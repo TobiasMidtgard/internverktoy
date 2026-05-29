@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Velodex — Showroom Registry</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+<style>
+  :root{
+    --bg:#0e1116;
+    --panel:#161b22;
+    --panel-2:#1c232d;
+    --line:#2a323d;
+    --ink:#e9eef5;
+    --muted:#8b97a6;
+    --accent:#f4b942;
+    --accent-2:#3fb6a8;
+    --danger:#e85d75;
+    --radius:14px;
+    --shadow:0 18px 40px -18px rgba(0,0,0,.7);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(63,182,168,.10), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(244,185,66,.10), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    overflow:hidden;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;}
+
+  /* ---------- Top bar ---------- */
+  header{
+    position:fixed;top:0;left:0;right:0;z-index:30;
+    display:flex;align-items:center;gap:14px;
+    padding:12px 16px;
+    background:rgba(14,17,22,.82);
+    backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);
+  }
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.5px;}
+  .logo .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent);}
+  .logo span{color:var(--muted);font-weight:500;}
+  .spacer{flex:1;}
+
+  select{
+    appearance:none;
+    background:var(--panel-2);
+    color:var(--ink);
+    border:1px solid var(--line);
+    padding:10px 38px 10px 14px;
+    border-radius:10px;
+    font:inherit;font-size:14px;font-weight:500;
+    cursor:pointer;min-width:200px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b97a6' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 13px center;
+  }
+  .btn{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+    padding:10px 14px;border-radius:10px;font:inherit;font-size:13px;font-weight:600;
+    cursor:pointer;transition:.15s;white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn.primary{background:var(--accent);color:#1a1205;border-color:var(--accent);}
+  .btn.primary:hover{filter:brightness(1.08);}
+
+  /* ---------- Canvas ---------- */
+  #stage{position:fixed;inset:0;top:0;overflow:hidden;touch-action:none;}
+  #canvas{
+    position:absolute;top:0;left:0;width:6000px;height:6000px;
+    transform-origin:0 0;
+    background-image:
+      linear-gradient(var(--line) 1px,transparent 1px),
+      linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:40px 40px;
+    opacity:1;
+  }
+  #canvas::before{content:"";position:absolute;inset:0;background-size:200px 200px;
+    background-image:
+      linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);}
+
+  .hint{
+    position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+    z-index:20;font-size:12px;color:var(--muted);
+    background:rgba(22,27,34,.8);padding:8px 14px;border-radius:30px;border:1px solid var(--line);
+    backdrop-filter:blur(8px);pointer-events:none;
+  }
+
+  /* ---------- Bike card ---------- */
+  .card{
+    position:absolute;width:300px;
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    overflow:hidden;cursor:grab;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .card.dragging{cursor:grabbing;box-shadow:0 26px 60px -16px rgba(0,0,0,.85);z-index:50!important;border-color:var(--accent);}
+  .card-head{
+    display:flex;align-items:center;gap:10px;
+    padding:14px 16px;border-bottom:1px solid var(--line);
+    background:rgba(0,0,0,.18);
+  }
+  .grip{display:flex;flex-direction:column;gap:3px;}
+  .grip i{width:16px;height:2px;background:var(--muted);border-radius:2px;display:block;}
+  .card-title{font-weight:700;font-size:15px;flex:1;line-height:1.2;}
+  .swatch{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.25);flex-shrink:0;}
+  .card-body{padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
+  .price{font-size:24px;font-weight:700;color:var(--accent);font-family:"IBM Plex Mono",monospace;}
+  .meta{display:flex;flex-wrap:wrap;gap:7px;}
+  .tag{font-size:11px;font-weight:600;color:var(--muted);background:var(--panel);border:1px solid var(--line);
+    padding:4px 9px;border-radius:20px;}
+  .tag b{color:var(--ink);font-weight:600;}
+  .desc{font-size:12.5px;line-height:1.5;color:var(--muted);}
+  .barcode-box{
+    background:#fff;border-radius:10px;padding:10px 8px 6px;
+    display:flex;flex-direction:column;align-items:center;cursor:zoom-in;
+    transition:transform .12s;
+  }
+  .barcode-box:active{transform:scale(.98);}
+  .barcode-box svg{width:100%;height:auto;display:block;}
+  .barcode-label{font-size:9px;color:#666;margin-top:2px;letter-spacing:1px;font-family:"IBM Plex Mono",monospace;}
+  .tap-note{font-size:10px;color:var(--accent-2);text-align:center;font-weight:600;letter-spacing:.5px;}
+
+  /* ---------- Fullscreen barcode ---------- */
+  #overlay{
+    position:fixed;inset:0;z-index:100;display:none;
+    background:rgba(8,10,13,.94);backdrop-filter:blur(6px);
+    flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:24px;
+  }
+  #overlay.show{display:flex;animation:fade .2s ease;}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .fs-card{
+    background:#fff;border-radius:18px;padding:36px 32px 24px;
+    width:min(680px,92vw);box-shadow:0 30px 80px rgba(0,0,0,.6);
+    display:flex;flex-direction:column;align-items:center;gap:14px;
+  }
+  .fs-card svg{width:100%;height:auto;}
+  .fs-frame{font-family:"IBM Plex Mono",monospace;font-size:18px;font-weight:600;color:#111;letter-spacing:3px;}
+  .fs-name{color:#fff;font-weight:600;font-size:18px;}
+  .fs-close{
+    background:#fff;color:#111;border:none;border-radius:30px;padding:12px 28px;
+    font:inherit;font-weight:700;cursor:pointer;font-size:14px;
+  }
+
+  /* ---------- Controls ---------- */
+  .controls{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end;}
+  .btn.active{background:var(--accent-2);border-color:var(--accent-2);color:#06231f;}
+  .btn.active:hover{filter:brightness(1.06);color:#06231f;}
+
+  /* ---------- Edit button on card ---------- */
+  .edit-btn{background:transparent;border:1px solid var(--line);color:var(--muted);
+    width:30px;height:30px;border-radius:8px;font-size:14px;cursor:pointer;flex-shrink:0;line-height:1;
+    display:flex;align-items:center;justify-content:center;transition:.15s;}
+  .edit-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+  /* ---------- Editor modal ---------- */
+  #editor{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;padding:18px;
+    background:rgba(8,10,13,.6);backdrop-filter:blur(6px);}
+  #editor.show{display:flex;animation:fade .18s ease;}
+  .editor-card{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line);
+    border-radius:16px;box-shadow:var(--shadow);width:min(460px,94vw);max-height:90vh;overflow:auto;
+    padding:22px;display:flex;flex-direction:column;gap:13px;}
+  .editor-card h2{font-size:18px;font-weight:700;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field>label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.3px;}
+  .field input,.field textarea{background:var(--bg);border:1px solid var(--line);border-radius:10px;
+    color:var(--ink);padding:11px 12px;font:inherit;font-size:16px;width:100%;}
+  .field textarea{resize:vertical;min-height:72px;line-height:1.45;}
+  .field input:focus,.field textarea:focus{outline:none;border-color:var(--accent);}
+  .frow{display:flex;gap:12px;}
+  .frow .field{flex:1;min-width:0;}
+  .color-field{flex:0 0 auto;}
+  .color-field input[type=color]{width:54px;height:46px;padding:4px;cursor:pointer;}
+  .editor-actions{display:flex;align-items:center;gap:10px;margin-top:2px;}
+  .editor-actions .spc{flex:1;}
+  .btn.danger{border-color:var(--danger);color:var(--danger);}
+  .btn.danger:hover{background:var(--danger);color:#fff;border-color:var(--danger);}
+  .err{color:var(--danger);font-size:12px;font-weight:600;}
+
+  @media (max-width:640px){
+    .logo span{display:none;}
+    header{flex-wrap:wrap;gap:8px;padding:10px 12px;}
+    .logo{width:100%;}
+    .controls{width:100%;margin-left:0;gap:8px;justify-content:flex-start;}
+    #bikeSelect{flex:1 1 100%;min-width:0;font-size:16px;padding:12px 36px 12px 13px;}
+    #snapSize{flex:0 0 auto;min-width:0;font-size:14px;padding:11px 30px 11px 12px;}
+    #addBike,#snapToggle,#resetView{flex:1 1 auto;}
+    .btn{padding:11px 12px;font-size:13px;}
+    .card{width:86vw;max-width:340px;}
+    .hint{font-size:11px;bottom:12px;padding:7px 12px;width:auto;max-width:92vw;text-align:center;line-height:1.4;}
+    .editor-card{padding:18px 16px;}
+    .fs-card{padding:24px 18px 18px;}
+    .fs-frame{font-size:14px;letter-spacing:2px;}
+    .fs-name{font-size:15px;text-align:center;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="dot"></span>VELODEX<span>· showroom registry</span></div>
+  <div class="controls">
+    <select id="bikeSelect"><option value="">Jump to bike…</option></select>
+    <button class="btn primary" id="addBike">+ Add bike</button>
+    <button class="btn" id="snapToggle" aria-pressed="false">Snap: Off</button>
+    <select id="snapSize" title="Snap grid size">
+      <option value="20">Grid 20</option>
+      <option value="40" selected>Grid 40</option>
+      <option value="80">Grid 80</option>
+      <option value="160">Grid 160</option>
+    </select>
+    <button class="btn" id="resetView">Reset view</button>
+  </div>
+</header>
+
+<div id="stage">
+  <div id="canvas"></div>
+</div>
+
+<div class="hint">Drag to pan · drag a card to move · double-tap to zoom · ✎ to edit · tap barcode to enlarge</div>
+
+<div id="overlay">
+  <div class="fs-name" id="fsName"></div>
+  <div class="fs-card">
+    <svg id="fsBarcode"></svg>
+    <div class="fs-frame" id="fsFrame"></div>
+  </div>
+  <button class="fs-close" id="fsClose">Close</button>
+</div>
+
+<div id="editor">
+  <div class="editor-card">
+    <h2 id="editorTitle">Edit bike</h2>
+    <div class="field"><label>Name</label><input id="f-name" placeholder="e.g. Falcon RS Carbon"></div>
+    <div class="frow">
+      <div class="field"><label>Size</label><input id="f-size" placeholder='e.g. 56cm / L (19")'></div>
+      <div class="field"><label>Price ($)</label><input id="f-price" type="number" min="0" step="1" placeholder="0"></div>
+    </div>
+    <div class="frow">
+      <div class="field color-field"><label>Colour</label><input id="f-color" type="color" value="#f4b942"></div>
+      <div class="field"><label>Colour name</label><input id="f-colorName" placeholder="e.g. Amber"></div>
+    </div>
+    <div class="frow">
+      <div class="field"><label>SKU</label><input id="f-id" placeholder="VX-XX-000"></div>
+      <div class="field"><label>Frame number</label><input id="f-frame" placeholder="FRX..."></div>
+    </div>
+    <div class="field"><label>Description</label><textarea id="f-desc" placeholder="Short description shown on the card"></textarea></div>
+    <div class="err" id="f-err"></div>
+    <div class="editor-actions">
+      <button class="btn danger" id="f-delete">Delete</button>
+      <span class="spc"></span>
+      <button class="btn" id="f-cancel">Cancel</button>
+      <button class="btn primary" id="f-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------------- DATA (the "database") ---------------- */
+const bikes = [
+  {id:"VX-RD-001", name:"Falcon RS Carbon", size:"56cm", color:"#e85d75", colorName:"Crimson", price:4299, frame:"FRX560092471", desc:"Featherweight carbon road racer. Electronic groupset, aero cockpit, tubeless-ready 700c wheels.", x:140, y:160},
+  {id:"VX-MT-002", name:"Granite Trail 29", size:"L (19\")", color:"#3fb6a8", colorName:"Teal", price:2799, frame:"FRX290118834", desc:"Full-suspension trail bike, 140mm travel. Dropper post, 1×12 drivetrain, 4-piston brakes.", x:520, y:300},
+  {id:"VX-CT-003", name:"Urban Glide E", size:"M (17\")", color:"#f4b942", colorName:"Amber", price:3450, frame:"FRX730045519", desc:"City e-bike with 500Wh battery, belt drive, integrated lights and rack. Up to 90km range.", x:160, y:560},
+  {id:"VX-GR-004", name:"Drifter Gravel", size:"54cm", color:"#6c8cff", colorName:"Cobalt", price:2150, frame:"FRX540077203", desc:"All-road gravel adventurer. Wide tyre clearance, mounts everywhere, comfortable endurance geo.", x:560, y:660},
+  {id:"VX-KD-005", name:"Sprout 20", size:"S (20\")", color:"#9b7cf0", colorName:"Violet", price:520, frame:"FRX200029988", desc:"Kids' pedal bike with training-friendly geometry, light alloy frame and tool-free seat adjust.", x:320, y:880}
+];
+
+const canvas = document.getElementById('canvas');
+const stage  = document.getElementById('stage');
+
+/* ---------------- Render cards ---------------- */
+function makeCard(b){
+  const el = document.createElement('div');
+  el.className='card';
+  el.style.left=b.x+'px';
+  el.style.top =b.y+'px';
+  el.dataset.uid=b.uid;
+  el.innerHTML=`
+    <div class="card-head">
+      <div class="grip"><i></i><i></i><i></i></div>
+      <div class="card-title">${b.name}</div>
+      <div class="swatch" style="background:${b.color}"></div>
+      <button class="edit-btn" data-edit title="Edit bike">✎</button>
+    </div>
+    <div class="card-body">
+      <div class="price">$${b.price.toLocaleString()}</div>
+      <div class="meta">
+        <span class="tag">Size <b>${b.size}</b></span>
+        <span class="tag">Colour <b>${b.colorName}</b></span>
+        <span class="tag">SKU <b>${b.id}</b></span>
+      </div>
+      <div class="desc">${b.desc}</div>
+      <div class="barcode-box" data-bc>
+        <svg class="bc-svg"></svg>
+        <div class="barcode-label">FRAME · ${b.frame}</div>
+      </div>
+      <div class="tap-note">↑ TAP BARCODE FOR FULLSCREEN ↑</div>
+    </div>`;
+  canvas.appendChild(el);
+
+  JsBarcode(el.querySelector('.bc-svg'), b.frame, {
+    format:"CODE128", lineColor:"#111", width:2, height:46, displayValue:false, margin:0
+  });
+
+  el.querySelector('[data-bc]').addEventListener('click',(e)=>{
+    if(el.dataset.moved==='1'){return;}
+    e.stopPropagation();
+    openFullscreen(b);
+  });
+
+  el.querySelector('[data-edit]').addEventListener('click',(e)=>{
+    e.stopPropagation();
+    openEditor(bikes.find(x=>x.uid===b.uid)||b);
+  });
+
+  return el;
+}
+let _uid=0; const uid=()=>'u'+(++_uid);
+bikes.forEach(b=>b.uid=uid());
+bikes.forEach(makeCard);
+
+/* ---------------- Dropdown ---------------- */
+const sel=document.getElementById('bikeSelect');
+function refreshDropdown(){
+  sel.innerHTML='<option value="">Jump to bike…</option>';
+  bikes.forEach(b=>{
+    const o=document.createElement('option');
+    o.value=b.uid;o.textContent=`${b.name} — ${b.size}`;
+    sel.appendChild(o);
+  });
+}
+refreshDropdown();
+sel.addEventListener('change',()=>{
+  const b=bikes.find(x=>x.uid===sel.value);
+  sel.value='';
+  if(!b)return;
+  focusCard(b,true);
+});
+
+/* card helpers */
+function cardEl(u){return [...canvas.children].find(c=>c.dataset.uid===u);}
+function rebuildCard(b){const old=cardEl(b.uid);if(old)old.remove();makeCard(b);}
+function snapVal(v){return snapOn?Math.round(v/snapSize)*snapSize:v;}
+
+/* Zoom + center a card so it fills most of the screen */
+function focusCard(b, big){
+  const card=cardEl(b.uid);
+  if(!card)return;
+  const cw=card.offsetWidth, ch=card.offsetHeight;
+  if(big){
+    // scale so the card fills ~88% of the smaller viewport dimension
+    const margin=0.88;
+    const fitW=(stage.clientWidth*margin)/cw;
+    const fitH=(stage.clientHeight*margin)/ch;
+    scale=Math.min(2.5,Math.max(0.5,Math.min(fitW,fitH)));
+  }
+  tx=stage.clientWidth/2  - (b.x+cw/2)*scale;
+  ty=stage.clientHeight/2 - (b.y+ch/2)*scale;
+  applyTransform(true);
+  card.style.boxShadow="0 0 0 2px var(--accent),"+getComputedStyle(card).boxShadow;
+  setTimeout(()=>card.style.boxShadow="",1100);
+}
+
+/* ---------------- Pan + Zoom + Drag ---------------- */
+let tx=0, ty=0, scale=1;
+function applyTransform(animate){
+  canvas.style.transition=animate?"transform .35s ease":"none";
+  canvas.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
+}
+applyTransform();
+
+let panning=false, draggingCard=null, startX, startY, cardStartX, cardStartY, moved;
+let lastTapTime=0, lastTapId=null;
+
+function pointer(e){const t=e.touches?e.touches[0]:e;return{x:t.clientX,y:t.clientY};}
+
+stage.addEventListener('pointerdown',onDown);
+function onDown(e){
+  const p=pointer(e);
+  const card=e.target.closest('.card');
+  const onControl=e.target.closest('[data-bc]')||e.target.closest('[data-edit]');
+  if(card && !onControl){
+    // double-tap / double-click detection
+    const now=Date.now();
+    if(card.dataset.uid===lastTapId && now-lastTapTime<320){
+      const b=bikes.find(x=>x.uid===card.dataset.uid);
+      if(b)focusCard(b,true);
+      lastTapTime=0;lastTapId=null;
+      return; // skip starting a drag on the second tap
+    }
+    lastTapTime=now;lastTapId=card.dataset.uid;
+
+    draggingCard=card;
+    card.classList.add('dragging');
+    card.dataset.moved='0';moved=false;
+    cardStartX=parseFloat(card.style.left);
+    cardStartY=parseFloat(card.style.top);
+    startX=p.x;startY=p.y;
+    canvas.appendChild(card); // bring to front
+  } else if(card && onControl){
+    return; // let barcode / edit button handle the tap
+  } else {
+    panning=true;startX=p.x;startY=p.y;
+  }
+  window.addEventListener('pointermove',onMove);
+  window.addEventListener('pointerup',onUp);
+}
+function onMove(e){
+  if(pinching)return; // a second finger is down — ignore single-finger pan/drag
+  const p=pointer(e);
+  if(draggingCard){
+    const dx=(p.x-startX)/scale, dy=(p.y-startY)/scale;
+    if(Math.abs(p.x-startX)>4||Math.abs(p.y-startY)>4){moved=true;draggingCard.dataset.moved='1';}
+    draggingCard.style.left=snapVal(cardStartX+dx)+'px';
+    draggingCard.style.top =snapVal(cardStartY+dy)+'px';
+  } else if(panning){
+    tx+=p.x-startX; ty+=p.y-startY;
+    startX=p.x;startY=p.y;
+    applyTransform();
+  }
+}
+function onUp(){
+  if(draggingCard){
+    draggingCard.classList.remove('dragging');
+    // persist new pos to data
+    const b=bikes.find(x=>x.uid===draggingCard.dataset.uid);
+    if(b){b.x=parseFloat(draggingCard.style.left);b.y=parseFloat(draggingCard.style.top);}
+    setTimeout(()=>{if(draggingCard)draggingCard.dataset.moved='0';},50);
+  }
+  draggingCard=null;panning=false;
+  window.removeEventListener('pointermove',onMove);
+  window.removeEventListener('pointerup',onUp);
+}
+
+/* pinch + wheel zoom */
+stage.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const factor=e.deltaY<0?1.1:0.9;
+  zoomAt(e.clientX,e.clientY,factor);
+},{passive:false});
+
+let pinchDist=0, pinching=false;
+stage.addEventListener('touchstart',e=>{
+  if(e.touches.length>=2){
+    pinching=true;
+    pinchDist=dist(e.touches);
+    // cancel any in-progress single-finger pan or card drag
+    if(draggingCard){draggingCard.classList.remove('dragging');}
+    draggingCard=null;panning=false;
+  }
+},{passive:false});
+stage.addEventListener('touchmove',e=>{
+  if(e.touches.length>=2){
+    e.preventDefault();
+    const d=dist(e.touches);
+    const mid={x:(e.touches[0].clientX+e.touches[1].clientX)/2,y:(e.touches[0].clientY+e.touches[1].clientY)/2};
+    zoomAt(mid.x,mid.y,d/pinchDist);
+    pinchDist=d;
+  }
+},{passive:false});
+stage.addEventListener('touchend',e=>{
+  if(e.touches.length<2){
+    // lifting back to one (or zero) fingers — re-anchor so the canvas doesn't jump
+    pinching=false;
+    if(e.touches.length===1){
+      startX=e.touches[0].clientX;
+      startY=e.touches[0].clientY;
+    } else {
+      panning=false;
+    }
+  }
+});
+function dist(t){return Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);}
+function zoomAt(cx,cy,factor){
+  const ns=Math.min(2.5,Math.max(0.35,scale*factor));
+  tx=cx-(cx-tx)*(ns/scale);
+  ty=cy-(cy-ty)*(ns/scale);
+  scale=ns;applyTransform();
+}
+
+document.getElementById('resetView').onclick=()=>{tx=0;ty=0;scale=1;applyTransform(true);};
+
+/* ---------------- Fullscreen barcode ---------------- */
+const overlay=document.getElementById('overlay');
+function openFullscreen(b){
+  document.getElementById('fsName').textContent=b.name+" · "+b.size;
+  document.getElementById('fsFrame').textContent=b.frame;
+  JsBarcode("#fsBarcode", b.frame, {format:"CODE128",lineColor:"#111",width:3,height:120,displayValue:false,margin:0});
+  overlay.classList.add('show');
+}
+document.getElementById('fsClose').onclick=()=>overlay.classList.remove('show');
+let ovDX=0,ovDY=0,ovDownOnBackdrop=false;
+overlay.addEventListener('pointerdown',e=>{ovDX=e.clientX;ovDY=e.clientY;ovDownOnBackdrop=(e.target===overlay);});
+overlay.addEventListener('pointerup',e=>{
+  const movedFar=Math.abs(e.clientX-ovDX)>10||Math.abs(e.clientY-ovDY)>10;
+  if(!movedFar && ovDownOnBackdrop && e.target===overlay) overlay.classList.remove('show');
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')overlay.classList.remove('show');});
+
+/* ---------------- Snapping ---------------- */
+let snapOn=false, snapSize=40;
+const snapToggle=document.getElementById('snapToggle');
+const snapSizeSel=document.getElementById('snapSize');
+function updateGridCue(){const s=(snapOn?snapSize:40);canvas.style.backgroundSize=s+'px '+s+'px';}
+function snapAllCards(){
+  bikes.forEach(b=>{
+    b.x=Math.round(b.x/snapSize)*snapSize;
+    b.y=Math.round(b.y/snapSize)*snapSize;
+    const el=cardEl(b.uid); if(el){el.style.left=b.x+'px';el.style.top=b.y+'px';}
+  });
+}
+snapToggle.onclick=()=>{
+  snapOn=!snapOn;
+  snapToggle.textContent='Snap: '+(snapOn?'On':'Off');
+  snapToggle.classList.toggle('active',snapOn);
+  snapToggle.setAttribute('aria-pressed',snapOn);
+  updateGridCue();
+  if(snapOn)snapAllCards();
+};
+snapSizeSel.onchange=()=>{
+  snapSize=parseInt(snapSizeSel.value,10)||40;
+  updateGridCue();
+  if(snapOn)snapAllCards();
+};
+
+/* ---------------- Editor: add / edit / remove ---------------- */
+const editor=document.getElementById('editor');
+const F={
+  name:document.getElementById('f-name'),
+  size:document.getElementById('f-size'),
+  price:document.getElementById('f-price'),
+  color:document.getElementById('f-color'),
+  colorName:document.getElementById('f-colorName'),
+  id:document.getElementById('f-id'),
+  frame:document.getElementById('f-frame'),
+  desc:document.getElementById('f-desc'),
+  err:document.getElementById('f-err')
+};
+let editingUid=null, delArm=false, delTimer=null;
+const delBtn=document.getElementById('f-delete');
+function resetDelete(){delArm=false;delBtn.textContent='Delete';if(delTimer){clearTimeout(delTimer);delTimer=null;}}
+
+function openEditor(b){
+  editingUid=b?b.uid:null;
+  document.getElementById('editorTitle').textContent=b?'Edit bike':'Add new bike';
+  delBtn.style.display=b?'':'none';
+  F.name.value=b?b.name:'';
+  F.size.value=b?b.size:'';
+  F.price.value=b?b.price:'';
+  F.color.value=b?b.color:'#f4b942';
+  F.colorName.value=b?b.colorName:'';
+  F.id.value=b?b.id:'';
+  F.frame.value=b?b.frame:'';
+  F.desc.value=b?b.desc:'';
+  F.err.textContent='';
+  resetDelete();
+  editor.classList.add('show');
+}
+function closeEditor(){editor.classList.remove('show');resetDelete();}
+
+document.getElementById('addBike').onclick=()=>openEditor(null);
+document.getElementById('f-cancel').onclick=closeEditor;
+let edDX=0,edDY=0,edDownOnBackdrop=false;
+editor.addEventListener('pointerdown',e=>{edDX=e.clientX;edDY=e.clientY;edDownOnBackdrop=(e.target===editor);});
+editor.addEventListener('pointerup',e=>{
+  const movedFar=Math.abs(e.clientX-edDX)>10||Math.abs(e.clientY-edDY)>10;
+  if(!movedFar && edDownOnBackdrop && e.target===editor) closeEditor();
+});
+
+document.getElementById('f-save').onclick=()=>{
+  const name=F.name.value.trim();
+  const frame=F.frame.value.trim();
+  if(!name){F.err.textContent='Please enter a name.';return;}
+  if(!frame){F.err.textContent='Frame number is required — it generates the barcode.';return;}
+  const data={
+    name,
+    size:F.size.value.trim()||'—',
+    price:Math.max(0,parseInt(F.price.value,10)||0),
+    color:F.color.value,
+    colorName:F.colorName.value.trim()||'—',
+    id:F.id.value.trim()||frame,
+    frame,
+    desc:F.desc.value.trim()||'No description provided.'
+  };
+  if(editingUid){
+    const b=bikes.find(x=>x.uid===editingUid);
+    Object.assign(b,data);
+    rebuildCard(b);
+    refreshDropdown();
+    closeEditor();
+  } else {
+    const cx=(stage.clientWidth/2 - tx)/scale - 150;
+    const cy=(stage.clientHeight/2 - ty)/scale - 130;
+    const b=Object.assign({uid:uid(),x:snapVal(cx),y:snapVal(cy)},data);
+    bikes.push(b);
+    makeCard(b);
+    refreshDropdown();
+    closeEditor();
+    focusCard(b,true);
+  }
+};
+
+delBtn.onclick=()=>{
+  if(!editingUid)return;
+  if(!delArm){
+    delArm=true;delBtn.textContent='Tap again to delete';
+    delTimer=setTimeout(resetDelete,2600);
+    return;
+  }
+  const i=bikes.findIndex(x=>x.uid===editingUid);
+  if(i>=0){const el=cardEl(editingUid);if(el)el.remove();bikes.splice(i,1);}
+  refreshDropdown();
+  closeEditor();
+};
+
+</script>
+</body>
+</html>
