@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Velodex — Showroom Registry</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg:#0e1116;
@@ -43,7 +44,7 @@
     border-bottom:1px solid var(--line);
   }
   .logo{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.5px;}
-  .logo .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent);}
+  .logo .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent);transition:.3s;}
   .logo span{color:var(--muted);font-weight:500;}
   .spacer{flex:1;}
 
@@ -67,6 +68,7 @@
   .btn:hover{border-color:var(--accent);color:var(--accent);}
   .btn.primary{background:var(--accent);color:#1a1205;border-color:var(--accent);}
   .btn.primary:hover{filter:brightness(1.08);}
+  .btn:disabled{opacity:.55;cursor:default;}
 
   /* ---------- Canvas ---------- */
   #stage{position:fixed;inset:0;top:0;overflow:hidden;touch-action:none;}
@@ -117,6 +119,16 @@
     padding:4px 9px;border-radius:20px;}
   .tag b{color:var(--ink);font-weight:600;}
   .desc{font-size:12.5px;line-height:1.5;color:var(--muted);}
+
+  /* ---------- Additional items list ---------- */
+  .items-title{font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;}
+  .items{display:flex;flex-direction:column;gap:5px;margin-top:-4px;}
+  .items .item{display:flex;justify-content:space-between;gap:10px;align-items:baseline;
+    font-size:12.5px;border-top:1px dashed var(--line);padding-top:5px;}
+  .items .item:first-child{border-top:none;padding-top:0;}
+  .items .iname{color:var(--ink);}
+  .items .iprice{font-family:"IBM Plex Mono",monospace;color:var(--accent-2);font-weight:600;white-space:nowrap;}
+
   .barcode-box{
     background:#fff;border-radius:10px;padding:10px 8px 6px;
     display:flex;flex-direction:column;align-items:center;cursor:zoom-in;
@@ -153,16 +165,21 @@
   .btn.active{background:var(--accent-2);border-color:var(--accent-2);color:#06231f;}
   .btn.active:hover{filter:brightness(1.06);color:#06231f;}
 
+  /* hide editing affordances while locked (view-only) */
+  body.locked .edit-btn{display:none;}
+  body.locked #addBike{display:none;}
+
   /* ---------- Edit button on card ---------- */
   .edit-btn{background:transparent;border:1px solid var(--line);color:var(--muted);
     width:30px;height:30px;border-radius:8px;font-size:14px;cursor:pointer;flex-shrink:0;line-height:1;
     display:flex;align-items:center;justify-content:center;transition:.15s;}
   .edit-btn:hover{border-color:var(--accent);color:var(--accent);}
 
-  /* ---------- Editor modal ---------- */
-  #editor{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;padding:18px;
+  /* ---------- Editor + passcode modals ---------- */
+  #editor,#passModal{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;padding:18px;
     background:rgba(8,10,13,.6);backdrop-filter:blur(6px);}
-  #editor.show{display:flex;animation:fade .18s ease;}
+  #passModal{z-index:130;}
+  #editor.show,#passModal.show{display:flex;animation:fade .18s ease;}
   .editor-card{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line);
     border-radius:16px;box-shadow:var(--shadow);width:min(460px,94vw);max-height:90vh;overflow:auto;
     padding:22px;display:flex;flex-direction:column;gap:13px;}
@@ -181,7 +198,26 @@
   .editor-actions .spc{flex:1;}
   .btn.danger{border-color:var(--danger);color:var(--danger);}
   .btn.danger:hover{background:var(--danger);color:#fff;border-color:var(--danger);}
-  .err{color:var(--danger);font-size:12px;font-weight:600;}
+  .err{color:var(--danger);font-size:12px;font-weight:600;min-height:1px;}
+
+  /* ---------- Additional-items editor ---------- */
+  .items-editor{display:flex;flex-direction:column;gap:8px;}
+  .item-row{display:flex;gap:8px;align-items:center;}
+  .item-row .iname-in{flex:1;min-width:0;}
+  .item-row .iprice-in{width:96px;flex:0 0 auto;}
+  .item-row .rm{background:transparent;border:1px solid var(--line);color:var(--muted);width:38px;height:46px;
+    border-radius:8px;cursor:pointer;flex:0 0 auto;font-size:15px;line-height:1;}
+  .item-row .rm:hover{border-color:var(--danger);color:var(--danger);}
+  .add-item{align-self:flex-start;background:transparent;border:1px dashed var(--line);color:var(--muted);
+    padding:8px 12px;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;transition:.15s;}
+  .add-item:hover{border-color:var(--accent-2);color:var(--accent-2);}
+
+  /* ---------- Toast ---------- */
+  #toast{position:fixed;bottom:64px;left:50%;transform:translateX(-50%) translateY(20px);
+    z-index:140;background:var(--danger);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;
+    font-weight:600;opacity:0;pointer-events:none;transition:.25s;box-shadow:var(--shadow);max-width:90vw;text-align:center;}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  #toast.ok{background:var(--accent-2);color:#06231f;}
 
   @media (max-width:640px){
     .logo span{display:none;}
@@ -190,7 +226,7 @@
     .controls{width:100%;margin-left:0;gap:8px;justify-content:flex-start;}
     #bikeSelect{flex:1 1 100%;min-width:0;font-size:16px;padding:12px 36px 12px 13px;}
     #snapSize{flex:0 0 auto;min-width:0;font-size:14px;padding:11px 30px 11px 12px;}
-    #addBike,#snapToggle,#resetView{flex:1 1 auto;}
+    #addBike,#snapToggle,#resetView,#lockBtn{flex:1 1 auto;}
     .btn{padding:11px 12px;font-size:13px;}
     .card{width:86vw;max-width:340px;}
     .hint{font-size:11px;bottom:12px;padding:7px 12px;width:auto;max-width:92vw;text-align:center;line-height:1.4;}
@@ -201,12 +237,13 @@
   }
 </style>
 </head>
-<body>
+<body class="locked">
 
 <header>
-  <div class="logo"><span class="dot"></span>VELODEX<span>· showroom registry</span></div>
+  <div class="logo"><span class="dot" id="liveDot" title="Connecting…"></span>VELODEX<span>· showroom registry</span></div>
   <div class="controls">
     <select id="bikeSelect"><option value="">Jump to bike…</option></select>
+    <button class="btn" id="lockBtn">🔒 View only</button>
     <button class="btn primary" id="addBike">+ Add bike</button>
     <button class="btn" id="snapToggle" aria-pressed="false">Snap: Off</button>
     <select id="snapSize" title="Snap grid size">
@@ -223,7 +260,7 @@
   <div id="canvas"></div>
 </div>
 
-<div class="hint">Drag to pan · drag a card to move · double-tap to zoom · ✎ to edit · tap barcode to enlarge</div>
+<div class="hint">Drag to pan · double-tap a card to zoom · tap a barcode to enlarge · 🔒 unlock to edit</div>
 
 <div id="overlay">
   <div class="fs-name" id="fsName"></div>
@@ -239,18 +276,20 @@
     <h2 id="editorTitle">Edit bike</h2>
     <div class="field"><label>Name</label><input id="f-name" placeholder="e.g. Falcon RS Carbon"></div>
     <div class="frow">
-      <div class="field"><label>Size</label><input id="f-size" placeholder='e.g. 56cm / L (19")'></div>
-      <div class="field"><label>Price ($)</label><input id="f-price" type="number" min="0" step="1" placeholder="0"></div>
+      <div class="field"><label>Wheel size</label><input id="f-size" placeholder='e.g. 29&quot;'></div>
+      <div class="field"><label>Price (kr)</label><input id="f-price" type="number" min="0" step="1" placeholder="0"></div>
     </div>
     <div class="frow">
       <div class="field color-field"><label>Colour</label><input id="f-color" type="color" value="#f4b942"></div>
       <div class="field"><label>Colour name</label><input id="f-colorName" placeholder="e.g. Amber"></div>
     </div>
-    <div class="frow">
-      <div class="field"><label>SKU</label><input id="f-id" placeholder="VX-XX-000"></div>
-      <div class="field"><label>Frame number</label><input id="f-frame" placeholder="FRX..."></div>
-    </div>
+    <div class="field"><label>Frame number</label><input id="f-frame" placeholder="FRX..."></div>
     <div class="field"><label>Description</label><textarea id="f-desc" placeholder="Short description shown on the card"></textarea></div>
+    <div class="field">
+      <label>Additional items</label>
+      <div class="items-editor" id="f-items"></div>
+      <button type="button" class="add-item" id="f-addItem">+ Add item</button>
+    </div>
     <div class="err" id="f-err"></div>
     <div class="editor-actions">
       <button class="btn danger" id="f-delete">Delete</button>
@@ -261,34 +300,85 @@
   </div>
 </div>
 
-<script>
-/* ---------------- DATA (the "database") ---------------- */
-const STORE_KEY='velodex.bikes.v1';
-const SEED_BIKES = [
-  {id:"VX-RD-001", name:"Falcon RS Carbon", size:"56cm", color:"#e85d75", colorName:"Crimson", price:4299, frame:"FRX560092471", desc:"Featherweight carbon road racer. Electronic groupset, aero cockpit, tubeless-ready 700c wheels.", x:140, y:160},
-  {id:"VX-MT-002", name:"Granite Trail 29", size:"L (19\")", color:"#3fb6a8", colorName:"Teal", price:2799, frame:"FRX290118834", desc:"Full-suspension trail bike, 140mm travel. Dropper post, 1×12 drivetrain, 4-piston brakes.", x:520, y:300},
-  {id:"VX-CT-003", name:"Urban Glide E", size:"M (17\")", color:"#f4b942", colorName:"Amber", price:3450, frame:"FRX730045519", desc:"City e-bike with 500Wh battery, belt drive, integrated lights and rack. Up to 90km range.", x:160, y:560},
-  {id:"VX-GR-004", name:"Drifter Gravel", size:"54cm", color:"#6c8cff", colorName:"Cobalt", price:2150, frame:"FRX540077203", desc:"All-road gravel adventurer. Wide tyre clearance, mounts everywhere, comfortable endurance geo.", x:560, y:660},
-  {id:"VX-KD-005", name:"Sprout 20", size:"S (20\")", color:"#9b7cf0", colorName:"Violet", price:520, frame:"FRX200029988", desc:"Kids' pedal bike with training-friendly geometry, light alloy frame and tool-free seat adjust.", x:320, y:880}
-];
+<div id="passModal">
+  <div class="editor-card" style="max-width:380px;">
+    <h2>Unlock editing</h2>
+    <div class="field"><label>Passcode</label><input id="p-input" type="password" placeholder="Enter edit passcode" autocomplete="off"></div>
+    <div class="err" id="p-err"></div>
+    <div class="editor-actions">
+      <span class="spc"></span>
+      <button class="btn" id="p-cancel">Cancel</button>
+      <button class="btn primary" id="p-ok">Unlock</button>
+    </div>
+  </div>
+</div>
 
-/* load persisted bikes, or fall back to the demo seed on first visit / corrupt data */
-function loadBikes(){
-  try{
-    const raw=localStorage.getItem(STORE_KEY);
-    if(raw){const arr=JSON.parse(raw);if(Array.isArray(arr))return arr;}
-  }catch(e){}
-  return SEED_BIKES.map(b=>({...b}));
-}
-const bikes = loadBikes();
-function save(){
-  try{localStorage.setItem(STORE_KEY,JSON.stringify(bikes));}catch(e){}
-}
+<div id="toast"></div>
+
+<script>
+/* ================= Supabase config ================= */
+const SB_URL = 'https://tfjvgvrqngevsiuueixf.supabase.co';
+const SB_KEY = 'sb_publishable_O-gjCbc7E1pX-I0o9DawbQ_xbnV6uJY';
+const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+const CACHE_KEY = 'velodex.cache.v2';   // fast first-paint only; server is the source of truth
+const PASS_KEY  = 'velodex.pass';       // per-tab edit session
+
+let bikes = [];
+let EDIT_PASS = sessionStorage.getItem(PASS_KEY) || null;   // null = locked / view-only
+const isEditing = () => !!EDIT_PASS;
 
 const canvas = document.getElementById('canvas');
 const stage  = document.getElementById('stage');
 
+/* ---------------- helpers ---------------- */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function nok(n){return (Number(n)||0).toLocaleString('nb-NO')+' kr';}
+
+/* DB row -> client object, and client -> DB payload */
+function fromRow(r){
+  return {
+    uid:r.uid, name:r.name||'', wheel_size:r.wheel_size||'', color:r.color||'#f4b942',
+    colorName:r.color_name||'—', price:r.price||0, frame:r.frame||'',
+    desc:r.descr||'', items:Array.isArray(r.items)?r.items:[],
+    x:Number(r.x)||0, y:Number(r.y)||0
+  };
+}
+function dbPayload(d){
+  const p={
+    name:d.name, wheel_size:d.wheel_size, color:d.color, color_name:d.colorName,
+    price:d.price, frame:d.frame, descr:d.desc, items:d.items
+  };
+  if(d.x!=null) p.x=d.x;
+  if(d.y!=null) p.y=d.y;
+  return p;
+}
+
+let toastTimer=null;
+function toast(msg,ok){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.toggle('ok',!!ok);t.classList.add('show');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
+}
+function isPasscodeError(err){return !!err && (err.code==='28000' || /passcode/i.test(err.message||''));}
+function handleWriteError(err,where){
+  if(isPasscodeError(err)){
+    EDIT_PASS=null;sessionStorage.removeItem(PASS_KEY);updateLockUI();
+    toast('Editing locked — passcode is no longer valid.');
+  } else {
+    toast((where||'Save')+' failed: '+((err&&err.message)||'error'));
+  }
+}
+
 /* ---------------- Render cards ---------------- */
+function itemsHtml(items){
+  if(!items||!items.length) return '';
+  const rows=items.map(it=>
+    `<div class="item"><span class="iname">${esc(it.name)}</span><span class="iprice">${nok(it.price)}</span></div>`
+  ).join('');
+  return `<div class="items-title">Additional items</div><div class="items">${rows}</div>`;
+}
 function makeCard(b){
   const el = document.createElement('div');
   el.className='card';
@@ -298,34 +388,36 @@ function makeCard(b){
   el.innerHTML=`
     <div class="card-head">
       <div class="grip"><i></i><i></i><i></i></div>
-      <div class="card-title">${b.name}</div>
-      <div class="swatch" style="background:${b.color}"></div>
+      <div class="card-title">${esc(b.name)}</div>
+      <div class="swatch" style="background:${esc(b.color)}"></div>
       <button class="edit-btn" data-edit title="Edit bike">✎</button>
     </div>
     <div class="card-body">
-      <div class="price">$${b.price.toLocaleString()}</div>
+      <div class="price">${nok(b.price)}</div>
       <div class="meta">
-        <span class="tag">Size <b>${b.size}</b></span>
-        <span class="tag">Colour <b>${b.colorName}</b></span>
-        <span class="tag">SKU <b>${b.id}</b></span>
+        <span class="tag">Wheel <b>${esc(b.wheel_size||'—')}</b></span>
+        <span class="tag">Colour <b>${esc(b.colorName)}</b></span>
       </div>
-      <div class="desc">${b.desc}</div>
+      <div class="desc">${esc(b.desc)}</div>
+      ${itemsHtml(b.items)}
       <div class="barcode-box" data-bc>
         <svg class="bc-svg"></svg>
-        <div class="barcode-label">FRAME · ${b.frame}</div>
+        <div class="barcode-label">FRAME · ${esc(b.frame)}</div>
       </div>
       <div class="tap-note">↑ TAP BARCODE FOR FULLSCREEN ↑</div>
     </div>`;
   canvas.appendChild(el);
 
-  JsBarcode(el.querySelector('.bc-svg'), b.frame, {
-    format:"CODE128", lineColor:"#111", width:2, height:46, displayValue:false, margin:0
-  });
+  if(b.frame){
+    JsBarcode(el.querySelector('.bc-svg'), b.frame, {
+      format:"CODE128", lineColor:"#111", width:2, height:46, displayValue:false, margin:0
+    });
+  }
 
   el.querySelector('[data-bc]').addEventListener('click',(e)=>{
     if(el.dataset.moved==='1'){return;}
     e.stopPropagation();
-    openFullscreen(b);
+    openFullscreen(bikes.find(x=>x.uid===b.uid)||b);
   });
 
   el.querySelector('[data-edit]').addEventListener('click',(e)=>{
@@ -335,11 +427,85 @@ function makeCard(b){
 
   return el;
 }
-let _uid=0; const uid=()=>'u'+(++_uid);
-// bump the counter past any persisted uids, then assign one to any bike missing it
-bikes.forEach(b=>{const n=parseInt(String(b.uid||'').replace(/\D/g,''),10);if(n>_uid)_uid=n;});
-bikes.forEach(b=>{if(!b.uid)b.uid=uid();});
-bikes.forEach(makeCard);
+
+/* ---------------- list reconciliation ---------------- */
+function cardEl(u){return [...canvas.children].find(c=>c.dataset.uid===u);}
+function rebuildCard(b){const old=cardEl(b.uid);if(old)old.remove();makeCard(b);}
+function clearCards(){[...canvas.querySelectorAll('.card')].forEach(c=>c.remove());}
+function cacheSave(){try{localStorage.setItem(CACHE_KEY,JSON.stringify(bikes));}catch(e){}}
+function renderAll(){clearCards();bikes.forEach(makeCard);refreshDropdown();}
+function applyList(list){bikes=list;renderAll();cacheSave();}
+
+function bootFromCache(){
+  try{
+    const raw=localStorage.getItem(CACHE_KEY);
+    if(raw){const arr=JSON.parse(raw);if(Array.isArray(arr)&&arr.length){bikes=arr;renderAll();}}
+  }catch(e){}
+}
+async function loadFromServer(){
+  const {data,error}=await sb.from('bikes').select('*').order('name');
+  if(error){toast('Could not reach server — showing last cached copy.');return;}
+  applyList(data.map(fromRow));
+}
+
+/* ---------------- Realtime ---------------- */
+const pendingSaves=new Set();  // uids this client just wrote — suppress our own echo
+
+function localUpsert(b){        // idempotent: never duplicates a card or list entry
+  const i=bikes.findIndex(x=>x.uid===b.uid);
+  if(i<0)bikes.push(b);else bikes[i]=b;
+  if(cardEl(b.uid))rebuildCard(b);else makeCard(b);
+  refreshDropdown();cacheSave();
+}
+
+function applyRowUpsert(row){
+  const b=fromRow(row);
+  const i=bikes.findIndex(x=>x.uid===b.uid);
+  if(i<0)bikes.push(b);else bikes[i]=b;   // keep the model current no matter what
+  cacheSave();
+  // don't redraw over our own in-flight write, an active drag, or an open editor
+  if(pendingSaves.has(b.uid))return;
+  if(draggingCard&&draggingCard.dataset.uid===b.uid)return;
+  if(editingUid===b.uid)return;
+  if(cardEl(b.uid))rebuildCard(b);else makeCard(b);
+  refreshDropdown();
+}
+function applyRowDelete(row){
+  const u=row.uid;if(!u)return;
+  const i=bikes.findIndex(x=>x.uid===u);
+  if(i>=0){const el=cardEl(u);if(el)el.remove();bikes.splice(i,1);refreshDropdown();cacheSave();}
+  if(editingUid===u)closeEditor();
+}
+function startRealtime(){
+  sb.channel('bikes-rt')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'bikes'},p=>applyRowUpsert(p.new))
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'bikes'},p=>applyRowUpsert(p.new))
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'bikes'},p=>applyRowDelete(p.old))
+    .subscribe((status)=>{
+      const d=document.getElementById('liveDot');
+      if(status==='SUBSCRIBED'&&d){d.style.background='var(--accent-2)';d.style.boxShadow='0 0 14px var(--accent-2)';d.title='Live sync on';}
+    });
+}
+
+/* ---------------- write helpers (passcode-protected RPCs) ---------------- */
+async function rpcAdd(payload){
+  const {data,error}=await sb.rpc('add_bike',{p_passcode:EDIT_PASS,p_data:payload});
+  if(error)throw error;return fromRow(data);
+}
+async function rpcUpdate(uid,payload){
+  pendingSaves.add(uid);
+  try{
+    const {data,error}=await sb.rpc('update_bike',{p_passcode:EDIT_PASS,p_uid:uid,p_data:payload});
+    if(error)throw error;return data?fromRow(data):null;
+  } finally {
+    // keep suppressing briefly — the realtime echo can arrive after the HTTP response
+    setTimeout(()=>pendingSaves.delete(uid),1500);
+  }
+}
+async function rpcDelete(uid){
+  const {error}=await sb.rpc('delete_bike',{p_passcode:EDIT_PASS,p_uid:uid});
+  if(error)throw error;
+}
 
 /* ---------------- Dropdown ---------------- */
 const sel=document.getElementById('bikeSelect');
@@ -347,11 +513,10 @@ function refreshDropdown(){
   sel.innerHTML='<option value="">Jump to bike…</option>';
   bikes.forEach(b=>{
     const o=document.createElement('option');
-    o.value=b.uid;o.textContent=`${b.name} — ${b.size}`;
+    o.value=b.uid;o.textContent=`${b.name}${b.wheel_size?(' — '+b.wheel_size):''}`;
     sel.appendChild(o);
   });
 }
-refreshDropdown();
 sel.addEventListener('change',()=>{
   const b=bikes.find(x=>x.uid===sel.value);
   sel.value='';
@@ -359,18 +524,13 @@ sel.addEventListener('change',()=>{
   focusCard(b,true);
 });
 
-/* card helpers */
-function cardEl(u){return [...canvas.children].find(c=>c.dataset.uid===u);}
-function rebuildCard(b){const old=cardEl(b.uid);if(old)old.remove();makeCard(b);}
+/* ---------------- Zoom + center a card ---------------- */
 function snapVal(v){return snapOn?Math.round(v/snapSize)*snapSize:v;}
-
-/* Zoom + center a card so it fills most of the screen */
 function focusCard(b, big){
   const card=cardEl(b.uid);
   if(!card)return;
   const cw=card.offsetWidth, ch=card.offsetHeight;
   if(big){
-    // scale so the card fills ~88% of the smaller viewport dimension
     const margin=0.88;
     const fitW=(stage.clientWidth*margin)/cw;
     const fitH=(stage.clientHeight*margin)/ch;
@@ -402,23 +562,27 @@ function onDown(e){
   const card=e.target.closest('.card');
   const onControl=e.target.closest('[data-bc]')||e.target.closest('[data-edit]');
   if(card && !onControl){
-    // double-tap / double-click detection
+    // double-tap / double-click to zoom (works locked or unlocked)
     const now=Date.now();
     if(card.dataset.uid===lastTapId && now-lastTapTime<320){
       const b=bikes.find(x=>x.uid===card.dataset.uid);
       if(b)focusCard(b,true);
       lastTapTime=0;lastTapId=null;
-      return; // skip starting a drag on the second tap
+      return; // skip starting a drag/pan on the second tap
     }
     lastTapTime=now;lastTapId=card.dataset.uid;
 
-    draggingCard=card;
-    card.classList.add('dragging');
-    card.dataset.moved='0';moved=false;
-    cardStartX=parseFloat(card.style.left);
-    cardStartY=parseFloat(card.style.top);
-    startX=p.x;startY=p.y;
-    canvas.appendChild(card); // bring to front
+    if(isEditing()){
+      draggingCard=card;
+      card.classList.add('dragging');
+      card.dataset.moved='0';moved=false;
+      cardStartX=parseFloat(card.style.left);
+      cardStartY=parseFloat(card.style.top);
+      startX=p.x;startY=p.y;
+      canvas.appendChild(card); // bring to front
+    } else {
+      panning=true;startX=p.x;startY=p.y; // locked: dragging a card pans the canvas
+    }
   } else if(card && onControl){
     return; // let barcode / edit button handle the tap
   } else {
@@ -444,10 +608,16 @@ function onMove(e){
 function onUp(){
   if(draggingCard){
     draggingCard.classList.remove('dragging');
-    // persist new pos to data
-    const b=bikes.find(x=>x.uid===draggingCard.dataset.uid);
-    if(b){b.x=parseFloat(draggingCard.style.left);b.y=parseFloat(draggingCard.style.top);save();}
-    setTimeout(()=>{if(draggingCard)draggingCard.dataset.moved='0';},50);
+    const u=draggingCard.dataset.uid;
+    const b=bikes.find(x=>x.uid===u);
+    if(b && moved){
+      b.x=parseFloat(draggingCard.style.left);
+      b.y=parseFloat(draggingCard.style.top);
+      cacheSave();
+      rpcUpdate(u,{x:b.x,y:b.y}).catch(err=>{handleWriteError(err,'Move');loadFromServer();});
+    }
+    const dc=draggingCard;
+    setTimeout(()=>{if(dc)dc.dataset.moved='0';},50);
   }
   draggingCard=null;panning=false;
   window.removeEventListener('pointermove',onMove);
@@ -466,7 +636,6 @@ stage.addEventListener('touchstart',e=>{
   if(e.touches.length>=2){
     pinching=true;
     pinchDist=dist(e.touches);
-    // cancel any in-progress single-finger pan or card drag
     if(draggingCard){draggingCard.classList.remove('dragging');}
     draggingCard=null;panning=false;
   }
@@ -482,7 +651,6 @@ stage.addEventListener('touchmove',e=>{
 },{passive:false});
 stage.addEventListener('touchend',e=>{
   if(e.touches.length<2){
-    // lifting back to one (or zero) fingers — re-anchor so the canvas doesn't jump
     pinching=false;
     if(e.touches.length===1){
       startX=e.touches[0].clientX;
@@ -505,7 +673,7 @@ document.getElementById('resetView').onclick=()=>{tx=0;ty=0;scale=1;applyTransfo
 /* ---------------- Fullscreen barcode ---------------- */
 const overlay=document.getElementById('overlay');
 function openFullscreen(b){
-  document.getElementById('fsName').textContent=b.name+" · "+b.size;
+  document.getElementById('fsName').textContent=b.name+(b.wheel_size?(" · "+b.wheel_size):"");
   document.getElementById('fsFrame').textContent=b.frame;
   JsBarcode("#fsBarcode", b.frame, {format:"CODE128",lineColor:"#111",width:3,height:120,displayValue:false,margin:0});
   overlay.classList.add('show');
@@ -530,7 +698,11 @@ function snapAllCards(){
     b.y=Math.round(b.y/snapSize)*snapSize;
     const el=cardEl(b.uid); if(el){el.style.left=b.x+'px';el.style.top=b.y+'px';}
   });
-  save();
+  cacheSave();
+  if(isEditing()){
+    Promise.all(bikes.map(b=>rpcUpdate(b.uid,{x:b.x,y:b.y}).then(()=>true).catch(()=>false)))
+      .then(res=>{if(res.some(ok=>!ok))toast('Some positions did not save.');});
+  }
 }
 snapToggle.onclick=()=>{
   snapOn=!snapOn;
@@ -546,6 +718,52 @@ snapSizeSel.onchange=()=>{
   if(snapOn)snapAllCards();
 };
 
+/* ---------------- Lock / passcode ---------------- */
+const lockBtn=document.getElementById('lockBtn');
+function updateLockUI(){
+  document.body.classList.toggle('locked',!isEditing());
+  lockBtn.textContent=isEditing()?'🔓 Editing':'🔒 View only';
+  lockBtn.classList.toggle('active',isEditing());
+}
+const passModal=document.getElementById('passModal');
+const pInput=document.getElementById('p-input');
+const pErr=document.getElementById('p-err');
+function openPass(){pErr.textContent='';pInput.value='';passModal.classList.add('show');setTimeout(()=>pInput.focus(),60);}
+function closePass(){passModal.classList.remove('show');}
+lockBtn.onclick=()=>{
+  if(isEditing()){
+    EDIT_PASS=null;sessionStorage.removeItem(PASS_KEY);updateLockUI();toast('Locked — view only.',true);
+  } else {
+    openPass();
+  }
+};
+async function tryUnlock(){
+  const code=pInput.value;
+  if(!code){pErr.textContent='Enter the passcode.';return;}
+  pErr.textContent='Checking…';
+  const {data,error}=await sb.rpc('verify_passcode',{p_passcode:code});
+  if(error){pErr.textContent='Network error — try again.';return;}
+  if(data===true){
+    EDIT_PASS=code;sessionStorage.setItem(PASS_KEY,code);updateLockUI();closePass();toast('Editing unlocked.',true);
+  } else {
+    pErr.textContent='Wrong passcode.';
+  }
+}
+document.getElementById('p-ok').onclick=tryUnlock;
+document.getElementById('p-cancel').onclick=closePass;
+pInput.addEventListener('keydown',e=>{if(e.key==='Enter')tryUnlock();if(e.key==='Escape')closePass();});
+let pDX=0,pDY=0,pDown=false;
+passModal.addEventListener('pointerdown',e=>{pDX=e.clientX;pDY=e.clientY;pDown=(e.target===passModal);});
+passModal.addEventListener('pointerup',e=>{
+  const far=Math.abs(e.clientX-pDX)>10||Math.abs(e.clientY-pDY)>10;
+  if(!far&&pDown&&e.target===passModal)closePass();
+});
+async function validateStoredPass(){
+  if(!EDIT_PASS)return;
+  const {data,error}=await sb.rpc('verify_passcode',{p_passcode:EDIT_PASS});
+  if(!error && data!==true){EDIT_PASS=null;sessionStorage.removeItem(PASS_KEY);updateLockUI();}
+}
+
 /* ---------------- Editor: add / edit / remove ---------------- */
 const editor=document.getElementById('editor');
 const F={
@@ -554,11 +772,29 @@ const F={
   price:document.getElementById('f-price'),
   color:document.getElementById('f-color'),
   colorName:document.getElementById('f-colorName'),
-  id:document.getElementById('f-id'),
   frame:document.getElementById('f-frame'),
   desc:document.getElementById('f-desc'),
   err:document.getElementById('f-err')
 };
+const itemsBox=document.getElementById('f-items');
+function addItemRow(name,price){
+  const row=document.createElement('div');
+  row.className='item-row';
+  row.innerHTML=`<input class="iname-in" placeholder="Item name"><input class="iprice-in" type="number" min="0" step="1" placeholder="kr"><button type="button" class="rm" title="Remove">✕</button>`;
+  row.querySelector('.iname-in').value=name||'';
+  row.querySelector('.iprice-in').value=(price!=null&&price!=='')?price:'';
+  row.querySelector('.rm').onclick=()=>row.remove();
+  itemsBox.appendChild(row);
+}
+function readItems(){
+  return [...itemsBox.querySelectorAll('.item-row')].map(r=>{
+    const name=r.querySelector('.iname-in').value.trim();
+    const price=Math.max(0,parseInt(r.querySelector('.iprice-in').value,10)||0);
+    return name?{name,price}:null;
+  }).filter(Boolean);
+}
+document.getElementById('f-addItem').onclick=()=>addItemRow('','');
+
 let editingUid=null, delArm=false, delTimer=null;
 const delBtn=document.getElementById('f-delete');
 function resetDelete(){delArm=false;delBtn.textContent='Delete';if(delTimer){clearTimeout(delTimer);delTimer=null;}}
@@ -568,20 +804,21 @@ function openEditor(b){
   document.getElementById('editorTitle').textContent=b?'Edit bike':'Add new bike';
   delBtn.style.display=b?'':'none';
   F.name.value=b?b.name:'';
-  F.size.value=b?b.size:'';
+  F.size.value=b?b.wheel_size:'';
   F.price.value=b?b.price:'';
   F.color.value=b?b.color:'#f4b942';
   F.colorName.value=b?b.colorName:'';
-  F.id.value=b?b.id:'';
   F.frame.value=b?b.frame:'';
   F.desc.value=b?b.desc:'';
+  itemsBox.innerHTML='';
+  if(b&&Array.isArray(b.items))b.items.forEach(it=>addItemRow(it.name,it.price));
   F.err.textContent='';
   resetDelete();
   editor.classList.add('show');
 }
-function closeEditor(){editor.classList.remove('show');resetDelete();}
+function closeEditor(){editor.classList.remove('show');editingUid=null;resetDelete();}
 
-document.getElementById('addBike').onclick=()=>openEditor(null);
+document.getElementById('addBike').onclick=()=>{if(isEditing())openEditor(null);};
 document.getElementById('f-cancel').onclick=closeEditor;
 let edDX=0,edDY=0,edDownOnBackdrop=false;
 editor.addEventListener('pointerdown',e=>{edDX=e.clientX;edDY=e.clientY;edDownOnBackdrop=(e.target===editor);});
@@ -590,54 +827,75 @@ editor.addEventListener('pointerup',e=>{
   if(!movedFar && edDownOnBackdrop && e.target===editor) closeEditor();
 });
 
-document.getElementById('f-save').onclick=()=>{
+const saveBtn=document.getElementById('f-save');
+saveBtn.onclick=async ()=>{
+  if(!isEditing()){F.err.textContent='Editing is locked.';return;}
   const name=F.name.value.trim();
   const frame=F.frame.value.trim();
   if(!name){F.err.textContent='Please enter a name.';return;}
   if(!frame){F.err.textContent='Frame number is required — it generates the barcode.';return;}
   const data={
     name,
-    size:F.size.value.trim()||'—',
+    wheel_size:F.size.value.trim()||'',
     price:Math.max(0,parseInt(F.price.value,10)||0),
     color:F.color.value,
     colorName:F.colorName.value.trim()||'—',
-    id:F.id.value.trim()||frame,
     frame,
-    desc:F.desc.value.trim()||'No description provided.'
+    desc:F.desc.value.trim()||'No description provided.',
+    items:readItems()
   };
-  if(editingUid){
-    const b=bikes.find(x=>x.uid===editingUid);
-    Object.assign(b,data);
-    rebuildCard(b);
-    refreshDropdown();
-    save();
-    closeEditor();
-  } else {
-    const cx=(stage.clientWidth/2 - tx)/scale - 150;
-    const cy=(stage.clientHeight/2 - ty)/scale - 130;
-    const b=Object.assign({uid:uid(),x:snapVal(cx),y:snapVal(cy)},data);
-    bikes.push(b);
-    makeCard(b);
-    refreshDropdown();
-    save();
-    closeEditor();
-    focusCard(b,true);
+  saveBtn.disabled=true;saveBtn.textContent='Saving…';F.err.textContent='';
+  try{
+    if(editingUid){
+      const updated=await rpcUpdate(editingUid, dbPayload(data));
+      if(updated)localUpsert(updated);
+      closeEditor();
+    } else {
+      const cx=(stage.clientWidth/2 - tx)/scale - 150;
+      const cy=(stage.clientHeight/2 - ty)/scale - 130;
+      const created=await rpcAdd(dbPayload({...data,x:snapVal(cx),y:snapVal(cy)}));
+      localUpsert(created);   // idempotent — safe even if the realtime echo beat us here
+      closeEditor();
+      focusCard(created,true);
+    }
+  }catch(err){
+    if(isPasscodeError(err)){handleWriteError(err);closeEditor();}
+    else F.err.textContent='Save failed: '+((err&&err.message)||'error');
+  }finally{
+    saveBtn.disabled=false;saveBtn.textContent='Save';
   }
 };
 
-delBtn.onclick=()=>{
+delBtn.onclick=async ()=>{
   if(!editingUid)return;
+  if(!isEditing()){F.err.textContent='Editing is locked.';return;}
   if(!delArm){
     delArm=true;delBtn.textContent='Tap again to delete';
     delTimer=setTimeout(resetDelete,2600);
     return;
   }
-  const i=bikes.findIndex(x=>x.uid===editingUid);
-  if(i>=0){const el=cardEl(editingUid);if(el)el.remove();bikes.splice(i,1);}
-  refreshDropdown();
-  save();
-  closeEditor();
+  const u=editingUid;
+  delBtn.disabled=true;
+  try{
+    await rpcDelete(u);
+    const i=bikes.findIndex(x=>x.uid===u);
+    if(i>=0){const el=cardEl(u);if(el)el.remove();bikes.splice(i,1);}
+    refreshDropdown();cacheSave();
+    closeEditor();
+  }catch(err){
+    if(isPasscodeError(err)){handleWriteError(err);closeEditor();}
+    else {F.err.textContent='Delete failed: '+((err&&err.message)||'error');resetDelete();}
+  }finally{
+    delBtn.disabled=false;
+  }
 };
+
+/* ---------------- Boot ---------------- */
+updateLockUI();
+bootFromCache();
+loadFromServer();
+validateStoredPass();
+startRealtime();
 
 </script>
 </body>
