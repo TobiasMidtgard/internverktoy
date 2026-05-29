@@ -263,13 +263,27 @@
 
 <script>
 /* ---------------- DATA (the "database") ---------------- */
-const bikes = [
+const STORE_KEY='velodex.bikes.v1';
+const SEED_BIKES = [
   {id:"VX-RD-001", name:"Falcon RS Carbon", size:"56cm", color:"#e85d75", colorName:"Crimson", price:4299, frame:"FRX560092471", desc:"Featherweight carbon road racer. Electronic groupset, aero cockpit, tubeless-ready 700c wheels.", x:140, y:160},
   {id:"VX-MT-002", name:"Granite Trail 29", size:"L (19\")", color:"#3fb6a8", colorName:"Teal", price:2799, frame:"FRX290118834", desc:"Full-suspension trail bike, 140mm travel. Dropper post, 1×12 drivetrain, 4-piston brakes.", x:520, y:300},
   {id:"VX-CT-003", name:"Urban Glide E", size:"M (17\")", color:"#f4b942", colorName:"Amber", price:3450, frame:"FRX730045519", desc:"City e-bike with 500Wh battery, belt drive, integrated lights and rack. Up to 90km range.", x:160, y:560},
   {id:"VX-GR-004", name:"Drifter Gravel", size:"54cm", color:"#6c8cff", colorName:"Cobalt", price:2150, frame:"FRX540077203", desc:"All-road gravel adventurer. Wide tyre clearance, mounts everywhere, comfortable endurance geo.", x:560, y:660},
   {id:"VX-KD-005", name:"Sprout 20", size:"S (20\")", color:"#9b7cf0", colorName:"Violet", price:520, frame:"FRX200029988", desc:"Kids' pedal bike with training-friendly geometry, light alloy frame and tool-free seat adjust.", x:320, y:880}
 ];
+
+/* load persisted bikes, or fall back to the demo seed on first visit / corrupt data */
+function loadBikes(){
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(raw){const arr=JSON.parse(raw);if(Array.isArray(arr))return arr;}
+  }catch(e){}
+  return SEED_BIKES.map(b=>({...b}));
+}
+const bikes = loadBikes();
+function save(){
+  try{localStorage.setItem(STORE_KEY,JSON.stringify(bikes));}catch(e){}
+}
 
 const canvas = document.getElementById('canvas');
 const stage  = document.getElementById('stage');
@@ -322,7 +336,9 @@ function makeCard(b){
   return el;
 }
 let _uid=0; const uid=()=>'u'+(++_uid);
-bikes.forEach(b=>b.uid=uid());
+// bump the counter past any persisted uids, then assign one to any bike missing it
+bikes.forEach(b=>{const n=parseInt(String(b.uid||'').replace(/\D/g,''),10);if(n>_uid)_uid=n;});
+bikes.forEach(b=>{if(!b.uid)b.uid=uid();});
 bikes.forEach(makeCard);
 
 /* ---------------- Dropdown ---------------- */
@@ -430,7 +446,7 @@ function onUp(){
     draggingCard.classList.remove('dragging');
     // persist new pos to data
     const b=bikes.find(x=>x.uid===draggingCard.dataset.uid);
-    if(b){b.x=parseFloat(draggingCard.style.left);b.y=parseFloat(draggingCard.style.top);}
+    if(b){b.x=parseFloat(draggingCard.style.left);b.y=parseFloat(draggingCard.style.top);save();}
     setTimeout(()=>{if(draggingCard)draggingCard.dataset.moved='0';},50);
   }
   draggingCard=null;panning=false;
@@ -514,6 +530,7 @@ function snapAllCards(){
     b.y=Math.round(b.y/snapSize)*snapSize;
     const el=cardEl(b.uid); if(el){el.style.left=b.x+'px';el.style.top=b.y+'px';}
   });
+  save();
 }
 snapToggle.onclick=()=>{
   snapOn=!snapOn;
@@ -593,6 +610,7 @@ document.getElementById('f-save').onclick=()=>{
     Object.assign(b,data);
     rebuildCard(b);
     refreshDropdown();
+    save();
     closeEditor();
   } else {
     const cx=(stage.clientWidth/2 - tx)/scale - 150;
@@ -601,6 +619,7 @@ document.getElementById('f-save').onclick=()=>{
     bikes.push(b);
     makeCard(b);
     refreshDropdown();
+    save();
     closeEditor();
     focusCard(b,true);
   }
@@ -616,6 +635,7 @@ delBtn.onclick=()=>{
   const i=bikes.findIndex(x=>x.uid===editingUid);
   if(i>=0){const el=cardEl(editingUid);if(el)el.remove();bikes.splice(i,1);}
   refreshDropdown();
+  save();
   closeEditor();
 };
 
