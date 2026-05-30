@@ -300,6 +300,12 @@
       <div class="items-editor" id="f-items"></div>
       <button type="button" class="add-item" id="f-addItem">+ Add item</button>
     </div>
+    <label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);cursor:pointer;">
+      <input type="checkbox" id="f-hidden" style="width:auto;"> Hide from public showroom
+    </label>
+    <div class="field" id="f-synced-note" style="display:none;font-size:12px;color:var(--muted);">
+      Synced from Thansen — name, price, availability &amp; barcode update automatically.
+    </div>
     <div class="err" id="f-err"></div>
     <div class="editor-actions">
       <button class="btn danger" id="f-delete">Delete</button>
@@ -827,7 +833,6 @@ function resetDelete(){delArm=false;delBtn.textContent='Delete';if(delTimer){cle
 function openEditor(b){
   editingUid=b?b.uid:null;
   document.getElementById('editorTitle').textContent=b?'Edit bike':'Add new bike';
-  delBtn.style.display=b?'':'none';
   F.name.value=b?b.name:'';
   F.size.value=b?b.wheel_size:'';
   F.price.value=b?b.price:'';
@@ -835,6 +840,13 @@ function openEditor(b){
   F.colorName.value=b?b.colorName:'';
   F.frame.value=b?b.frame:'';
   F.desc.value=b?b.desc:'';
+  const synced = !!(b && b.source==='thansen');
+  document.getElementById('f-hidden').checked = !!(b && b.hidden);
+  document.getElementById('f-synced-note').style.display = synced ? '' : 'none';
+  // Thansen-owned fields are read-only for synced bikes
+  [F.name, F.price, F.frame].forEach(el => { el.readOnly = synced; el.style.opacity = synced?0.6:1; });
+  // deleting a synced bike is pointless (re-imported) — hide Delete, rely on Hide
+  delBtn.style.display = (b && !synced) ? '' : 'none';
   itemsBox.innerHTML='';
   if(b&&Array.isArray(b.items))b.items.forEach(it=>addItemRow(it.name,it.price));
   F.err.textContent='';
@@ -872,7 +884,9 @@ saveBtn.onclick=async ()=>{
   saveBtn.disabled=true;saveBtn.textContent='Saving…';F.err.textContent='';
   try{
     if(editingUid){
-      const updated=await rpcUpdate(editingUid, dbPayload(data));
+      const payload = dbPayload(data);
+      payload.hidden = document.getElementById('f-hidden').checked;
+      const updated = await rpcUpdate(editingUid, payload);
       if(updated)localUpsert(updated);
       closeEditor();
     } else {
