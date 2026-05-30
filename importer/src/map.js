@@ -16,7 +16,7 @@ export function mapProductToBike(html, { x = 0, y = 0 } = {}){
   const url = offer.url || product.url || '';
   const image = Array.isArray(product.image) ? product.image[0] : (product.image || null);
   return {
-    source_id: String(product.sku || product.productID || url.match(/pn(\d+)/)?.[1] || '').trim(),
+    source_id: String(url.match(/pn(\d+)/)?.[1] || product.sku || product.productID || '').trim(),
     name: String(product.name || '').trim(),
     price: Math.round(parseFloat(offer.price || '0')) || 0,
     frame: String(product.gtin || product.gtin13 || '').trim(),

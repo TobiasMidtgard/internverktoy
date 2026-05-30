@@ -17,7 +17,7 @@ test('detectOutlet matches breadcrumb/url keywords', () => {
 });
 test('mapProductToBike maps a normal product', () => {
   const b = mapProductToBike(f('sample-product.html'), { x: 40, y: 80 });
-  assert.equal(b.source_id, 'P123456');
+  assert.equal(b.source_id, '123456');   // canonical pn id from the URL
   assert.equal(b.name, 'X-ZITE E-Trekking 28"');
   assert.equal(b.price, 12999);             // integer NOK
   assert.equal(b.frame, '5712345678901');   // EAN -> barcode
