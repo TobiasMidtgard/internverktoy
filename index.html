@@ -409,7 +409,7 @@ function makeCard(b){
               + (b.outlet?'<span class="badge flag">Outlet</span>':'')
               + (b.discontinued?'<span class="badge flag">Discontinued</span>':'');
   el.innerHTML=`
-    ${b.image_url?`<img class="card-img" src="${esc(b.image_url)}" alt="" loading="lazy">`:''}
+    ${b.image_url?`<img class="card-img" src="${esc(b.image_url)}" alt="" loading="lazy" onerror="this.remove()">`:''}
     <div class="card-head">
       <div class="grip"><i></i><i></i><i></i></div>
       <div class="card-title">${esc(b.name)}</div>
@@ -543,6 +543,7 @@ const sel=document.getElementById('bikeSelect');
 function refreshDropdown(){
   sel.innerHTML='<option value="">Jump to bike…</option>';
   bikes.forEach(b=>{
+    if(!isEditing() && (b.hidden||b.discontinued)) return; // public dropdown hides them too
     const o=document.createElement('option');
     o.value=b.uid;o.textContent=`${b.name}${b.wheel_size?(' — '+b.wheel_size):''}`;
     sel.appendChild(o);
@@ -755,6 +756,7 @@ function updateLockUI(){
   document.body.classList.toggle('locked',!isEditing());
   lockBtn.textContent=isEditing()?'🔓 Editing':'🔒 View only';
   lockBtn.classList.toggle('active',isEditing());
+  refreshDropdown();
 }
 const passModal=document.getElementById('passModal');
 const pInput=document.getElementById('p-input');
