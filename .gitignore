@@ -1,0 +1,8 @@
+# Local-only planning/design docs — kept OUT of the public repo on purpose
+docs/
+
+# Local tooling / config
+.claude/
+node_modules/
+.env
+.env.*
