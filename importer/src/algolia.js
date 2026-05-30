@@ -12,7 +12,7 @@ export function algoliaUrl(appId = APP_ID, index = INDEX){
 
 // fetchJson(url, options) -> parsed JSON. Injected so tests can stub the network.
 export async function fetchBikeHits(fetchJson, { node = COMPLETE_BIKES_NODE, hitsPerPage = 1000 } = {}){
-  const body = JSON.stringify({ query: '', hitsPerPage, facetFilters: [`node_tree:${node}`] });
+  const body = JSON.stringify({ query: '', hitsPerPage, facetFilters: [`node_tree.node_id:${node}`] });
   const data = await fetchJson(algoliaUrl(), {
     method: 'POST',
     headers: {

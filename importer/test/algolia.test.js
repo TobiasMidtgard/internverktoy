@@ -12,7 +12,7 @@ test('fetchBikeHits filters to type=product and sends the node filter + creds', 
   assert.equal(hits.length, 2);                       // the "category" entry is filtered out
   assert.ok(hits.every(h => h.type === 'product'));
   assert.ok(captured.url.includes('thansen_no_products'));
-  assert.ok(captured.opts.body.includes('node_tree:14338'));
+  assert.ok(captured.opts.body.includes('node_tree.node_id:14338'));
   assert.ok(captured.opts.headers['X-Algolia-API-Key'].length > 0);
 });
 
