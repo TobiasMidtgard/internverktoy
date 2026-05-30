@@ -483,7 +483,13 @@ function startRealtime(){
     .on('postgres_changes',{event:'DELETE',schema:'public',table:'bikes'},p=>applyRowDelete(p.old))
     .subscribe((status)=>{
       const d=document.getElementById('liveDot');
-      if(status==='SUBSCRIBED'&&d){d.style.background='var(--accent-2)';d.style.boxShadow='0 0 14px var(--accent-2)';d.title='Live sync on';}
+      if(status==='SUBSCRIBED'){
+        if(d){d.style.background='var(--accent-2)';d.style.boxShadow='0 0 14px var(--accent-2)';d.title='Live sync on';}
+        // catch up on anything missed before/while (re)connecting — unless mid-interaction
+        if(!draggingCard && !editingUid) loadFromServer();
+      } else if(d && (status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED')){
+        d.style.background='var(--accent)';d.style.boxShadow='0 0 14px var(--accent)';d.title='Reconnecting…';
+      }
     });
 }
 
