@@ -1,9 +1,0 @@
-User-agent: ClaudeBot
-Disallow: /
-
-User-agent: *
-Disallow: /search
-Disallow: /ajax/
-Disallow: /xml/
-Disallow: /account
-Disallow: /instockstatus
