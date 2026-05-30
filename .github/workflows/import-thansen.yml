@@ -1,0 +1,27 @@
+name: Import Thansen bikes
+on:
+  schedule:
+    - cron: '0 6 * * *'   # daily 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (no DB writes)'
+        type: boolean
+        default: false
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm ci
+        working-directory: importer
+      - run: npm test
+        working-directory: importer
+      - name: Run importer
+        working-directory: importer
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}
+        run: node src/run.js ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
