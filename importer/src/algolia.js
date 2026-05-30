@@ -11,8 +11,8 @@ export function algoliaUrl(appId = APP_ID, index = INDEX){
 }
 
 // fetchJson(url, options) -> parsed JSON. Injected so tests can stub the network.
-export async function fetchBikeHits(fetchJson, { node = COMPLETE_BIKES_NODE, hitsPerPage = 1000 } = {}){
-  const body = JSON.stringify({ query: '', hitsPerPage, facetFilters: [`node_tree.node_id:${node}`] });
+export async function fetchBikeHits(fetchJson, { hitsPerPage = 1000 } = {}){
+  const body = JSON.stringify({ query: '', hitsPerPage, facetFilters: ['node_tree.name:Sykler'] });
   const data = await fetchJson(algoliaUrl(), {
     method: 'POST',
     headers: {
@@ -25,7 +25,7 @@ export async function fetchBikeHits(fetchJson, { node = COMPLETE_BIKES_NODE, hit
   if (!data || !Array.isArray(data.hits)){
     throw new Error('Algolia returned no hits array: ' + ((data && data.message) || 'unknown'));
   }
-  return data.hits.filter(h => h && h.type === 'product');
+  return data.hits.filter(h => h && h.url); // all results from this category query are complete bikes
 }
 
 export const defaultFetchJson = async (url, opts) => {

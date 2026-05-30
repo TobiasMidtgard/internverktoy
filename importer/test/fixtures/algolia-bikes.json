@@ -1,30 +1,28 @@
 {
-  "nbHits": 2,
+  "nbHits": 3,
   "hits": [
     {
-      "type": "product",
+      "type": "Sykkel",
       "title": "X-ZITE El-sykkel 24\" Junior",
       "url": "/sykkel/sykler/elsykler-junior/x-zite-el-sykkel-24/n14360/pn1037962",
       "price": 8999,
       "in_stock": true,
       "item_number": "230203170",
-      "image": "https://dyncdn.thg.dk/img/a.jpg",
-      "node_tree": [42, 14338, 14360]
+      "image": "https://dyncdn.thg.dk/img/a.jpg"
     },
     {
-      "type": "product",
+      "type": "Sykkel",
       "title": "X-ZITE Mountainbike 27,5\"",
       "url": "/sykkel/sykler/mountainbikes/x-zite-mtb/n14355/pn1100001",
       "price": 4999,
       "in_stock": false,
       "item_number": "230200001",
-      "image": "https://dyncdn.thg.dk/img/b.jpg",
-      "node_tree": [42, 14338, 14355]
+      "image": "https://dyncdn.thg.dk/img/b.jpg"
     },
     {
-      "type": "category",
-      "title": "not a product",
-      "url": "/sykkel/sykler/n14338"
+      "type": "Sykkel",
+      "title": "no url record — should be filtered",
+      "url": ""
     }
   ]
 }
