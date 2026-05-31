@@ -4,7 +4,7 @@
 const APP_ID = 'OD48YHEOTK';
 const SEARCH_KEY = '62be5f66604910c596a0da1f567c3237';
 const INDEX = 'thansen_no_products';
-// Excluded: Rullator (mobility walkers + their spare parts) and Trehjuls Tilbehør (chargers etc.)
+// Only the real bike categories (complete bikes with frame numbers)
 
 export function algoliaUrl(appId = APP_ID, index = INDEX){
   return `https://${appId}-dsn.algolia.net/1/indexes/${index}/query`;
@@ -14,8 +14,16 @@ export function algoliaUrl(appId = APP_ID, index = INDEX){
 export async function fetchBikeHits(fetchJson, { hitsPerPage = 1000 } = {}){
   const body = JSON.stringify({
     query: '', hitsPerPage,
-    facetFilters: ['node_tree.name:Sykler'],
-    filters: 'NOT al_menu.lvl2:"Sykkel > Sykler > Rullator" AND NOT al_menu.lvl3:"Sykkel > Sykler > Trehjuls & løpesykkel > Tilbehør"'
+    facetFilters: [[
+      'al_menu.lvl2:Sykkel > Sykler > Elsykler',
+      'al_menu.lvl2:Sykkel > Sykler > Barnesykler 12-18" (1-6 år)',
+      'al_menu.lvl2:Sykkel > Sykler > Juniorsykler 20-26" (6-14 år)',
+      'al_menu.lvl2:Sykkel > Sykler > Mountainbikes',
+      'al_menu.lvl2:Sykkel > Sykler > Herresykler',
+      'al_menu.lvl2:Sykkel > Sykler > Damesykler',
+      'al_menu.lvl2:Sykkel > Sykler > Racer  Gravel',
+      'al_menu.lvl2:Sykkel > Sykler > Sammenleggbare sykler'
+    ]]
   });
   const data = await fetchJson(algoliaUrl(), {
     method: 'POST',

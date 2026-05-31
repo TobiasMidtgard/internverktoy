@@ -12,7 +12,7 @@ test('fetchBikeHits filters to type=product and sends the node filter + creds', 
   assert.equal(hits.length, 2);                       // the no-url entry is filtered out
   assert.ok(hits.every(h => h.url));
   assert.ok(captured.url.includes('thansen_no_products'));
-  assert.ok(captured.opts.body.includes('node_tree.name:Sykler'));
+  assert.ok(captured.opts.body.includes('al_menu.lvl2:Sykkel > Sykler > Elsykler'));
   assert.ok(captured.opts.headers['X-Algolia-API-Key'].length > 0);
 });
 

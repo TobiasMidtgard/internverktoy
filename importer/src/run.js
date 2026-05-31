@@ -11,7 +11,7 @@ async function main(){
   const hits = await fetchBikeHits(defaultFetchJson);
   console.log(`Algolia returned ${hits.length} complete-bike products`);
 
-  const bikes = hits.map(h => mapHitToBike(h)).filter(b => b.source_id && b.name);
+  const bikes = hits.map(h => mapHitToBike(h)).filter(b => b.source_id && b.name && b.frame);
 
   // Safety: if mapping yielded nothing (API change / blocked key), abort WITHOUT writing.
   if (bikes.length === 0){
