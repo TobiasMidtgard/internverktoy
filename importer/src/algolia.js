@@ -62,7 +62,8 @@ export async function fetchSpareParts(fetchJson, model, { hitsPerPage = 50 } = {
     },
     body
   });
-  return (data.hits || [])
+  if (!data || !Array.isArray(data.hits)) return [];
+  return data.hits
     .filter(h => h && h.item_number && h.url)
     .map(h => ({
       title:       String(h.title || '').trim(),

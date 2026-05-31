@@ -5,6 +5,7 @@ export function parseSheets(sheets){
   const sheet = sheets.find(s => s.id === 6000);
   if (!sheet || !Array.isArray(sheet.fields)) return {};
   const get = id => (sheet.fields.find(f => f.id === id)?.value?.[0]) ?? null;
+  const ws = get(21);
   return {
     model:       get(1),
     color_name:  get(2),
@@ -12,7 +13,7 @@ export function parseSheets(sheets){
     warranty:    get(7),
     gears:       get(10),
     gear_brand:  get(12),
-    wheel_size:  get(21) ? get(21) + '"' : null,
+    wheel_size:  ws ? ws + '"' : null,
     brake_front: get(31),
     brake_rear:  get(32),
     tyre:        get(52),
@@ -33,7 +34,7 @@ export function mapHitToBike(hit, { x = 0, y = 0 } = {}){
   const specs = parseSheets(hit.sheets);
   const brand = hit.brand?.title || '';
   return {
-    source_id:         String(url.match(/pn(\d+)/)?.[1] || hit.objectID || '').trim(),
+    source_id:         String(url.match(/\/pn(\d+)(?:[/?#]|$)/)?.[1] || hit.objectID || '').trim(),
     name:              formatTitle(brand, specs.type, specs.model) || String(hit.title || '').trim(),
     descr:             String(hit.title || '').trim(),
     price:             Math.round(Number(hit.price) || 0),
@@ -42,7 +43,7 @@ export function mapHitToBike(hit, { x = 0, y = 0 } = {}){
     image_url:         hit.image || null,
     source_url:        abs,
     outlet:            /outlet|tilbud/i.test(url),
-    color_name:        specs.color_name || '—',
+    color_name:        specs.color_name || '',
     wheel_size:        specs.wheel_size || '',
     specs,
     spare_parts:       [],

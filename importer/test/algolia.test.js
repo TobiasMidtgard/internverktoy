@@ -5,7 +5,7 @@ import { fetchBikeHits } from '../src/algolia.js';
 
 const fix = JSON.parse(readFileSync(new URL('./fixtures/algolia-bikes.json', import.meta.url), 'utf8'));
 
-test('fetchBikeHits filters to type=product and sends the node filter + creds', async () => {
+test('fetchBikeHits filters to bike categories and sends al_menu + creds', async () => {
   let captured;
   const fakeFetchJson = async (url, opts) => { captured = { url, opts }; return fix; };
   const hits = await fetchBikeHits(fakeFetchJson);
