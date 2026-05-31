@@ -569,10 +569,7 @@ function specsHtml(specs){
 }
 
 function partsButtonHtml(b){
-  const count = (b.specs && b.spareParts && b.spareParts.length)
-    ? b.spareParts.length
-    : 0;
-  const total  = (b.specs?.spare_parts_count) || count || 0; // not a DB col, but count is sufficient
+  const count = (b.spareParts && b.spareParts.length) || 0;
   if(!b.source_url) return '';
   const label = count>0 ? `${count} reservedeler funnet` : 'Se reservedeler på Thansen';
   return `<button class="parts-btn" data-parts><span class="parts-icon">🔧</span><span class="parts-label">${label}</span><span class="parts-arrow">▶</span></button>`;
@@ -683,7 +680,7 @@ function applyRowUpsert(row){
   if(draggingCard&&draggingCard.dataset.uid===b.uid)return;
   if(editingUid===b.uid)return;
   if(cardEl(b.uid))rebuildCard(b);else makeCard(b);
-  refreshDropdown();
+  refreshDropdown();refreshTray();
 }
 function applyRowDelete(row){
   const u=row.uid;if(!u)return;
