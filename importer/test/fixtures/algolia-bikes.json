@@ -3,25 +3,61 @@
   "hits": [
     {
       "type": "Sykkel",
-      "title": "X-ZITE El-sykkel 24\" Junior",
-      "url": "/sykkel/sykler/elsykler-junior/x-zite-el-sykkel-24/n14360/pn1037962",
-      "price": 8999,
+      "title": "Mountainbike 26\" 26.21 21-gir Lilla",
+      "url": "/sykkel/sykler/mountainbikes/mountainbike-26-26.21-21-gir-lilla/n14355/pn1356895",
+      "price": 3999,
       "in_stock": true,
-      "item_number": "230203170",
-      "image": "https://dyncdn.thg.dk/img/a.jpg"
+      "item_number": "112642217",
+      "image": "https://dyncdn.thg.dk/img/a.jpg",
+      "brand": { "title": "X-ZITE" },
+      "supplementary_types": { "spare_part": { "product_count": 30 } },
+      "sheets": [
+        { "id": 6000, "fields": [
+          { "id": 1,  "title": "Modell",        "value": ["26.21"] },
+          { "id": 2,  "title": "Farge",         "value": ["Lilla"] },
+          { "id": 3,  "title": "Type",          "value": ["Mountainbike"] },
+          { "id": 7,  "title": "Materiale",     "value": ["Aluminium med 20 års garanti mot rammebrudd"] },
+          { "id": 10, "title": "Antall gir",    "value": ["21"] },
+          { "id": 12, "title": "Modell",        "value": ["Shimano Tourney"] },
+          { "id": 21, "title": "Hjulstørrelse", "value": ["26"] },
+          { "id": 31, "title": "Forbremse",     "value": ["Mekanisk skivebremse"] },
+          { "id": 32, "title": "Bakbremse",     "value": ["Mekanisk skivebrems"] },
+          { "id": 52, "title": "Dekk",          "value": ["26 x 2,00"] },
+          { "id": 53, "title": "Vekt",          "value": ["13,5"] }
+        ]}
+      ]
     },
     {
       "type": "Sykkel",
-      "title": "X-ZITE Mountainbike 27,5\"",
-      "url": "/sykkel/sykler/mountainbikes/x-zite-mtb/n14355/pn1100001",
-      "price": 4999,
-      "in_stock": false,
-      "item_number": "230200001",
-      "image": "https://dyncdn.thg.dk/img/b.jpg"
+      "title": "El-sykkel MTB Everest 29\" 10,4Ah 50cm",
+      "url": "/sykkel/sykler/elsykler/el-sykkel-mtb-everest-29/n14359/pn1470754",
+      "price": 14999,
+      "in_stock": true,
+      "item_number": "230214141",
+      "image": "https://dyncdn.thg.dk/img/b.jpg",
+      "brand": { "title": "X-ZITE" },
+      "supplementary_types": { "spare_part": { "product_count": 12 } },
+      "sheets": [
+        { "id": 6000, "fields": [
+          { "id": 1,  "title": "Modell",        "value": ["E-2907"] },
+          { "id": 2,  "title": "Farge",         "value": ["Blå"] },
+          { "id": 3,  "title": "Type",          "value": ["Elsykkel MTB"] },
+          { "id": 7,  "title": "Materiale",     "value": ["Aluminium med 20 års garanti mot rammebrudd"] },
+          { "id": 10, "title": "Antall gir",    "value": ["7"] },
+          { "id": 12, "title": "Modell",        "value": ["Shimano Altus"] },
+          { "id": 21, "title": "Hjulstørrelse", "value": ["29"] },
+          { "id": 31, "title": "Forbremse",     "value": ["Hydraulisk skivebremse"] },
+          { "id": 52, "title": "Dekk",          "value": ["CST Patrol 29 x 2,40"] },
+          { "id": 53, "title": "Vekt",          "value": ["22"] },
+          { "id": 61, "title": "Motortype",     "value": ["36V-250W i bakhjul"] },
+          { "id": 63, "title": "Batteri",       "value": ["36V-10,4Ah (375Wh) Li-Ion BMS"] },
+          { "id": 64, "title": "Rekkevidde",   "value": ["Opp til 60 km"] }
+        ]}
+      ]
     },
     {
       "type": "Sykkel",
-      "title": "no url record — should be filtered",
+      "title": "no url record — filtered",
       "url": ""
     }
   ]
