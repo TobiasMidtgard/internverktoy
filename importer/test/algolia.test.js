@@ -19,3 +19,33 @@ test('fetchBikeHits filters to type=product and sends the node filter + creds', 
 test('throws when Algolia returns no hits array', async () => {
   await assert.rejects(() => fetchBikeHits(async () => ({ message: 'boom' })), /no hits/i);
 });
+
+import { fetchSpareParts } from '../src/algolia.js';
+
+test('fetchSpareParts queries Reservedeler by model and returns item array', async () => {
+  const spareFixture = {
+    nbHits: 2,
+    hits: [
+      { title:'Forgaffel MTB 26.21', item_number:'230209069', price:599,
+        url:'/sykkel/reservedeler/forgafler/forgaffel-mtb-26.21/pn230209069',
+        node_tree:[{name:'Sykkel'},{name:'Reservedeler'},{name:'Forgafler'}] },
+      { title:'Drop out MTB 26.21', item_number:'220111095', price:149,
+        url:'/sykkel/reservedeler/ramme-rammedeler/drop-out/pn220111095',
+        node_tree:[{name:'Sykkel'},{name:'Reservedeler'},{name:'Ramme & rammedeler'}] }
+    ]
+  };
+  let captured;
+  const fake = async (url, opts) => { captured = {url,opts}; return spareFixture; };
+  const parts = await fetchSpareParts(fake, '26.21');
+  assert.equal(parts.length, 2);
+  assert.equal(parts[0].title,       'Forgaffel MTB 26.21');
+  assert.equal(parts[0].item_number, '230209069');
+  assert.equal(parts[0].price,       599);
+  assert.equal(parts[0].category,    'Forgafler');
+  assert.ok(captured.opts.body.includes('Reservedeler'));
+  assert.ok(captured.opts.body.includes('26.21'));
+});
+test('fetchSpareParts returns empty array when model is blank', async () => {
+  const parts = await fetchSpareParts(async () => ({}), '');
+  assert.deepEqual(parts, []);
+});

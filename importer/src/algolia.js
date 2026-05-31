@@ -45,3 +45,29 @@ export const defaultFetchJson = async (url, opts) => {
   if (!res.ok) throw new Error(`Algolia HTTP ${res.status}`);
   return res.json();
 };
+
+export async function fetchSpareParts(fetchJson, model, { hitsPerPage = 50 } = {}){
+  if (!model) return [];
+  const body = JSON.stringify({
+    query: model,
+    hitsPerPage,
+    facetFilters: ['node_tree.name:Reservedeler']
+  });
+  const data = await fetchJson(algoliaUrl(), {
+    method: 'POST',
+    headers: {
+      'X-Algolia-Application-Id': APP_ID,
+      'X-Algolia-API-Key': SEARCH_KEY,
+      'Content-Type': 'application/json'
+    },
+    body
+  });
+  return (data.hits || [])
+    .filter(h => h && h.item_number && h.url)
+    .map(h => ({
+      title:       String(h.title || '').trim(),
+      item_number: String(h.item_number || '').trim(),
+      price:       Math.round(Number(h.price) || 0),
+      category:    (h.node_tree || []).slice(-1)[0]?.name || '',
+    }));
+}
