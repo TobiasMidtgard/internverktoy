@@ -359,13 +359,18 @@ function fromRow(r){
     desc:r.descr||'', items:Array.isArray(r.items)?r.items:[],
     x:Number(r.x)||0, y:Number(r.y)||0,
     source:r.source||null, source_url:r.source_url||'', image_url:r.image_url||'',
-    availability:r.availability||null, outlet:!!r.outlet, hidden:!!r.hidden, discontinued:!!r.discontinued
+    availability:r.availability||null, outlet:!!r.outlet, hidden:!!r.hidden,
+    discontinued:!!r.discontinued,
+    specs:   (r.specs   && typeof r.specs   === 'object') ? r.specs   : {},
+    spareParts: Array.isArray(r.spare_parts) ? r.spare_parts : [],
+    displayStatus: r.display_status || 'on_display',
   };
 }
 function dbPayload(d){
   const p={
     name:d.name, wheel_size:d.wheel_size, color:d.color, color_name:d.colorName,
-    price:d.price, frame:d.frame, descr:d.desc, items:d.items
+    price:d.price, frame:d.frame, descr:d.desc, items:d.items,
+    display_status:d.displayStatus,
   };
   if(d.x!=null) p.x=d.x;
   if(d.y!=null) p.y=d.y;
@@ -399,7 +404,8 @@ function itemsHtml(items){
 }
 function makeCard(b){
   const el = document.createElement('div');
-  el.className='card'+((b.hidden||b.discontinued)?' is-hidden':'');
+  const isNonDisplay = b.displayStatus === 'non_display';
+  el.className='card'+((b.hidden||b.discontinued||isNonDisplay)?' is-hidden':'');
   el.style.left=b.x+'px';
   el.style.top =b.y+'px';
   el.dataset.uid=b.uid;
