@@ -125,6 +125,20 @@
   .badge.instock{background:rgba(99,210,151,.14);color:#63d297;border:1px solid #2f7d54;}
   .badge.oos{background:rgba(232,93,117,.14);color:var(--danger);border:1px solid var(--danger);}
   .badge.flag{background:rgba(139,151,166,.14);color:var(--muted);border:1px solid var(--line);}
+  /* ---------- Spec tags ---------- */
+  .spec-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:-4px;}
+  .spec-tag{font-size:10px;font-weight:600;color:var(--muted);background:var(--panel);
+    border:1px solid var(--line);padding:3px 8px;border-radius:12px;white-space:nowrap;}
+  .spec-tag b{color:var(--ink);}
+  /* ---------- Spare parts button ---------- */
+  .parts-btn{display:flex;align-items:center;gap:6px;width:100%;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    color:var(--muted);padding:10px 12px;font:inherit;font-size:12px;font-weight:600;
+    cursor:pointer;transition:.15s;text-align:left;min-height:44px;}
+  .parts-btn:hover{border-color:var(--accent-2);color:var(--accent-2);}
+  .parts-btn .parts-icon{font-size:16px;line-height:1;}
+  .parts-btn .parts-label{flex:1;}
+  .parts-btn .parts-arrow{font-size:10px;opacity:.6;}
   .card-img{width:100%;height:130px;object-fit:cover;background:#fff;border-bottom:1px solid var(--line);display:block;}
   /* hidden/discontinued: gone in public view, dimmed in edit mode */
   body.locked .card.is-hidden{display:none;}
@@ -402,6 +416,31 @@ function itemsHtml(items){
   ).join('');
   return `<div class="items-title">Additional items</div><div class="items">${rows}</div>`;
 }
+function specsHtml(specs){
+  if(!specs||!Object.keys(specs).length) return '';
+  const tags=[];
+  if(specs.gears)     tags.push(`<span class="spec-tag">⚙ <b>${esc(specs.gears)}-gir</b></span>`);
+  if(specs.brake_front){
+    const short=specs.brake_front.replace('Mekanisk ','Mek. ').replace('Hydraulisk ','Hyd. ').replace('skivebremse','skive').replace('skivebrems','skive');
+    tags.push(`<span class="spec-tag">🛑 <b>${esc(short)}</b></span>`);
+  }
+  if(specs.tyre)      tags.push(`<span class="spec-tag">◎ <b>${esc(specs.tyre)}</b></span>`);
+  if(specs.weight_kg) tags.push(`<span class="spec-tag">⚖ <b>${esc(specs.weight_kg)} kg</b></span>`);
+  if(specs.motor)     tags.push(`<span class="spec-tag">⚡ <b>${esc(specs.motor.split(' ').slice(0,2).join(' '))}</b></span>`);
+  if(specs.battery)   tags.push(`<span class="spec-tag">🔋 <b>${esc(specs.battery.split(' ').slice(0,2).join(' '))}</b></span>`);
+  if(!tags.length) return '';
+  return `<div class="spec-row">${tags.join('')}</div>`;
+}
+
+function partsButtonHtml(b){
+  const count = (b.specs && b.spareParts && b.spareParts.length)
+    ? b.spareParts.length
+    : 0;
+  const total  = (b.specs?.spare_parts_count) || count || 0; // not a DB col, but count is sufficient
+  if(!b.source_url) return '';
+  const label = count>0 ? `${count} reservedeler funnet` : 'Se reservedeler på Thansen';
+  return `<button class="parts-btn" data-parts><span class="parts-icon">🔧</span><span class="parts-label">${label}</span><span class="parts-arrow">▶</span></button>`;
+}
 function makeCard(b){
   const el = document.createElement('div');
   const isNonDisplay = b.displayStatus === 'non_display';
@@ -425,12 +464,14 @@ function makeCard(b){
     <div class="card-body">
       <div class="price">${nok(b.price)}</div>
       <div class="badges">${flags}${avail}</div>
+      ${specsHtml(b.specs)}
       <div class="meta">
         <span class="tag">Wheel <b>${esc(b.wheel_size||'—')}</b></span>
         <span class="tag">Colour <b>${esc(b.colorName)}</b></span>
       </div>
       <div class="desc">${esc(b.desc)}</div>
       ${itemsHtml(b.items)}
+      ${partsButtonHtml(b)}
       <div class="barcode-box" data-bc>
         <svg class="bc-svg"></svg>
         <div class="barcode-label">FRAME · ${esc(b.frame)}</div>
@@ -454,6 +495,13 @@ function makeCard(b){
   el.querySelector('[data-edit]').addEventListener('click',(e)=>{
     e.stopPropagation();
     openEditor(bikes.find(x=>x.uid===b.uid)||b);
+  });
+
+  const partsBtn = el.querySelector('[data-parts]');
+  if(partsBtn) partsBtn.addEventListener('click', e => {
+    if(el.dataset.moved==='1') return;
+    e.stopPropagation();
+    openPartsPanel(bikes.find(x=>x.uid===b.uid)||b);
   });
 
   return el;
