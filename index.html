@@ -293,6 +293,61 @@
     .parts-sheet{border-radius:16px 0 0 16px;max-height:100vh;}
   }
 
+  /* ---------- Non-display tray ---------- */
+  #nonDisplayTray{
+    position:fixed;bottom:0;left:0;right:0;z-index:25;
+    display:none;flex-direction:column;
+    background:linear-gradient(0deg,var(--panel),var(--panel-2));
+    border-top:1px solid var(--line);
+    box-shadow:0 -8px 32px -8px rgba(0,0,0,.5);
+    transition:height .25s ease;
+  }
+  body:not(.locked) #nonDisplayTray{display:flex;}
+  .tray-handle{
+    display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;
+    min-height:48px;user-select:none;flex-shrink:0;
+  }
+  .tray-handle:hover{background:rgba(255,255,255,.03);}
+  .tray-chevron{font-size:11px;color:var(--muted);transition:transform .25s;}
+  .tray-label{font-size:13px;font-weight:600;color:var(--muted);flex:1;}
+  .tray-count{font-size:11px;color:var(--muted);background:var(--panel-2);
+    border:1px solid var(--line);border-radius:10px;padding:2px 8px;}
+  #nonDisplayTray.open .tray-chevron{transform:rotate(180deg);}
+  .tray-cards{
+    display:flex;flex-direction:row;gap:12px;overflow-x:auto;
+    padding:0 16px 16px;flex:1;
+    scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
+  }
+  .tray-cards::-webkit-scrollbar{height:4px;}
+  .tray-cards::-webkit-scrollbar-thumb{background:var(--line);border-radius:2px;}
+  .tray-card-mini{
+    flex:0 0 200px;scroll-snap-align:start;
+    background:var(--bg);border:1px solid var(--line);border-radius:10px;
+    padding:10px 12px;display:flex;flex-direction:column;gap:5px;cursor:pointer;
+    transition:.15s;opacity:.7;
+  }
+  .tray-card-mini:hover{border-color:var(--accent);opacity:1;}
+  .tray-card-mini .tc-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tray-card-mini .tc-price{font-size:12px;font-family:"IBM Plex Mono",monospace;color:var(--accent);}
+  .tray-card-mini .tc-badge{font-size:10px;color:var(--muted);}
+  .tray-empty{padding:16px;color:var(--muted);font-size:13px;text-align:center;}
+  @media (max-width:640px){
+    .tray-cards{flex:0 0 auto;max-height:140px;}
+    #nonDisplayTray.open{height:200px;}
+  }
+  @media (min-width:641px){
+    #nonDisplayTray.open{height:240px;}
+  }
+  body:not(.locked) .hint{bottom:60px;}
+  /* editor display-status toggle */
+  .status-toggle{display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid var(--line);}
+  .status-toggle button{
+    flex:1;padding:11px 10px;font:inherit;font-size:13px;font-weight:600;
+    background:var(--bg);color:var(--muted);border:none;cursor:pointer;transition:.15s;min-height:44px;
+  }
+  .status-toggle button.active{background:var(--accent-2);color:#06231f;}
+  .status-toggle button:first-child{border-right:1px solid var(--line);}
+
   @media (max-width:640px){
     .logo span{display:none;}
     header{flex-wrap:wrap;gap:8px;padding:10px 12px;}
@@ -304,6 +359,7 @@
     .btn{padding:11px 12px;font-size:13px;}
     .card{width:86vw;max-width:340px;}
     .hint{font-size:11px;bottom:12px;padding:7px 12px;width:auto;max-width:92vw;text-align:center;line-height:1.4;}
+    body:not(.locked) .hint{bottom:60px;}
     .editor-card{padding:18px 16px;}
     .fs-card{padding:24px 18px 18px;}
     .fs-frame{font-size:14px;letter-spacing:2px;}
@@ -364,8 +420,15 @@
       <div class="items-editor" id="f-items"></div>
       <button type="button" class="add-item" id="f-addItem">+ Add item</button>
     </div>
-    <label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);cursor:pointer;">
-      <input type="checkbox" id="f-hidden" style="width:auto;"> Hide from public showroom
+    <div class="field">
+      <label>Utstillingsstatus</label>
+      <div class="status-toggle" id="f-displayToggle">
+        <button type="button" id="f-statusOn"  onclick="setDisplayStatus('on_display')">På utstilling</button>
+        <button type="button" id="f-statusOff" onclick="setDisplayStatus('non_display')">Ikke på utstilling</button>
+      </div>
+    </div>
+    <label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);cursor:pointer;min-height:44px;">
+      <input type="checkbox" id="f-hidden" style="width:auto;"> Skjul (outlet / utgått)
     </label>
     <div class="field" id="f-synced-note" style="display:none;font-size:12px;color:var(--muted);">
       Synced from Thansen — name, price, availability &amp; barcode update automatically.
@@ -391,6 +454,15 @@
       <button class="btn primary" id="p-ok">Unlock</button>
     </div>
   </div>
+</div>
+
+<div id="nonDisplayTray">
+  <div class="tray-handle" id="trayHandle">
+    <span class="tray-chevron" id="trayChevron">▲</span>
+    <span class="tray-label">Ikke på utstilling</span>
+    <span class="tray-count" id="trayCount">0</span>
+  </div>
+  <div class="tray-cards" id="trayCards"></div>
 </div>
 
 <div id="partsPanel">
@@ -577,7 +649,7 @@ function rebuildCard(b){const old=cardEl(b.uid);if(old)old.remove();makeCard(b);
 function clearCards(){[...canvas.querySelectorAll('.card')].forEach(c=>c.remove());}
 function cacheSave(){try{localStorage.setItem(CACHE_KEY,JSON.stringify(bikes));}catch(e){}}
 function renderAll(){clearCards();bikes.forEach(makeCard);refreshDropdown();}
-function applyList(list){bikes=list;renderAll();cacheSave();}
+function applyList(list){bikes=list;renderAll();cacheSave();refreshTray();}
 
 function bootFromCache(){
   try{
@@ -598,7 +670,7 @@ function localUpsert(b){        // idempotent: never duplicates a card or list e
   const i=bikes.findIndex(x=>x.uid===b.uid);
   if(i<0)bikes.push(b);else bikes[i]=b;
   if(cardEl(b.uid))rebuildCard(b);else makeCard(b);
-  refreshDropdown();cacheSave();
+  refreshDropdown();cacheSave();refreshTray();
 }
 
 function applyRowUpsert(row){
@@ -618,6 +690,7 @@ function applyRowDelete(row){
   const i=bikes.findIndex(x=>x.uid===u);
   if(i>=0){const el=cardEl(u);if(el)el.remove();bikes.splice(i,1);refreshDropdown();cacheSave();}
   if(editingUid===u)closeEditor();
+  refreshTray();
 }
 function startRealtime(){
   sb.channel('bikes-rt')
@@ -882,6 +955,33 @@ partsPanel.addEventListener('pointerup',e=>{
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape' && partsPanel.classList.contains('show')) closePartsPanel();});
 
+/* ---------------- Non-display tray ---------------- */
+const tray      = document.getElementById('nonDisplayTray');
+const trayCards = document.getElementById('trayCards');
+const trayCount = document.getElementById('trayCount');
+
+function refreshTray(){
+  const nonDisplay = bikes.filter(b => b.displayStatus === 'non_display');
+  trayCount.textContent = nonDisplay.length;
+  trayCards.innerHTML = nonDisplay.length === 0
+    ? '<div class="tray-empty">Ingen sykler her ennå — flytt sykler hit via editoren</div>'
+    : nonDisplay.map(b=>`
+        <div class="tray-card-mini" data-tray-uid="${esc(b.uid)}">
+          <div class="tc-name">${esc(b.name)}</div>
+          <div class="tc-price">${nok(b.price)}</div>
+          <div class="tc-badge">${b.availability==='InStock'?'På lager':'Ikke på lager'}</div>
+        </div>`).join('');
+  [...trayCards.querySelectorAll('[data-tray-uid]')].forEach(el=>{
+    el.addEventListener('click',()=>{
+      const b=bikes.find(x=>x.uid===el.dataset.trayUid);
+      if(b && isEditing()) openEditor(b);
+    });
+  });
+}
+document.getElementById('trayHandle').addEventListener('click',()=>{
+  tray.classList.toggle('open');
+});
+
 /* ---------------- Snapping ---------------- */
 let snapOn=false, snapSize=40;
 const snapToggle=document.getElementById('snapToggle');
@@ -1005,6 +1105,7 @@ function openEditor(b){
   F.colorName.value=b?b.colorName:'';
   F.frame.value=b?b.frame:'';
   F.desc.value=b?b.desc:'';
+  setDisplayStatus(b ? (b.displayStatus||'on_display') : 'on_display');
   const synced = !!(b && b.source==='thansen');
   document.getElementById('f-hidden').checked = !!(b && b.hidden);
   document.getElementById('f-synced-note').style.display = synced ? '' : 'none';
@@ -1019,6 +1120,13 @@ function openEditor(b){
   editor.classList.add('show');
 }
 function closeEditor(){editor.classList.remove('show');editingUid=null;resetDelete();}
+
+let _editorDisplayStatus = 'on_display';
+function setDisplayStatus(val){
+  _editorDisplayStatus = val;
+  document.getElementById('f-statusOn').classList.toggle('active', val==='on_display');
+  document.getElementById('f-statusOff').classList.toggle('active', val==='non_display');
+}
 
 document.getElementById('addBike').onclick=()=>{if(isEditing())openEditor(null);};
 document.getElementById('f-cancel').onclick=closeEditor;
@@ -1051,6 +1159,7 @@ saveBtn.onclick=async ()=>{
     if(editingUid){
       const payload = dbPayload(data);
       payload.hidden = document.getElementById('f-hidden').checked;
+      payload.display_status = _editorDisplayStatus;
       const updated = await rpcUpdate(editingUid, payload);
       if(updated)localUpsert(updated);
       closeEditor();
