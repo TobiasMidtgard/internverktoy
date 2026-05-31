@@ -4,7 +4,7 @@
 const APP_ID = 'OD48YHEOTK';
 const SEARCH_KEY = '62be5f66604910c596a0da1f567c3237';
 const INDEX = 'thansen_no_products';
-const COMPLETE_BIKES_NODE = 14338; // "Sykkel › Sykler" category node = complete bikes
+// Excluded: Rullator (mobility walkers + their spare parts) and Trehjuls Tilbehør (chargers etc.)
 
 export function algoliaUrl(appId = APP_ID, index = INDEX){
   return `https://${appId}-dsn.algolia.net/1/indexes/${index}/query`;
@@ -12,7 +12,11 @@ export function algoliaUrl(appId = APP_ID, index = INDEX){
 
 // fetchJson(url, options) -> parsed JSON. Injected so tests can stub the network.
 export async function fetchBikeHits(fetchJson, { hitsPerPage = 1000 } = {}){
-  const body = JSON.stringify({ query: '', hitsPerPage, facetFilters: ['node_tree.name:Sykler'] });
+  const body = JSON.stringify({
+    query: '', hitsPerPage,
+    facetFilters: ['node_tree.name:Sykler'],
+    filters: 'NOT al_menu.lvl2:"Sykkel > Sykler > Rullator" AND NOT al_menu.lvl3:"Sykkel > Sykler > Trehjuls & løpesykkel > Tilbehør"'
+  });
   const data = await fetchJson(algoliaUrl(), {
     method: 'POST',
     headers: {
