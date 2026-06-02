@@ -141,8 +141,8 @@
   .parts-btn .parts-arrow{font-size:10px;opacity:.6;}
   .card-img{width:100%;height:130px;object-fit:cover;background:#fff;border-bottom:1px solid var(--line);display:block;}
   /* hidden/discontinued: gone in public view, dimmed in edit mode */
-  body.locked .card.is-hidden{display:none;}
-  body:not(.locked) .card.is-hidden{opacity:.45;outline:1px dashed var(--line);}
+  /* off-display / hidden / discontinued bikes live in the Bikes menu, not on the canvas */
+  .card.is-hidden{display:none;}
 
   /* ---------- Additional items list ---------- */
   .items-title{font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;}
