@@ -190,14 +190,19 @@
   .btn.active:hover{filter:brightness(1.06);color:#06231f;}
 
   /* hide editing affordances while locked (view-only) */
-  body.locked .edit-btn{display:none;}
-  body.locked #addBike{display:none;}
+  body.locked .edit-btn,
+  body.locked .remove-btn{display:none;}
 
   /* ---------- Edit button on card ---------- */
   .edit-btn{background:transparent;border:1px solid var(--line);color:var(--muted);
     width:30px;height:30px;border-radius:8px;font-size:14px;cursor:pointer;flex-shrink:0;line-height:1;
     display:flex;align-items:center;justify-content:center;transition:.15s;}
   .edit-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .remove-btn{background:transparent;border:1px solid var(--line);color:var(--muted);
+    width:30px;height:30px;border-radius:8px;font-size:13px;cursor:pointer;flex-shrink:0;line-height:1;
+    display:flex;align-items:center;justify-content:center;transition:.15s;}
+  .remove-btn:hover{border-color:var(--danger);color:var(--danger);}
+  .card.is-selected{outline:2px solid var(--accent);outline-offset:2px;}
 
   /* ---------- Editor + passcode modals ---------- */
   #editor,#passModal{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;padding:18px;
@@ -242,6 +247,10 @@
     font-weight:600;opacity:0;pointer-events:none;transition:.25s;box-shadow:var(--shadow);max-width:90vw;text-align:center;}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   #toast.ok{background:var(--accent-2);color:#06231f;}
+  .toast-undo{margin-left:12px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);
+    color:inherit;font:inherit;font-size:12px;font-weight:700;padding:4px 11px;border-radius:8px;cursor:pointer;
+    vertical-align:middle;}
+  .toast-undo:hover{background:rgba(255,255,255,.3);}
 
   /* ---------- Spare-parts panel ---------- */
   #partsPanel{
@@ -293,52 +302,59 @@
     .parts-sheet{border-radius:16px 0 0 16px;max-height:100vh;}
   }
 
-  /* ---------- Non-display tray ---------- */
-  #nonDisplayTray{
-    position:fixed;bottom:0;left:0;right:0;z-index:25;
-    display:none;flex-direction:column;
-    background:linear-gradient(0deg,var(--panel),var(--panel-2));
-    border-top:1px solid var(--line);
-    box-shadow:0 -8px 32px -8px rgba(0,0,0,.5);
-    transition:height .25s ease;
+  /* ---------- Library panel (all bikes / add / jump) ---------- */
+  #libraryPanel{
+    position:fixed;inset:0;z-index:110;display:none;
+    background:rgba(8,10,13,.6);backdrop-filter:blur(4px);
+    align-items:flex-end;justify-content:flex-end;
   }
-  body:not(.locked) #nonDisplayTray{display:flex;}
-  .tray-handle{
-    display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;
-    min-height:48px;user-select:none;flex-shrink:0;
+  #libraryPanel.show{display:flex;animation:fade .2s ease;}
+  .lib-sheet{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--line);border-radius:16px 16px 0 0;
+    width:100%;max-width:420px;max-height:82vh;
+    display:flex;flex-direction:column;box-shadow:var(--shadow);overflow:hidden;
   }
-  .tray-handle:hover{background:rgba(255,255,255,.03);}
-  .tray-chevron{font-size:11px;color:var(--muted);transition:transform .25s;}
-  .tray-label{font-size:13px;font-weight:600;color:var(--muted);flex:1;}
-  .tray-count{font-size:11px;color:var(--muted);background:var(--panel-2);
-    border:1px solid var(--line);border-radius:10px;padding:2px 8px;}
-  #nonDisplayTray.open .tray-chevron{transform:rotate(180deg);}
-  .tray-cards{
-    display:flex;flex-direction:row;gap:12px;overflow-x:auto;
-    padding:0 16px 16px;flex:1;
-    scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
-  }
-  .tray-cards::-webkit-scrollbar{height:4px;}
-  .tray-cards::-webkit-scrollbar-thumb{background:var(--line);border-radius:2px;}
-  .tray-card-mini{
-    flex:0 0 200px;scroll-snap-align:start;
-    background:var(--bg);border:1px solid var(--line);border-radius:10px;
-    padding:10px 12px;display:flex;flex-direction:column;gap:5px;cursor:pointer;
-    transition:.15s;opacity:.7;
-  }
-  .tray-card-mini:hover{border-color:var(--accent);opacity:1;}
-  .tray-card-mini .tc-name{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .tray-card-mini .tc-price{font-size:12px;font-family:"IBM Plex Mono",monospace;color:var(--accent);}
-  .tray-card-mini .tc-badge{font-size:10px;color:var(--muted);}
-  .tray-empty{padding:16px;color:var(--muted);font-size:13px;text-align:center;}
+  .lib-header{padding:16px 16px 0;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  .lib-title{font-weight:700;font-size:16px;flex:1;}
+  .lib-close{background:transparent;border:1px solid var(--line);color:var(--muted);
+    width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:16px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;}
+  .lib-close:hover{border-color:var(--danger);color:var(--danger);}
+  .lib-create{margin:12px 16px 0;flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--accent);color:#1a1205;border:none;border-radius:10px;padding:12px;
+    font:inherit;font-size:14px;font-weight:700;cursor:pointer;min-height:48px;}
+  .lib-create:hover{filter:brightness(1.08);}
+  .lib-search{margin:12px 16px 0;flex-shrink:0;}
+  .lib-search input{background:var(--bg);border:1px solid var(--line);border-radius:10px;
+    color:var(--ink);padding:11px 14px;font:inherit;font-size:16px;width:100%;}
+  .lib-search input:focus{outline:none;border-color:var(--accent);}
+  .lib-list{flex:1;overflow-y:auto;padding:8px 0 4px;margin-top:8px;}
+  .lib-item{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line);}
+  .lib-item:last-child{border-bottom:none;}
+  .lib-item[data-action="jump"]{cursor:pointer;}
+  .lib-item[data-action="jump"]:hover{background:rgba(255,255,255,.03);}
+  .lib-main{flex:1;min-width:0;}
+  .lib-name{font-size:13px;color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .lib-syn{color:var(--accent-2);font-weight:700;}
+  .lib-sub{font-size:11px;color:var(--muted);font-family:"IBM Plex Mono",monospace;margin-top:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .lib-right{flex-shrink:0;display:flex;align-items:center;gap:8px;}
+  .lib-chip{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+    padding:3px 8px;border-radius:20px;border:1px solid #2f7d54;background:rgba(99,210,151,.14);color:#63d297;}
+  .lib-add{background:var(--panel);border:1px solid var(--accent-2);color:var(--accent-2);
+    border-radius:8px;padding:8px 13px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;
+    min-height:40px;white-space:nowrap;}
+  .lib-add:hover{background:rgba(63,182,168,.12);}
+  .lib-empty{padding:24px 16px;text-align:center;color:var(--muted);font-size:13px;}
   @media (max-width:640px){
-    .tray-cards{flex:0 0 auto;max-height:140px;}
-    #nonDisplayTray.open{height:200px;}
+    #libraryPanel{align-items:flex-end;justify-content:stretch;}
+    .lib-sheet{max-width:100%;border-radius:16px 16px 0 0;max-height:85vh;}
   }
   @media (min-width:641px){
-    #nonDisplayTray.open{height:240px;}
+    #libraryPanel{align-items:flex-end;justify-content:flex-end;}
+    .lib-sheet{border-radius:16px 0 0 16px;max-height:100vh;}
   }
-  body:not(.locked) .hint{bottom:60px;}
   /* editor display-status toggle */
   .status-toggle{display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid var(--line);}
   .status-toggle button{
@@ -353,13 +369,11 @@
     header{flex-wrap:wrap;gap:8px;padding:10px 12px;}
     .logo{width:100%;}
     .controls{width:100%;margin-left:0;gap:8px;justify-content:flex-start;}
-    #bikeSelect{flex:1 1 100%;min-width:0;font-size:16px;padding:12px 36px 12px 13px;}
     #snapSize{flex:0 0 auto;min-width:0;font-size:14px;padding:11px 30px 11px 12px;}
-    #addBike,#snapToggle,#resetView,#lockBtn{flex:1 1 auto;}
+    #bikesBtn,#snapToggle,#resetView,#lockBtn{flex:1 1 auto;}
     .btn{padding:11px 12px;font-size:13px;}
     .card{width:86vw;max-width:340px;}
     .hint{font-size:11px;bottom:12px;padding:7px 12px;width:auto;max-width:92vw;text-align:center;line-height:1.4;}
-    body:not(.locked) .hint{bottom:60px;}
     .editor-card{padding:18px 16px;}
     .fs-card{padding:24px 18px 18px;}
     .fs-frame{font-size:14px;letter-spacing:2px;}
@@ -372,9 +386,8 @@
 <header>
   <div class="logo"><span class="dot" id="liveDot" title="Connecting…"></span>VELODEX<span>· showroom registry</span></div>
   <div class="controls">
-    <select id="bikeSelect"><option value="">Jump to bike…</option></select>
+    <button class="btn" id="bikesBtn">Bikes</button>
     <button class="btn" id="lockBtn">🔒 View only</button>
-    <button class="btn primary" id="addBike">+ Add bike</button>
     <button class="btn" id="snapToggle" aria-pressed="false">Snap: Off</button>
     <select id="snapSize" title="Snap grid size">
       <option value="20">Grid 20</option>
@@ -456,13 +469,16 @@
   </div>
 </div>
 
-<div id="nonDisplayTray">
-  <div class="tray-handle" id="trayHandle">
-    <span class="tray-chevron" id="trayChevron">▲</span>
-    <span class="tray-label">Ikke på utstilling</span>
-    <span class="tray-count" id="trayCount">0</span>
+<div id="libraryPanel">
+  <div class="lib-sheet">
+    <div class="lib-header">
+      <div class="lib-title" id="libTitle">Bikes</div>
+      <button class="lib-close" id="libClose" title="Close">✕</button>
+    </div>
+    <button class="lib-create" id="libCreate" type="button">＋ Create new custom bike</button>
+    <div class="lib-search"><input type="search" id="libSearch" placeholder="Search bikes…" autocomplete="off"></div>
+    <div class="lib-list" id="libList"></div>
   </div>
-  <div class="tray-cards" id="trayCards"></div>
 </div>
 
 <div id="partsPanel">
@@ -528,11 +544,21 @@ function dbPayload(d){
 }
 
 let toastTimer=null;
-function toast(msg,ok){
+function toast(msg,ok,action){
   const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.toggle('ok',!!ok);t.classList.add('show');
+  t.classList.toggle('ok',!!ok);
+  if(action){
+    t.textContent='';
+    const span=document.createElement('span');span.textContent=msg;t.appendChild(span);
+    const btn=document.createElement('button');btn.className='toast-undo';btn.textContent=action.label;
+    btn.onclick=()=>{t.classList.remove('show');if(toastTimer)clearTimeout(toastTimer);action.fn();};
+    t.appendChild(btn);
+  } else {
+    t.textContent=msg;
+  }
+  t.classList.add('show');
   if(toastTimer)clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),action?5000:2800);
 }
 function isPasscodeError(err){return !!err && (err.code==='28000' || /passcode/i.test(err.message||''));}
 function handleWriteError(err,where){
@@ -593,6 +619,7 @@ function makeCard(b){
       <div class="card-title">${esc(b.name)}</div>
       <div class="swatch" style="background:${esc(b.color)}"></div>
       <button class="edit-btn" data-edit title="Edit bike">✎</button>
+      <button class="remove-btn" data-remove title="Remove from display">✕</button>
     </div>
     <div class="card-body">
       <div class="price">${nok(b.price)}</div>
@@ -630,6 +657,11 @@ function makeCard(b){
     openEditor(bikes.find(x=>x.uid===b.uid)||b);
   });
 
+  el.querySelector('[data-remove]').addEventListener('click',(e)=>{
+    e.stopPropagation();
+    softRemove(b.uid);
+  });
+
   const partsBtn = el.querySelector('[data-parts]');
   if(partsBtn) partsBtn.addEventListener('click', e => {
     if(el.dataset.moved==='1') return;
@@ -637,6 +669,7 @@ function makeCard(b){
     openPartsPanel(bikes.find(x=>x.uid===b.uid)||b);
   });
 
+  if(b.uid===selectedUid) el.classList.add('is-selected');
   return el;
 }
 
@@ -645,8 +678,8 @@ function cardEl(u){return [...canvas.children].find(c=>c.dataset.uid===u);}
 function rebuildCard(b){const old=cardEl(b.uid);if(old)old.remove();makeCard(b);}
 function clearCards(){[...canvas.querySelectorAll('.card')].forEach(c=>c.remove());}
 function cacheSave(){try{localStorage.setItem(CACHE_KEY,JSON.stringify(bikes));}catch(e){}}
-function renderAll(){clearCards();bikes.forEach(makeCard);refreshDropdown();}
-function applyList(list){bikes=list;renderAll();cacheSave();refreshTray();}
+function renderAll(){clearCards();bikes.forEach(makeCard);refreshLibrary();}
+function applyList(list){bikes=list;renderAll();cacheSave();}
 
 function bootFromCache(){
   try{
@@ -667,7 +700,7 @@ function localUpsert(b){        // idempotent: never duplicates a card or list e
   const i=bikes.findIndex(x=>x.uid===b.uid);
   if(i<0)bikes.push(b);else bikes[i]=b;
   if(cardEl(b.uid))rebuildCard(b);else makeCard(b);
-  refreshDropdown();cacheSave();refreshTray();
+  refreshLibrary();cacheSave();
 }
 
 function applyRowUpsert(row){
@@ -680,14 +713,14 @@ function applyRowUpsert(row){
   if(draggingCard&&draggingCard.dataset.uid===b.uid)return;
   if(editingUid===b.uid)return;
   if(cardEl(b.uid))rebuildCard(b);else makeCard(b);
-  refreshDropdown();refreshTray();
+  refreshLibrary();
 }
 function applyRowDelete(row){
   const u=row.uid;if(!u)return;
   const i=bikes.findIndex(x=>x.uid===u);
-  if(i>=0){const el=cardEl(u);if(el)el.remove();bikes.splice(i,1);refreshDropdown();cacheSave();}
+  if(i>=0){const el=cardEl(u);if(el)el.remove();bikes.splice(i,1);refreshLibrary();cacheSave();}
+  if(selectedUid===u)clearSelection();
   if(editingUid===u)closeEditor();
-  refreshTray();
 }
 function startRealtime(){
   sb.channel('bikes-rt')
@@ -726,23 +759,119 @@ async function rpcDelete(uid){
   if(error)throw error;
 }
 
-/* ---------------- Dropdown ---------------- */
-const sel=document.getElementById('bikeSelect');
-function refreshDropdown(){
-  sel.innerHTML='<option value="">Jump to bike…</option>';
-  bikes.forEach(b=>{
-    if(!isEditing() && (b.hidden||b.discontinued||b.displayStatus==='non_display')) return; // public dropdown hides them too
-    const o=document.createElement('option');
-    o.value=b.uid;o.textContent=`${b.name}${b.wheel_size?(' — '+b.wheel_size):''}`;
-    sel.appendChild(o);
+/* ---------------- Display actions (remove / add / permanent delete) ---------------- */
+async function softRemove(uid){
+  const b=bikes.find(x=>x.uid===uid); if(!b||b.displayStatus==='non_display') return;
+  const prev=b.displayStatus;
+  b.displayStatus='non_display';
+  if(cardEl(uid))rebuildCard(b);
+  if(selectedUid===uid)clearSelection();
+  cacheSave();refreshLibrary();
+  try{
+    await rpcUpdate(uid,{display_status:'non_display'});
+    toast('Removed from display.',true,{label:'Undo',fn:()=>addToDisplay(uid)});
+  }catch(err){
+    b.displayStatus=prev;if(cardEl(uid))rebuildCard(b);cacheSave();refreshLibrary();
+    handleWriteError(err,'Remove');
+  }
+}
+async function addToDisplay(uid){
+  const b=bikes.find(x=>x.uid===uid); if(!b) return;
+  const prev=b.displayStatus;
+  b.displayStatus='on_display';
+  if(cardEl(uid))rebuildCard(b);else makeCard(b);
+  cacheSave();refreshLibrary();closeLibrary();
+  focusCard(b,true);
+  try{
+    await rpcUpdate(uid,{display_status:'on_display'});
+  }catch(err){
+    b.displayStatus=prev;if(cardEl(uid))rebuildCard(b);cacheSave();refreshLibrary();
+    handleWriteError(err,'Add');
+  }
+}
+async function doDelete(uid){
+  try{
+    await rpcDelete(uid);
+    const i=bikes.findIndex(x=>x.uid===uid);
+    if(i>=0){const el=cardEl(uid);if(el)el.remove();bikes.splice(i,1);}
+    if(selectedUid===uid)clearSelection();
+    if(editingUid===uid)closeEditor();
+    refreshLibrary();cacheSave();
+    toast('Bike deleted.',true);
+  }catch(err){
+    if(isPasscodeError(err)){handleWriteError(err);if(editingUid===uid)closeEditor();}
+    else toast('Delete failed: '+((err&&err.message)||'error'));
+  }
+}
+
+/* ---------------- Library panel (all bikes / add / jump) ---------------- */
+const libraryPanel=document.getElementById('libraryPanel');
+const libList=document.getElementById('libList');
+const libSearch=document.getElementById('libSearch');
+const libCreate=document.getElementById('libCreate');
+const bikesBtn=document.getElementById('bikesBtn');
+let _libQuery='';
+
+function libVisible(){
+  const editing=isEditing();
+  let list=bikes.slice();
+  if(!editing) list=list.filter(b=>!(b.hidden||b.discontinued||b.displayStatus==='non_display'));
+  const q=_libQuery.toLowerCase().trim();
+  if(q) list=list.filter(b=>(b.name+' '+(b.wheel_size||'')+' '+(b.colorName||'')).toLowerCase().includes(q));
+  return list.sort((a,b)=>a.name.localeCompare(b.name));
+}
+function refreshLibrary(){
+  const editing=isEditing();
+  libCreate.style.display = editing ? '' : 'none';
+  const list=libVisible();
+  if(!list.length){
+    libList.innerHTML=`<div class="lib-empty">${_libQuery?'No matches.':'No bikes yet.'}</div>`;
+    return;
+  }
+  libList.innerHTML=list.map(b=>{
+    const off=b.displayStatus==='non_display';
+    const hid=b.hidden||b.discontinued;
+    const offCanvas=editing && (off||hid);
+    const syn=b.source==='thansen'?' <span class="lib-syn">⟳</span>':'';
+    const status=off?' · off display':(hid?' · hidden':'');
+    const sub=`${b.wheel_size?esc(b.wheel_size)+' · ':''}${nok(b.price)}${editing?status:''}`;
+    const right = !editing ? ''
+      : offCanvas ? `<button class="lib-add" data-lib-add="${esc(b.uid)}">+ Add</button>`
+      : `<span class="lib-chip">On display</span>`;
+    const action = offCanvas ? 'add' : 'jump';
+    return `<div class="lib-item" data-action="${action}" data-lib-uid="${esc(b.uid)}">
+      <div class="lib-main"><div class="lib-name">${esc(b.name)}${syn}</div><div class="lib-sub">${sub}</div></div>
+      <div class="lib-right">${right}</div></div>`;
+  }).join('');
+  [...libList.querySelectorAll('.lib-item[data-action="jump"]')].forEach(el=>{
+    el.addEventListener('click',()=>{
+      const b=bikes.find(x=>x.uid===el.dataset.libUid);
+      if(b){closeLibrary();focusCard(b,true);}
+    });
+  });
+  [...libList.querySelectorAll('[data-lib-add]')].forEach(btn=>{
+    btn.addEventListener('click',e=>{e.stopPropagation();addToDisplay(btn.dataset.libAdd);});
   });
 }
-sel.addEventListener('change',()=>{
-  const b=bikes.find(x=>x.uid===sel.value);
-  sel.value='';
-  if(!b)return;
-  focusCard(b,true);
+function openLibrary(){
+  _libQuery='';libSearch.value='';
+  document.getElementById('libTitle').textContent=isEditing()?'Add bike':'Bikes';
+  refreshLibrary();
+  libraryPanel.classList.add('show');
+  setTimeout(()=>libSearch.focus(),120);
+}
+function closeLibrary(){libraryPanel.classList.remove('show');}
+bikesBtn.onclick=openLibrary;
+document.getElementById('libClose').onclick=closeLibrary;
+libCreate.onclick=()=>{closeLibrary();openEditor(null);};
+libSearch.addEventListener('input',e=>{_libQuery=e.target.value;refreshLibrary();});
+libSearch.addEventListener('keydown',e=>{if(e.key==='Escape')closeLibrary();});
+let lbDX=0,lbDY=0,lbDown=false;
+libraryPanel.addEventListener('pointerdown',e=>{lbDX=e.clientX;lbDY=e.clientY;lbDown=(e.target===libraryPanel);});
+libraryPanel.addEventListener('pointerup',e=>{
+  if(Math.abs(e.clientX-lbDX)<10&&Math.abs(e.clientY-lbDY)<10&&lbDown&&e.target===libraryPanel)closeLibrary();
 });
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&libraryPanel.classList.contains('show'))closeLibrary();});
 
 /* ---------------- Zoom + center a card ---------------- */
 function snapVal(v){return snapOn?Math.round(v/snapSize)*snapSize:v;}
@@ -780,7 +909,8 @@ stage.addEventListener('pointerdown',onDown);
 function onDown(e){
   const p=pointer(e);
   const card=e.target.closest('.card');
-  const onControl=e.target.closest('[data-bc]')||e.target.closest('[data-edit]');
+  const onControl=e.target.closest('[data-bc]')||e.target.closest('[data-edit]')
+    ||e.target.closest('[data-remove]')||e.target.closest('[data-parts]');
   if(card && !onControl){
     // double-tap / double-click to zoom (works locked or unlocked)
     const now=Date.now();
@@ -804,8 +934,9 @@ function onDown(e){
       panning=true;startX=p.x;startY=p.y; // locked: dragging a card pans the canvas
     }
   } else if(card && onControl){
-    return; // let barcode / edit button handle the tap
+    return; // let barcode / edit / remove / parts button handle the tap
   } else {
+    if(isEditing())clearSelection();   // tapping empty canvas deselects
     panning=true;startX=p.x;startY=p.y;
   }
   window.addEventListener('pointermove',onMove);
@@ -835,6 +966,8 @@ function onUp(){
       b.y=parseFloat(draggingCard.style.top);
       cacheSave();
       rpcUpdate(u,{x:b.x,y:b.y}).catch(err=>{handleWriteError(err,'Move');loadFromServer();});
+    } else if(b && !moved){
+      selectCard(u);   // a click without a drag selects the card
     }
     const dc=draggingCard;
     setTimeout(()=>{if(dc)dc.dataset.moved='0';},50);
@@ -843,6 +976,40 @@ function onUp(){
   window.removeEventListener('pointermove',onMove);
   window.removeEventListener('pointerup',onUp);
 }
+
+/* ---------------- Card selection + keyboard delete ---------------- */
+let selectedUid=null;
+function selectCard(uid){
+  if(!isEditing())return;
+  if(selectedUid&&selectedUid!==uid){const o=cardEl(selectedUid);if(o)o.classList.remove('is-selected');}
+  selectedUid=uid;
+  const el=cardEl(uid);if(el)el.classList.add('is-selected');
+  resetKbdDelete();
+}
+function clearSelection(){
+  if(selectedUid){const el=cardEl(selectedUid);if(el)el.classList.remove('is-selected');}
+  selectedUid=null;resetKbdDelete();
+}
+let kbdDelArm=false,kbdDelTimer=null;
+function resetKbdDelete(){kbdDelArm=false;if(kbdDelTimer){clearTimeout(kbdDelTimer);kbdDelTimer=null;}}
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Delete'&&e.key!=='Backspace')return;
+  if(!isEditing()||!selectedUid)return;
+  const ae=document.activeElement;
+  if(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.isContentEditable))return;
+  if(editor.classList.contains('show')||libraryPanel.classList.contains('show'))return;
+  e.preventDefault();
+  const b=bikes.find(x=>x.uid===selectedUid);if(!b)return;
+  if(b.source==='thansen'){toast('Synced bikes can’t be deleted — remove from display instead.');return;}
+  if(!kbdDelArm){
+    kbdDelArm=true;
+    toast('Press Delete again to permanently remove “'+b.name+'”.');
+    kbdDelTimer=setTimeout(resetKbdDelete,2600);
+    return;
+  }
+  const u=selectedUid;resetKbdDelete();
+  doDelete(u);
+});
 
 /* pinch + wheel zoom */
 stage.addEventListener('wheel',e=>{
@@ -952,33 +1119,6 @@ partsPanel.addEventListener('pointerup',e=>{
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape' && partsPanel.classList.contains('show')) closePartsPanel();});
 
-/* ---------------- Non-display tray ---------------- */
-const tray      = document.getElementById('nonDisplayTray');
-const trayCards = document.getElementById('trayCards');
-const trayCount = document.getElementById('trayCount');
-
-function refreshTray(){
-  const nonDisplay = bikes.filter(b => b.displayStatus === 'non_display');
-  trayCount.textContent = nonDisplay.length;
-  trayCards.innerHTML = nonDisplay.length === 0
-    ? '<div class="tray-empty">Ingen sykler her ennå — flytt sykler hit via editoren</div>'
-    : nonDisplay.map(b=>`
-        <div class="tray-card-mini" data-tray-uid="${esc(b.uid)}">
-          <div class="tc-name">${esc(b.name)}</div>
-          <div class="tc-price">${nok(b.price)}</div>
-          <div class="tc-badge">${b.availability==='InStock'?'På lager':'Ikke på lager'}</div>
-        </div>`).join('');
-  [...trayCards.querySelectorAll('[data-tray-uid]')].forEach(el=>{
-    el.addEventListener('click',()=>{
-      const b=bikes.find(x=>x.uid===el.dataset.trayUid);
-      if(b && isEditing()) openEditor(b);
-    });
-  });
-}
-document.getElementById('trayHandle').addEventListener('click',()=>{
-  tray.classList.toggle('open');
-});
-
 /* ---------------- Snapping ---------------- */
 let snapOn=false, snapSize=40;
 const snapToggle=document.getElementById('snapToggle');
@@ -1013,11 +1153,14 @@ snapSizeSel.onchange=()=>{
 /* ---------------- Lock / passcode ---------------- */
 const lockBtn=document.getElementById('lockBtn');
 function updateLockUI(){
-  document.body.classList.toggle('locked',!isEditing());
-  lockBtn.textContent=isEditing()?'🔓 Editing':'🔒 View only';
-  lockBtn.classList.toggle('active',isEditing());
-  refreshDropdown();
-  refreshTray();
+  const editing=isEditing();
+  document.body.classList.toggle('locked',!editing);
+  lockBtn.textContent=editing?'🔓 Editing':'🔒 View only';
+  lockBtn.classList.toggle('active',editing);
+  bikesBtn.textContent=editing?'+ Add bike':'Bikes';
+  bikesBtn.classList.toggle('primary',editing);
+  if(!editing)clearSelection();
+  refreshLibrary();
 }
 const passModal=document.getElementById('passModal');
 const pInput=document.getElementById('p-input');
@@ -1126,7 +1269,6 @@ function setDisplayStatus(val){
   document.getElementById('f-statusOff').classList.toggle('active', val==='non_display');
 }
 
-document.getElementById('addBike').onclick=()=>{if(isEditing())openEditor(null);};
 document.getElementById('f-cancel').onclick=closeEditor;
 let edDX=0,edDY=0,edDownOnBackdrop=false;
 editor.addEventListener('pointerdown',e=>{edDX=e.clientX;edDY=e.clientY;edDownOnBackdrop=(e.target===editor);});
@@ -1187,18 +1329,9 @@ delBtn.onclick=async ()=>{
   }
   const u=editingUid;
   delBtn.disabled=true;
-  try{
-    await rpcDelete(u);
-    const i=bikes.findIndex(x=>x.uid===u);
-    if(i>=0){const el=cardEl(u);if(el)el.remove();bikes.splice(i,1);}
-    refreshDropdown();cacheSave();
-    closeEditor();
-  }catch(err){
-    if(isPasscodeError(err)){handleWriteError(err);closeEditor();}
-    else {F.err.textContent='Delete failed: '+((err&&err.message)||'error');resetDelete();}
-  }finally{
-    delBtn.disabled=false;
-  }
+  await doDelete(u);   // shared: closes editor + toasts on success/error
+  delBtn.disabled=false;
+  resetDelete();
 };
 
 /* ---------------- Boot ---------------- */
