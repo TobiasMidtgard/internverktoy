@@ -1000,7 +1000,6 @@ document.addEventListener('keydown',e=>{
   if(editor.classList.contains('show')||libraryPanel.classList.contains('show'))return;
   e.preventDefault();
   const b=bikes.find(x=>x.uid===selectedUid);if(!b)return;
-  if(b.source==='thansen'){toast('Synced bikes can’t be deleted — remove from display instead.');return;}
   if(!kbdDelArm){
     kbdDelArm=true;
     toast('Press Delete again to permanently remove “'+b.name+'”.');
@@ -1252,8 +1251,9 @@ function openEditor(b){
   document.getElementById('f-synced-note').style.display = synced ? '' : 'none';
   // Thansen-owned fields are read-only for synced bikes
   [F.name, F.price, F.frame].forEach(el => { el.readOnly = synced; el.style.opacity = synced?0.6:1; });
-  // deleting a synced bike is pointless (re-imported) — hide Delete, rely on Hide
-  delBtn.style.display = (b && !synced) ? '' : 'none';
+  // Delete is available for any existing bike (incl. synced — note a still-listed
+  // Thansen bike will reappear on the next import; use Hide to suppress permanently).
+  delBtn.style.display = b ? '' : 'none';
   itemsBox.innerHTML='';
   if(b&&Array.isArray(b.items))b.items.forEach(it=>addItemRow(it.name,it.price));
   F.err.textContent='';
