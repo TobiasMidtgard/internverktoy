@@ -165,7 +165,7 @@
 
   /* ---------- Fullscreen barcode ---------- */
   #overlay{
-    position:fixed;inset:0;z-index:100;display:none;
+    position:fixed;inset:0;z-index:125;display:none;
     background:rgba(8,10,13,.94);backdrop-filter:blur(6px);
     flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:24px;
   }
@@ -1100,7 +1100,12 @@ overlay.addEventListener('pointerup',e=>{
   const movedFar=Math.abs(e.clientX-ovDX)>10||Math.abs(e.clientY-ovDY)>10;
   if(!movedFar && ovDownOnBackdrop && e.target===overlay) overlay.classList.remove('show');
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape')overlay.classList.remove('show');});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape' && overlay.classList.contains('show')){
+    overlay.classList.remove('show');
+    e.stopImmediatePropagation(); // closing the fullscreen barcode must NOT also close an underlying detail modal
+  }
+});
 
 /* ---------------- Bike detail modal (double-click) ---------------- */
 const detailModal=document.getElementById('detailModal');
@@ -1128,15 +1133,19 @@ function openDetail(b){
       ${detailSpecsHtml(b.specs)}
       ${b.desc?`<div class="detail-desc">${esc(b.desc)}</div>`:''}
       ${itemsHtml(b.items)}
-      ${b.frame?`<div class="detail-frame">FRAME · ${esc(b.frame)}</div>`:''}
+      ${b.frame?`<div class="barcode-box" data-d-bc><svg class="d-bc-svg"></svg><div class="barcode-label">FRAME · ${esc(b.frame)}</div></div>`:''}
       <div class="detail-actions">
-        ${b.frame?`<button class="btn" data-d-barcode>▦ Barcode</button>`:''}
+        ${b.source_url?`<a class="btn" href="${esc(b.source_url)}" target="_blank" rel="noopener">↗ Open on Thansen</a>`:''}
         ${b.source_url?`<button class="btn" data-d-parts>🔧 Spare parts</button>`:''}
         ${isEditing()?`<button class="btn" data-d-edit>✎ Edit</button>`:''}
       </div>
     </div>`;
   const cur=()=>bikes.find(x=>x.uid===b.uid)||b;
-  const bd=detailModal.querySelector('[data-d-barcode]'); if(bd) bd.onclick=()=>{closeDetail();openFullscreen(cur());};
+  if(b.frame){
+    JsBarcode(detailModal.querySelector('.d-bc-svg'), b.frame, {format:"CODE128",lineColor:"#111",width:2,height:60,displayValue:false,margin:0});
+    const bcBox=detailModal.querySelector('[data-d-bc]');
+    if(bcBox) bcBox.onclick=()=>openFullscreen(cur()); // fullscreen opens ABOVE the modal; closing it returns here
+  }
   const pp=detailModal.querySelector('[data-d-parts]');   if(pp) pp.onclick=()=>{closeDetail();openPartsPanel(cur());};
   const ed=detailModal.querySelector('[data-d-edit]');    if(ed) ed.onclick=()=>{closeDetail();openEditor(cur());};
   detailModal.classList.add('show');
