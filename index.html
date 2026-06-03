@@ -139,7 +139,7 @@
   .parts-btn .parts-icon{font-size:16px;line-height:1;}
   .parts-btn .parts-label{flex:1;}
   .parts-btn .parts-arrow{font-size:10px;opacity:.6;}
-  .card-img{width:100%;height:130px;object-fit:cover;background:#fff;border-bottom:1px solid var(--line);display:block;}
+  .card-img{width:100%;height:130px;object-fit:cover;background:#fff;border-bottom:1px solid var(--line);display:block;-webkit-user-drag:none;user-select:none;}
   /* hidden/discontinued: gone in public view, dimmed in edit mode */
   /* off-display / hidden / discontinued bikes live in the Bikes menu, not on the canvas */
   .card.is-hidden{display:none;}
@@ -364,6 +364,28 @@
   .status-toggle button.active{background:var(--accent-2);color:#06231f;}
   .status-toggle button:first-child{border-right:1px solid var(--line);}
 
+  /* ---------- Bike detail modal (double-click) ---------- */
+  #detailModal{position:fixed;inset:0;z-index:115;display:none;align-items:center;justify-content:center;padding:18px;
+    background:rgba(8,10,13,.7);backdrop-filter:blur(6px);}
+  #detailModal.show{display:flex;animation:fade .18s ease;}
+  .detail-card{position:relative;background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line);
+    border-radius:16px;box-shadow:var(--shadow);width:min(440px,94vw);max-height:90vh;overflow:auto;}
+  .detail-close{position:absolute;top:10px;right:10px;z-index:2;background:rgba(0,0,0,.45);border:1px solid var(--line);
+    color:var(--ink);width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:16px;
+    display:flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;}
+  .detail-close:hover{border-color:var(--danger);color:var(--danger);}
+  .detail-img{width:100%;height:210px;object-fit:cover;background:#fff;display:block;border-radius:16px 16px 0 0;-webkit-user-drag:none;}
+  .detail-pad{padding:18px 20px 20px;display:flex;flex-direction:column;gap:13px;}
+  .detail-title{font-size:20px;font-weight:700;line-height:1.2;padding-right:34px;}
+  .detail-price{font-size:26px;font-weight:700;color:var(--accent);font-family:"IBM Plex Mono",monospace;}
+  .detail-specs{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:13px;margin:0;}
+  .detail-specs dt{color:var(--muted);}
+  .detail-specs dd{color:var(--ink);text-align:right;margin:0;}
+  .detail-desc{font-size:13px;line-height:1.55;color:var(--muted);}
+  .detail-frame{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted);letter-spacing:.5px;}
+  .detail-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:2px;}
+  .detail-actions .btn{flex:1 1 130px;justify-content:center;text-align:center;min-height:44px;}
+
   @media (max-width:640px){
     .logo span{display:none;}
     header{flex-wrap:wrap;gap:8px;padding:10px 12px;}
@@ -403,7 +425,7 @@
   <div id="canvas"></div>
 </div>
 
-<div class="hint">Drag to pan · double-tap a card to zoom · tap a barcode to enlarge · 🔒 unlock to edit</div>
+<div class="hint">Drag to pan · double-tap a card for details · tap a barcode to enlarge · 🔒 unlock to edit</div>
 
 <div id="overlay">
   <div class="fs-name" id="fsName"></div>
@@ -492,6 +514,13 @@
     </div>
     <div class="parts-list" id="partsList"></div>
     <div class="parts-footer"><a id="partsLink" href="#" target="_blank" rel="noopener">Vis alle reservedeler hos Thansen →</a></div>
+  </div>
+</div>
+
+<div id="detailModal">
+  <div class="detail-card">
+    <button class="detail-close" id="detailClose" title="Close">✕</button>
+    <div id="detailBody"></div>
   </div>
 </div>
 
@@ -613,7 +642,7 @@ function makeCard(b){
               + (b.outlet?'<span class="badge flag">Outlet</span>':'')
               + (b.discontinued?'<span class="badge flag">Discontinued</span>':'');
   el.innerHTML=`
-    ${b.image_url?`<img class="card-img" src="${esc(b.image_url)}" alt="" loading="lazy" onerror="this.remove()">`:''}
+    ${b.image_url?`<img class="card-img" src="${esc(b.image_url)}" alt="" loading="lazy" draggable="false" onerror="this.remove()">`:''}
     <div class="card-head">
       <div class="grip"><i></i><i></i><i></i></div>
       <div class="card-title">${esc(b.name)}</div>
@@ -912,11 +941,11 @@ function onDown(e){
   const onControl=e.target.closest('[data-bc]')||e.target.closest('[data-edit]')
     ||e.target.closest('[data-remove]')||e.target.closest('[data-parts]');
   if(card && !onControl){
-    // double-tap / double-click to zoom (works locked or unlocked)
+    // double-tap / double-click opens the bike detail modal (works locked or unlocked)
     const now=Date.now();
     if(card.dataset.uid===lastTapId && now-lastTapTime<320){
       const b=bikes.find(x=>x.uid===card.dataset.uid);
-      if(b)focusCard(b,true);
+      if(b)openDetail(b);
       lastTapTime=0;lastTapId=null;
       return; // skip starting a drag/pan on the second tap
     }
@@ -1072,6 +1101,54 @@ overlay.addEventListener('pointerup',e=>{
   if(!movedFar && ovDownOnBackdrop && e.target===overlay) overlay.classList.remove('show');
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape')overlay.classList.remove('show');});
+
+/* ---------------- Bike detail modal (double-click) ---------------- */
+const detailModal=document.getElementById('detailModal');
+const SPEC_LABELS={model:'Model',type:'Type',gears:'Gears',gear_brand:'Gear set',wheel_size:'Wheel',
+  brake_front:'Front brake',brake_rear:'Rear brake',tyre:'Tyre',weight_kg:'Weight (kg)',
+  warranty:'Frame',motor:'Motor',battery:'Battery',range_km:'Range',color_name:'Colour'};
+function detailSpecsHtml(specs){
+  if(!specs) return '';
+  const rows=Object.entries(SPEC_LABELS).filter(([k])=>specs[k])
+    .map(([k,label])=>`<dt>${esc(label)}</dt><dd>${esc(specs[k])}</dd>`).join('');
+  return rows?`<dl class="detail-specs">${rows}</dl>`:'';
+}
+function openDetail(b){
+  const avail = b.availability==='InStock' ? '<span class="badge instock">In stock</span>'
+              : b.availability==='OutOfStock' ? '<span class="badge oos">Out of stock</span>' : '';
+  const flags = (b.source==='thansen'?'<span class="badge synced">⟳ Thansen</span>':'')
+              + (b.outlet?'<span class="badge flag">Outlet</span>':'')
+              + (b.discontinued?'<span class="badge flag">Discontinued</span>':'');
+  document.getElementById('detailBody').innerHTML=`
+    ${b.image_url?`<img class="detail-img" src="${esc(b.image_url)}" alt="" draggable="false" onerror="this.remove()">`:''}
+    <div class="detail-pad">
+      <div class="detail-title">${esc(b.name)}</div>
+      <div class="detail-price">${nok(b.price)}</div>
+      <div class="badges">${flags}${avail}</div>
+      ${detailSpecsHtml(b.specs)}
+      ${b.desc?`<div class="detail-desc">${esc(b.desc)}</div>`:''}
+      ${itemsHtml(b.items)}
+      ${b.frame?`<div class="detail-frame">FRAME · ${esc(b.frame)}</div>`:''}
+      <div class="detail-actions">
+        ${b.frame?`<button class="btn" data-d-barcode>▦ Barcode</button>`:''}
+        ${b.source_url?`<button class="btn" data-d-parts>🔧 Spare parts</button>`:''}
+        ${isEditing()?`<button class="btn" data-d-edit>✎ Edit</button>`:''}
+      </div>
+    </div>`;
+  const cur=()=>bikes.find(x=>x.uid===b.uid)||b;
+  const bd=detailModal.querySelector('[data-d-barcode]'); if(bd) bd.onclick=()=>{closeDetail();openFullscreen(cur());};
+  const pp=detailModal.querySelector('[data-d-parts]');   if(pp) pp.onclick=()=>{closeDetail();openPartsPanel(cur());};
+  const ed=detailModal.querySelector('[data-d-edit]');    if(ed) ed.onclick=()=>{closeDetail();openEditor(cur());};
+  detailModal.classList.add('show');
+}
+function closeDetail(){detailModal.classList.remove('show');}
+document.getElementById('detailClose').onclick=closeDetail;
+let dmDX=0,dmDY=0,dmDown=false;
+detailModal.addEventListener('pointerdown',e=>{dmDX=e.clientX;dmDY=e.clientY;dmDown=(e.target===detailModal);});
+detailModal.addEventListener('pointerup',e=>{
+  if(Math.abs(e.clientX-dmDX)<10&&Math.abs(e.clientY-dmDY)<10&&dmDown&&e.target===detailModal)closeDetail();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&detailModal.classList.contains('show'))closeDetail();});
 
 /* ---------------- Spare-parts panel ---------------- */
 const partsPanel   = document.getElementById('partsPanel');
