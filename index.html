@@ -444,7 +444,7 @@
       <input type="checkbox" id="f-hidden" style="width:auto;"> Skjul (outlet / utgått)
     </label>
     <div class="field" id="f-synced-note" style="display:none;font-size:12px;color:var(--muted);">
-      Synced from Thansen — name, price, availability &amp; barcode update automatically.
+      Synced from Thansen — name, price &amp; availability update automatically. Frame number is yours to edit.
     </div>
     <div class="err" id="f-err"></div>
     <div class="editor-actions">
@@ -1249,8 +1249,9 @@ function openEditor(b){
   const synced = !!(b && b.source==='thansen');
   document.getElementById('f-hidden').checked = !!(b && b.hidden);
   document.getElementById('f-synced-note').style.display = synced ? '' : 'none';
-  // Thansen-owned fields are read-only for synced bikes
-  [F.name, F.price, F.frame].forEach(el => { el.readOnly = synced; el.style.opacity = synced?0.6:1; });
+  // Thansen-owned fields are read-only for synced bikes; frame (serial) is always editable
+  [F.name, F.price].forEach(el => { el.readOnly = synced; el.style.opacity = synced?0.6:1; });
+  F.frame.readOnly = false; F.frame.style.opacity = 1;
   // Delete is available for any existing bike (incl. synced — note a still-listed
   // Thansen bike will reappear on the next import; use Hide to suppress permanently).
   delBtn.style.display = b ? '' : 'none';
