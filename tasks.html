@@ -241,8 +241,11 @@ function stableOrder(a,b){
 window.onload = function () {
   buildColorGrid();
   refreshAdminUI();
-  loadAll();
-  setInterval(() => { recalculateAlerts(); renderAlertsList(); renderStats(); }, 30000);
+  if (T.sb) T.sb.rpc('rollover_recurring').catch(()=>{}).then(()=>loadAll()); else loadAll();
+  setInterval(async () => {
+    try { const { data } = await T.sb.rpc('rollover_recurring'); if (data) await loadAll(); } catch(e){}
+    recalculateAlerts(); renderAlertsList(); renderStats();
+  }, 60000);
   if (T.sb) {
     T.sb.channel('board-rt')
       .on('postgres_changes',{event:'*',schema:'public',table:'tasks'}, loadAll)
@@ -515,7 +518,12 @@ function renderWeeklyPlannerView(){
     col.addEventListener('dragover',e=>{ e.preventDefault(); col.classList.add('border-thansen-500'); });
     col.addEventListener('dragleave',()=>col.classList.remove('border-thansen-500'));
     col.addEventListener('drop',e=>{ col.classList.remove('border-thansen-500'); const d=e.dataTransfer.getData('text/plain'); if(d.startsWith('task:')) rescheduleTaskToWeekday(d.slice(5), idx); });
-    const dt=state.tasks.filter(t=>{ if(!t.due||t.status==='done') return false; const x=new Date(t.due); const di=x.getDay()===0?6:x.getDay()-1; return di===idx; });
+    const dt=state.tasks.filter(t=>{
+      if(t.status==='done') return false;
+      if(t.frequency==='daily') return true;                 // daglige vises hver dag
+      if(!t.due) return false;
+      const x=new Date(t.due); const di=x.getDay()===0?6:x.getDay()-1; return di===idx;
+    });
     col.innerHTML=`<div class="flex items-center justify-between mb-3 shrink-0 pb-2 border-b border-slate-100 dark:border-slate-900"><div class="flex flex-col"><span class="text-xs font-bold ${today?'text-thansen-500 dark:text-thansen-yellow':'text-slate-700 dark:text-slate-300'}">${dn}</span><span class="text-[9px] text-slate-400 font-semibold">${today?'I dag':'Vaktplan'}</span></div><span class="text-xs font-bold bg-slate-100 dark:bg-slate-900 text-slate-500 px-2 py-0.5 rounded-lg">${dt.length}</span></div>
       <div class="flex-1 overflow-y-auto space-y-3 pb-2" id="weekly-day-${idx}"></div>
       <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-900 space-y-2" id="weekly-notes-${idx}"></div>
@@ -573,10 +581,9 @@ function triggerEditFromDetail(){ const id=currentTaskId; closeTaskDetailModal()
 /* ---------- mutations ---------- */
 async function moveTaskStatus(taskId, target){
   try{
-    const {data,error}=await T.sb.rpc('set_status',{p_id:taskId,p_status:target}); if(error) throw error;
-    const nt=Array.isArray(data)?data[0]:data; await loadAll();
-    if(target==='done' && nt && nt.recur_unit!=='none' && nt.due_at) showToast('Rutine fullført — neste: '+formatCardDate(nt.due_at),'#10b981');
-    else showToast('Status oppdatert','#004595');
+    const {error}=await T.sb.rpc('set_status',{p_id:taskId,p_status:target}); if(error) throw error;
+    await loadAll();
+    showToast(target==='done' ? 'Fullført ✓' : 'Status oppdatert', target==='done' ? '#10b981' : '#004595');
   }catch(e){ showToast('Feil: '+e.message,'#e30613'); loadAll(); }
 }
 async function appendAssigneeToTask(taskId, tag){
