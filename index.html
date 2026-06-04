@@ -88,13 +88,13 @@
   const T = window.THelper;
   const btn = document.getElementById('adminBtn');
   function paint(){
-    const admin = !!T.getPass();
-    btn.classList.toggle('on', admin);
-    btn.innerHTML = admin ? '🔓 Admin · <span class="lo">Logg ut</span>' : '🔒 Logg inn som admin';
+    const u = T.getUser();
+    btn.classList.toggle('on', !!u);
+    btn.innerHTML = u ? `🔓 ${T.esc(u.tag)} · <span class="lo">Logg ut</span>` : '🔒 Logg inn';
   }
   btn.addEventListener('click', async () => {
-    if (T.getPass()) { T.clearPass(); paint(); T.toast('Logget ut'); }
-    else { const p = await T.ensurePass(); if (p) { paint(); T.toast('Logget inn som admin'); } }
+    if (T.getUser()) { T.clearSession(); paint(); T.toast('Logget ut'); }
+    else { const u = await T.ensureUser(); if (u) { paint(); T.toast('Logget inn som '+(u.name||u.tag)); } }
   });
   paint();
 </script>

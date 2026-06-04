@@ -81,7 +81,7 @@
             <i class="fa-solid fa-plus text-[10px]"></i><span>Ny ansatt</span>
           </button>
         </div>
-        <div id="coworkers-list" class="space-y-2 overflow-y-auto max-h-[280px] pr-1"></div>
+        <div id="coworkers-list" class="space-y-2 pr-1"></div>
         <div class="mt-6 bg-slate-50 dark:bg-slate-900/60 rounded-xl p-4 border border-slate-200/60 dark:border-slate-800/60 text-xs">
           <p class="font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center"><i class="fa-solid fa-circle-info text-thansen-500 mr-1.5"></i> Endre Oppgaveansvar</p>
           <p class="text-slate-500 leading-relaxed mb-2"><strong>Tildel:</strong> Dra en ansatt og slipp på en oppgave (krever admin).</p>
@@ -204,6 +204,12 @@
           <option value="BCT">BCT</option>
           <option value="Butikksjef">Butikksjef</option>
         </select></div>
+      <div id="coworker-role-wrap" class="hidden"><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tilgangsnivå <span class="text-thansen-yellow">(kun IT)</span></label>
+        <select id="coworker-role" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-thansen-500 focus:outline-none">
+          <option value="coworker">Medarbeider</option>
+          <option value="manager">Butikksjef</option>
+          <option value="dev">IT / Dev</option>
+        </select></div>
       <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fargetema</label><div class="grid grid-cols-6 gap-2" id="color-grid"></div><input type="hidden" id="coworker-color" value="#004595"></div>
       <div class="pt-2 flex items-center justify-end space-x-2"><button type="button" onclick="closeCoworkerModal()" class="px-4 py-2 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 font-medium rounded-xl">Avbryt</button><button type="submit" class="px-4 py-2 text-xs bg-thansen-500 hover:bg-thansen-600 text-white font-bold rounded-xl shadow-md">Registrer</button></div>
     </form>
@@ -219,8 +225,8 @@
 <script src="shared.js"></script>
 <script>
 const T = window.THelper;
-let isAdmin = false;
-let state = { activeViewTab:'board', coworkers:[], tasks:[], alerts:[] };
+let isAdmin = false, isDev = false, me = null;
+let state = { activeViewTab:'board', coworkers:[], tasks:[], alerts:[], notes:[] };
 const F2U = { once:'none', daily:'day', weekly:'week', monthly:'month' };
 const U2F = { none:'once', day:'daily', week:'weekly', month:'monthly', hour:'daily' };
 const PALETTE = ['#004595','#e30613','#10b981','#f59e0b','#3b82f6','#ec4899'];
@@ -240,20 +246,25 @@ window.onload = function () {
   if (T.sb) {
     T.sb.channel('board-rt')
       .on('postgres_changes',{event:'*',schema:'public',table:'tasks'}, loadAll)
-      .on('postgres_changes',{event:'*',schema:'public',table:'coworkers'}, loadAll)
+      .on('postgres_changes',{event:'*',schema:'public',table:'planner_notes'}, loadAll)
       .subscribe();
   }
 };
 
 async function loadAll(){
   if(!T.sb){ showToast('Supabase utilgjengelig','#e30613'); return; }
-  const [cw, tk] = await Promise.all([ T.sb.from('coworkers').select('*'), T.sb.from('tasks').select('*') ]);
+  const [cw, tk, nt] = await Promise.all([
+    T.sb.from('coworkers_public').select('*'),
+    T.sb.from('tasks').select('*'),
+    T.sb.from('planner_notes').select('*')
+  ]);
   if(cw.error || tk.error){
     const msg=(cw.error||tk.error).message||'';
-    if(/relation|does not exist|column|schema cache/i.test(msg)) showToast('Kjør migreringen tasks_v5.sql','#e30613');
+    if(/relation|does not exist|column|schema cache/i.test(msg)) showToast('Kjør migreringen tasks_v7.sql','#e30613');
     else showToast('Lastefeil: '+msg,'#e30613');
     return;
   }
+  state.notes = (nt && !nt.error && nt.data) ? nt.data : [];
   state.coworkers = (cw.data||[]).sort((a,b)=>a.tag.localeCompare(b.tag));
   state.tasks = (tk.data||[]).map(r=>({
     id:r.id, title:r.title||'', desc:r.notes||'', assignees:r.assignees||[],
@@ -264,18 +275,20 @@ async function loadAll(){
 }
 
 /* ---------- admin / theme ---------- */
+function roleLabel(r){ return r==='dev'?'IT / Dev':r==='manager'?'Butikksjef':'Medarbeider'; }
 function refreshAdminUI(){
-  isAdmin = !!T.getPass();
-  document.getElementById('lockBtn').innerHTML = `<i class="fa-solid ${isAdmin?'fa-lock-open':'fa-lock'} text-lg"></i>`;
-  document.getElementById('lockBtn').title = isAdmin ? 'Logg ut' : 'Logg inn som admin';
-  document.getElementById('admin-state').textContent = isAdmin ? '🔓 Butikksjef' : '👁 Visning';
+  me = T.getUser(); isAdmin = T.canManage(); isDev = T.isDev();
+  const lock=document.getElementById('lockBtn');
+  lock.innerHTML = `<i class="fa-solid ${me?'fa-right-from-bracket':'fa-right-to-bracket'} text-lg"></i>`;
+  lock.title = me ? 'Logg ut' : 'Logg inn';
+  document.getElementById('admin-state').textContent = me ? `${me.tag} · ${roleLabel(me.role)}` : 'Ikke innlogget';
   document.getElementById('add-task-global-btn').classList.toggle('hidden', !isAdmin);
   document.getElementById('add-coworker-btn').classList.toggle('hidden', !isAdmin);
   renderScheduler(); renderCoworkerList();
 }
 async function toggleAdmin(){
-  if(T.getPass()){ T.clearPass(); refreshAdminUI(); showToast('Logget ut','#64748b'); }
-  else { const p = await T.ensurePass(); if(p){ refreshAdminUI(); showToast('Logget inn som Butikksjef','#004595'); } }
+  if(T.getUser()){ T.clearSession(); refreshAdminUI(); showToast('Logget ut','#64748b'); }
+  else { const u = await T.ensureUser(); if(u){ refreshAdminUI(); showToast('Logget inn som '+(u.name||u.tag),'#004595'); } }
 }
 function toggleMobileSidebar(){ document.getElementById('workspace-sidebar').classList.toggle('-translate-x-full'); }
 function toggleAlertsPanel(){ document.getElementById('alerts-panel').classList.toggle('translate-x-full'); }
@@ -324,6 +337,7 @@ function openCoworkerModal(tag){
   editingCoworkerTag = (typeof tag==='string') ? tag : null;
   document.getElementById('coworker-form').reset();
   const tagInput=document.getElementById('coworker-tag');
+  const roleWrap=document.getElementById('coworker-role-wrap');
   if(editingCoworkerTag){
     const c=state.coworkers.find(x=>x.tag===editingCoworkerTag); if(!c) return;
     document.getElementById('coworker-modal-title').innerHTML='<i class="fa-solid fa-user-pen text-thansen-500"></i> <span>Rediger Profil</span>';
@@ -331,10 +345,13 @@ function openCoworkerModal(tag){
     tagInput.value=c.tag; tagInput.disabled=true;
     document.getElementById('coworker-color').value=c.color;
     document.getElementById('coworker-title').value=c.title||'Butikkmedarbeider';
+    if(isDev){ roleWrap.classList.remove('hidden'); document.getElementById('coworker-role').value=c.role||'coworker'; }
+    else roleWrap.classList.add('hidden');
   } else {
     document.getElementById('coworker-modal-title').innerHTML='<i class="fa-solid fa-user-plus text-thansen-500"></i> <span>Registrer Ansatt</span>';
     tagInput.disabled=false;
     document.getElementById('coworker-color').value='#004595';
+    roleWrap.classList.add('hidden');
   }
   document.getElementById('coworker-modal').classList.remove('hidden');
 }
@@ -353,23 +370,25 @@ async function handleCoworkerSubmit(e){
   const color=document.getElementById('coworker-color').value;
   const title=document.getElementById('coworker-title').value;
   if(tag.length!==4){ showToast('Koden må være nøyaktig 4 tegn.','#e30613'); return; }
+  const roleSel=document.getElementById('coworker-role');
   try{
     if(editingCoworkerTag){
-      await T.rpc('update_coworker',{p_tag:tag,p_name:name,p_color:color,p_title:title});
+      await T.rpcAuth('update_coworker',{p_tag:tag,p_name:name,p_color:color,p_title:title});
+      if(isDev && roleSel){ try{ await T.rpcAuth('set_role',{p_target:tag,p_role:roleSel.value}); }catch(e){} }
       showToast(`${tag} oppdatert`,color);
     } else {
       if(state.coworkers.some(c=>c.tag===tag)){ showToast('Koden finnes allerede.','#e30613'); return; }
-      await T.rpc('add_coworker',{p_tag:tag,p_name:name,p_color:color,p_title:title});
+      await T.rpcAuth('add_coworker',{p_tag:tag,p_name:name,p_color:color,p_title:title});
       showToast(`Ansatt ${tag} registrert!`,color);
     }
     closeCoworkerModal(); await loadAll();
-  }catch(err){ if(err.message!=='no-pass') showToast('Feil: '+err.message,'#e30613'); }
+  }catch(err){ if(err.message!=='no-auth') showToast('Feil: '+err.message,'#e30613'); }
 }
 async function deleteCoworker(tag){
   if(!isAdmin) return;
   if(!confirm('Fjerne ansatt '+tag+' fra registeret?')) return;
-  try{ await T.rpc('delete_coworker',{p_tag:tag}); await loadAll(); showToast('Ansatt fjernet','#e30613'); }
-  catch(e){ if(e.message!=='no-pass') showToast('Feil: '+e.message,'#e30613'); }
+  try{ await T.rpcAuth('delete_coworker',{p_tag:tag}); await loadAll(); showToast('Ansatt fjernet','#e30613'); }
+  catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
 }
 
 /* ---------- view tabs ---------- */
@@ -497,12 +516,33 @@ function renderWeeklyPlannerView(){
     col.addEventListener('dragleave',()=>col.classList.remove('border-thansen-500'));
     col.addEventListener('drop',e=>{ col.classList.remove('border-thansen-500'); const d=e.dataTransfer.getData('text/plain'); if(d.startsWith('task:')) rescheduleTaskToWeekday(d.slice(5), idx); });
     const dt=state.tasks.filter(t=>{ if(!t.due||t.status==='done') return false; const x=new Date(t.due); const di=x.getDay()===0?6:x.getDay()-1; return di===idx; });
-    col.innerHTML=`<div class="flex items-center justify-between mb-3 shrink-0 pb-2 border-b border-slate-100 dark:border-slate-900"><div class="flex flex-col"><span class="text-xs font-bold ${today?'text-thansen-500 dark:text-thansen-yellow':'text-slate-700 dark:text-slate-300'}">${dn}</span><span class="text-[9px] text-slate-400 font-semibold">${today?'I dag':'Vaktplan'}</span></div><span class="text-xs font-bold bg-slate-100 dark:bg-slate-900 text-slate-500 px-2 py-0.5 rounded-lg">${dt.length}</span></div><div class="flex-1 overflow-y-auto space-y-3 pb-2" id="weekly-day-${idx}"></div>`;
+    col.innerHTML=`<div class="flex items-center justify-between mb-3 shrink-0 pb-2 border-b border-slate-100 dark:border-slate-900"><div class="flex flex-col"><span class="text-xs font-bold ${today?'text-thansen-500 dark:text-thansen-yellow':'text-slate-700 dark:text-slate-300'}">${dn}</span><span class="text-[9px] text-slate-400 font-semibold">${today?'I dag':'Vaktplan'}</span></div><span class="text-xs font-bold bg-slate-100 dark:bg-slate-900 text-slate-500 px-2 py-0.5 rounded-lg">${dt.length}</span></div>
+      <div class="flex-1 overflow-y-auto space-y-3 pb-2" id="weekly-day-${idx}"></div>
+      <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-900 space-y-2" id="weekly-notes-${idx}"></div>
+      <button onclick="addPlannerNote(${idx})" class="mt-2 w-full text-[10px] font-bold text-thansen-500 dark:text-thansen-yellow border border-dashed border-slate-300 dark:border-slate-700 rounded-lg py-1.5 hover:bg-thansen-500/5"><i class="fa-solid fa-note-sticky mr-1"></i>Legg igjen notat</button>`;
     w.appendChild(col);
     const cl=document.getElementById(`weekly-day-${idx}`);
     if(!dt.length) cl.innerHTML=`<div class="h-16 border-2 border-dashed border-slate-200/50 dark:border-slate-800/50 rounded-xl flex items-center justify-center text-slate-400 text-[10px]"><span>Ingen oppgaver</span></div>`;
     else dt.forEach(t=>cl.appendChild(createTaskCard(t,true)));
+    const nl=document.getElementById(`weekly-notes-${idx}`);
+    state.notes.filter(n=>n.weekday===idx).forEach(n=>{
+      const canDel = me && (n.author===me.tag || isAdmin);
+      const el=document.createElement('div'); el.className='rounded-lg p-2 text-[11px] leading-snug relative';
+      el.style.background=(n.color||'#ffd400')+'1f'; el.style.borderLeft=`3px solid ${n.color||'#ffd400'}`;
+      el.innerHTML=`<div class="text-slate-700 dark:text-slate-200 pr-4 whitespace-pre-wrap">${esc(n.body)}</div><div class="text-[9px] text-slate-400 mt-1">${esc(n.author||'')}</div>${canDel?`<button onclick="deletePlannerNote('${n.id}')" class="absolute top-1 right-1 text-slate-400 hover:text-thansen-red text-[10px]">✕</button>`:''}`;
+      nl.appendChild(el);
+    });
   });
+}
+async function addPlannerNote(weekday){
+  const body = prompt('Notat for '+['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag','Søndag'][weekday]+':');
+  if(!body || !body.trim()) return;
+  try{ await T.rpcAuth('add_planner_note',{p_weekday:weekday,p_body:body.trim(),p_color:'#ffd400'}); await loadAll(); showToast('Notat lagt til','#10b981'); }
+  catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
+}
+async function deletePlannerNote(id){
+  try{ await T.rpcAuth('delete_planner_note',{p_id:id}); await loadAll(); showToast('Notat slettet','#e30613'); }
+  catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
 }
 
 /* ---------- detail modal ---------- */
@@ -543,14 +583,14 @@ async function appendAssigneeToTask(taskId, tag){
   if(!isAdmin){ showToast('Kun Butikksjef kan tildele.','#e30613'); return; }
   const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
   if(t.assignees.includes(tag)){ showToast(`${tag} er allerede tildelt.`,'#f59e0b'); return; }
-  try{ await T.rpc('set_assignees',{p_id:taskId,p_assignees:[...t.assignees,tag]}); await loadAll(); showToast(`Tildelte ${tag}`,'#004595'); }
-  catch(e){ if(e.message!=='no-pass') showToast('Feil: '+e.message,'#e30613'); }
+  try{ await T.rpcAuth('set_assignees',{p_id:taskId,p_assignees:[...t.assignees,tag]}); await loadAll(); showToast(`Tildelte ${tag}`,'#004595'); }
+  catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
 }
 async function removeAssigneeFromTask(taskId, tag){
   if(!isAdmin){ showToast('Kun Butikksjef kan endre ansvar.','#e30613'); return; }
   const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
-  try{ await T.rpc('set_assignees',{p_id:taskId,p_assignees:t.assignees.filter(a=>a!==tag)}); await loadAll(); showToast(`Fjernet ${tag}`,'#e30613'); }
-  catch(e){ if(e.message!=='no-pass') showToast('Feil: '+e.message,'#e30613'); }
+  try{ await T.rpcAuth('set_assignees',{p_id:taskId,p_assignees:t.assignees.filter(a=>a!==tag)}); await loadAll(); showToast(`Fjernet ${tag}`,'#e30613'); }
+  catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
 }
 async function rescheduleTaskToWeekday(taskId, dayIndex){
   if(!isAdmin){ showToast('Kun Butikksjef kan flytte vakter.','#e30613'); return; }
@@ -558,8 +598,8 @@ async function rescheduleTaskToWeekday(taskId, dayIndex){
   const today=new Date(); const cur=today.getDay()===0?6:today.getDay()-1;
   const target=new Date(); target.setDate(today.getDate()+(dayIndex-cur));
   const o=t.due?new Date(t.due):new Date(); target.setHours(o.getHours(),o.getMinutes(),0,0);
-  try{ await T.rpc('update_task',{p_id:taskId,p_task:{due_at:target.toISOString()}}); await loadAll(); const days=['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag','Søndag']; showToast('Flyttet til '+days[dayIndex],'#10b981'); }
-  catch(e){ if(e.message!=='no-pass') showToast('Feil: '+e.message,'#e30613'); }
+  try{ await T.rpcAuth('update_task',{p_id:taskId,p_task:{due_at:target.toISOString()}}); await loadAll(); const days=['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag','Søndag']; showToast('Flyttet til '+days[dayIndex],'#10b981'); }
+  catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
 }
 
 /* ---------- create / edit ---------- */
@@ -601,16 +641,16 @@ async function handleTaskSubmit(e){
     assignees:sel, recur_unit:F2U[document.getElementById('task-frequency').value], recur_n:1,
     due_at:due?new Date(due).toISOString():null, status:document.getElementById('task-status').value, priority:document.getElementById('task-priority').value };
   try{
-    if(id) await T.rpc('update_task',{p_id:id,p_task:payload}); else await T.rpc('add_task',{p_task:payload});
+    if(id) await T.rpcAuth('update_task',{p_id:id,p_task:payload}); else await T.rpcAuth('add_task',{p_task:payload});
     closeTaskModal(); await loadAll(); showToast(id?'Oppgave oppdatert!':'Ny oppgave opprettet!','#004595');
-  }catch(err){ if(err.message!=='no-pass') showToast('Feil: '+err.message,'#e30613'); }
+  }catch(err){ if(err.message!=='no-auth') showToast('Feil: '+err.message,'#e30613'); }
 }
 async function deleteTask(taskId){
   if(!isAdmin){ showToast('Kun Butikksjef kan slette.','#e30613'); return; }
   const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
   if(!confirm(`Slette oppgaven "${t.title}" permanent?`)) return;
-  try{ await T.rpc('delete_task',{p_id:taskId}); await loadAll(); showToast('Oppgaven ble slettet','#e30613'); }
-  catch(e){ if(e.message!=='no-pass') showToast('Feil: '+e.message,'#e30613'); }
+  try{ await T.rpcAuth('delete_task',{p_id:taskId}); await loadAll(); showToast('Oppgaven ble slettet','#e30613'); }
+  catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
 }
 
 /* ---------- alerts ---------- */
