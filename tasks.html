@@ -24,7 +24,11 @@
   .hub{color:var(--muted);text-decoration:none;font-weight:600;opacity:.85;}
   .hub:hover{opacity:1;color:var(--text);}
   .brand{font-weight:800;letter-spacing:.13em;}
-  main{max-width:720px;margin:0 auto;padding:18px 16px 80px;}
+  .lock{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--text);
+    border-radius:10px;padding:6px 11px;cursor:pointer;font-size:15px;}
+  .lock:hover{border-color:var(--primary);}
+  .lock.on{border-color:var(--cta);}
+  main{max-width:720px;margin:0 auto;padding:18px 16px 96px;}
 
   input,select,textarea,button{font:inherit;}
   textarea,input[type=text],input[type=date]{background:var(--panel);color:var(--text);
@@ -35,17 +39,7 @@
     font-weight:700;font-size:15px;cursor:pointer;}
   .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text);}
 
-  .add{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:18px;
-    display:flex;flex-direction:column;gap:10px;}
-  .add .title-in{width:100%;}
-  .add .desc-in{min-height:46px;}
-  .add .foot{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;}
-  .due-wrap{display:flex;flex-direction:column;gap:4px;}
-  .due-wrap label{color:var(--muted);font-size:12px;}
-  .add .btn{margin-left:auto;}
-
   .recur{display:flex;flex-direction:column;gap:2px;}
-  .recur .rlabel{color:var(--muted);font-size:12px;}
   .recur .rlabel b{color:var(--primary);}
   .recur input[type=range]{width:100%;accent-color:var(--primary);margin:2px 0 0;}
   .ticks{display:flex;justify-content:space-between;}
@@ -66,6 +60,7 @@
   .check{appearance:none;width:22px;height:22px;border:2px solid var(--line);border-radius:7px;cursor:pointer;
     flex:0 0 auto;margin-top:2px;position:relative;background:var(--panel);}
   .check:hover{border-color:var(--cta);}
+  .check:disabled{cursor:default;opacity:.8;}
   .check:checked{background:var(--ok);border-color:var(--ok);}
   .check:checked::after{content:"✓";position:absolute;inset:0;color:#06210f;font-size:14px;
     display:flex;align-items:center;justify-content:center;font-weight:800;}
@@ -74,6 +69,7 @@
   .t-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
   .chip{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);}
   .chip.recur{border-color:#1f3a5c;color:#9ecbff;}
+  .chip.who{border-color:#2a4d33;color:#9be0b0;}
   .chip.over{border-color:var(--over);color:#ffb4b4;}
   .chip.today{border-color:var(--today);color:#ffd591;}
   .chip.soon{border-color:var(--soon);color:#aee5ff;}
@@ -83,8 +79,9 @@
   .empty{color:var(--muted);text-align:center;padding:36px 10px;}
 
   .t-desc{margin-top:8px;display:flex;flex-direction:column;gap:3px;}
-  .md-chk{display:flex;align-items:flex-start;gap:8px;font-size:14px;cursor:pointer;color:var(--text);}
+  .md-chk{display:flex;align-items:flex-start;gap:8px;font-size:14px;color:var(--text);}
   .md-chk input{margin:3px 0 0;width:16px;height:16px;accent-color:var(--ok);cursor:pointer;flex:0 0 auto;}
+  .md-chk input:disabled{cursor:default;}
   .md-chk.on span{text-decoration:line-through;color:var(--muted);}
   .md-li{font-size:14px;color:var(--text);}
   .md-li::before{content:"•";color:var(--muted);margin-right:6px;}
@@ -92,6 +89,12 @@
   .md-p{font-size:14px;color:var(--muted);word-break:break-word;}
   .md-sp{height:6px;}
   code{background:#0c1422;padding:0 4px;border-radius:4px;font-size:12px;}
+
+  .fab{position:fixed;right:20px;bottom:20px;width:56px;height:56px;border-radius:50%;background:var(--cta);
+    color:#fff;border:0;font-size:30px;line-height:1;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.5);
+    display:none;align-items:center;justify-content:center;z-index:40;}
+  .fab.show{display:flex;}
+  .fab:hover{filter:brightness(1.08);}
 
   .modal{position:fixed;inset:0;background:rgba(6,9,13,.62);display:none;align-items:center;justify-content:center;
     z-index:50;padding:16px;}
@@ -102,7 +105,7 @@
   .sheet .row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
   .sheet label{color:var(--muted);font-size:13px;}
   .sheet .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:6px;}
-  @media(max-width:520px){ .add .btn{margin-left:0;width:100%;} }
+  @media(max-width:520px){ }
 </style>
 </head>
 <body>
@@ -110,53 +113,41 @@
 <header>
   <a class="hub" href="index.html">‹ Hjem</a>
   <span class="brand">OPPGAVER</span>
+  <button class="lock" id="lockBtn" title="Logg inn som admin">🔒</button>
 </header>
 
 <main>
   <div class="banner" id="banner"></div>
-
-  <div class="add">
-    <input type="text" class="title-in" id="addTitle" placeholder="Legg til oppgave…" autocomplete="off">
-    <textarea class="desc-in" id="addDesc" placeholder="Beskrivelse (valgfritt) — bruk «- [ ] punkt» for avkrysning, «- » for kulepunkt, **fet**"></textarea>
-    <div class="recur">
-      <span class="rlabel">Gjentas: <b id="addRlabel">Aldri</b></span>
-      <input type="range" id="addSlider" min="0" max="4" step="1" value="0">
-      <div class="ticks" id="addTicks">
-        <span data-v="0">Aldri</span><span data-v="1">Månedlig</span><span data-v="2">Ukentlig</span><span data-v="3">Daglig</span><span data-v="4">Hver time</span>
-      </div>
-    </div>
-    <div class="foot">
-      <div class="due-wrap" id="addDueWrap">
-        <label id="addDueLbl">Forfaller (valgfritt)</label>
-        <input type="date" id="addDue">
-      </div>
-      <button class="btn" id="addBtn">Legg til</button>
-    </div>
-  </div>
-
   <div id="list"></div>
 </main>
 
-<div class="modal" id="editModal">
+<button class="fab" id="fab" title="Ny oppgave" aria-label="Ny oppgave">＋</button>
+
+<div class="modal" id="taskModal">
   <div class="sheet">
-    <h3>Rediger oppgave</h3>
-    <div class="row"><label>Tittel</label><input type="text" id="edTitle"></div>
+    <h3 id="mTitle">Ny oppgave</h3>
+    <div class="row"><label>Tittel</label><input type="text" id="mTitleIn" placeholder="Hva skal gjøres?"></div>
     <div class="row">
       <label>Beskrivelse</label>
-      <textarea id="edDesc" style="min-height:90px"></textarea>
+      <textarea id="mDesc" style="min-height:84px" placeholder="Valgfritt — «- [ ] punkt» for avkrysning"></textarea>
       <span class="hint">«- [ ] punkt» = avkrysning · «- » = kulepunkt · «# » = overskrift · **fet**</span>
     </div>
     <div class="row">
-      <label>Gjentas: <b id="edRlabel">Aldri</b></label>
-      <input type="range" id="edSlider" min="0" max="4" step="1" value="0">
-      <div class="ticks" id="edTicks">
+      <label>Tildelt kollega</label>
+      <input type="text" id="mAssignee" list="assigneeList" placeholder="Navn (valgfritt)" autocomplete="off">
+      <datalist id="assigneeList"></datalist>
+    </div>
+    <div class="row recur">
+      <label>Gjentas: <b id="mRlabel">Aldri</b></label>
+      <input type="range" id="mSlider" min="0" max="4" step="1" value="0">
+      <div class="ticks" id="mTicks">
         <span data-v="0">Aldri</span><span data-v="1">Månedlig</span><span data-v="2">Ukentlig</span><span data-v="3">Daglig</span><span data-v="4">Hver time</span>
       </div>
     </div>
-    <div class="row" id="edDueRow"><label>Forfallsdato</label><input type="date" id="edDue"></div>
+    <div class="row" id="mDueRow"><label id="mDueLbl">Forfaller (valgfritt)</label><input type="date" id="mDue"></div>
     <div class="actions">
-      <button class="btn ghost" id="edCancel">Avbryt</button>
-      <button class="btn" id="edSave">Lagre</button>
+      <button class="btn ghost" id="mCancel">Avbryt</button>
+      <button class="btn" id="mSave">Lagre</button>
     </div>
   </div>
 </div>
@@ -166,7 +157,7 @@
 const T = window.THelper;
 const $ = id => document.getElementById(id);
 const LOC = 'nb-NO';
-let tasks = [], editId = null;
+let tasks = [], editId = null, isAdmin = false;
 
 const RECUR       = ['none','month','week','day','hour'];
 const RECUR_LABEL = ['Aldri','Månedlig','Ukentlig','Daglig','Hver time'];
@@ -204,7 +195,7 @@ function mdInline(s){
   s = s.replace(/`([^`]+)`/g,'<code>$1</code>');
   return s;
 }
-function mdToHtml(src){
+function mdToHtml(src, interactive){
   if(!src) return '';
   let ci=-1; const out=[];
   for(const raw of src.split('\n')){
@@ -212,7 +203,7 @@ function mdToHtml(src){
     let m;
     if(m = line.match(/^\s*[-*]\s+\[([ xX])\]\s+(.*)$/)){
       ci++; const on = m[1].toLowerCase()==='x';
-      out.push(`<label class="md-chk ${on?'on':''}"><input type="checkbox" data-ci="${ci}" ${on?'checked':''}><span>${mdInline(m[2])}</span></label>`);
+      out.push(`<label class="md-chk ${on?'on':''}"><input type="checkbox" data-ci="${ci}" ${on?'checked':''} ${interactive?'':'disabled'}><span>${mdInline(m[2])}</span></label>`);
     } else if(m = line.match(/^\s*[-*]\s+(.*)$/)){
       out.push(`<div class="md-li">${mdInline(m[1])}</div>`);
     } else if(m = line.match(/^#{1,3}\s+(.*)$/)){
@@ -235,8 +226,8 @@ function toggleCheckbox(src, ci){
 }
 
 /* ---------- glidebryter ---------- */
-function setSlider(sliderId, ticksId, labelId, idx, onChange){
-  const s = $(sliderId), ticks = $(ticksId), lbl = $(labelId);
+function setSlider(idx, onChange){
+  const s = $('mSlider'), ticks = $('mTicks'), lbl = $('mRlabel');
   s.value = idx;
   const paint = () => {
     const v = +s.value;
@@ -250,9 +241,13 @@ function setSlider(sliderId, ticksId, labelId, idx, onChange){
 }
 
 /* ---------- visning ---------- */
+function fillAssignees(){
+  const names = [...new Set(tasks.map(t=>t.assignee).filter(Boolean))].sort((a,b)=>a.localeCompare(b,LOC));
+  $('assigneeList').innerHTML = names.map(n=>`<option value="${T.esc(n)}">`).join('');
+}
 function render(){
   const box = $('list');
-  if(!tasks.length){ box.innerHTML = '<div class="empty">Ingen oppgaver ennå — legg til en over.</div>'; return; }
+  if(!tasks.length){ box.innerHTML = '<div class="empty">Ingen oppgaver ennå.</div>'; return; }
   const open = tasks.filter(t=>!t.done).sort((a,b)=>{
     if(!a.due_at) return 1; if(!b.due_at) return -1;
     return new Date(a.due_at) - new Date(b.due_at);
@@ -265,18 +260,19 @@ function render(){
 function row(t){
   const e = T.esc, meta = [];
   meta.push(`<span class="chip recur">${e(recurChip(t.recur_unit))}</span>`);
+  if(t.assignee) meta.push(`<span class="chip who">👤 ${e(t.assignee)}</span>`);
   if(!t.done){ const c = dueChip(t.due_at); if(c) meta.push(`<span class="chip ${c.cls}">${e(c.txt)}</span>`); }
+  const acts = isAdmin
+    ? `<div class="t-act"><button class="icobtn" data-act="edit" title="Rediger">✎</button><button class="icobtn" data-act="del" title="Slett">🗑</button></div>`
+    : '';
   return `<li class="task ${t.done?'done':''}" data-id="${e(t.id)}">
-    <input type="checkbox" class="check" data-act="check" ${t.done?'checked':''}>
+    <input type="checkbox" class="check" ${isAdmin?'data-act="check"':'disabled'} ${t.done?'checked':''}>
     <div class="t-main">
       <div class="t-title">${e(t.title)}</div>
-      ${t.notes ? `<div class="t-desc">${mdToHtml(t.notes)}</div>` : ''}
+      ${t.notes ? `<div class="t-desc">${mdToHtml(t.notes, isAdmin)}</div>` : ''}
       <div class="t-meta">${meta.join('')}</div>
     </div>
-    <div class="t-act">
-      <button class="icobtn" data-act="edit" title="Rediger">✎</button>
-      <button class="icobtn" data-act="del" title="Slett">🗑</button>
-    </div>
+    ${acts}
   </li>`;
 }
 
@@ -286,32 +282,14 @@ async function load(){
   const {data,error} = await T.sb.from('tasks').select('*');
   if(error){
     if(/relation|does not exist|schema cache|column/i.test(error.message||''))
-      showBanner('Oppgave-backend mangler migreringen (tasks.sql + tasks_v2.sql). Kjør dem og last inn på nytt.');
+      showBanner('Oppgave-backend mangler migreringen (tasks.sql + tasks_v2.sql + tasks_v3.sql). Kjør dem og last inn på nytt.');
     else showBanner('Lastefeil: '+error.message);
     tasks=[]; render(); return;
   }
-  hideBanner(); tasks = data || []; render();
+  hideBanner(); tasks = data || []; fillAssignees(); render();
 }
 const showBanner = m => { const b=$('banner'); b.textContent=m; b.style.display='block'; };
 const hideBanner = () => { $('banner').style.display='none'; };
-
-async function addTask(){
-  const title = $('addTitle').value.trim();
-  if(!title) return;
-  const unit = idxToUnit(+$('addSlider').value);
-  let due_at;
-  if(unit === 'hour')        due_at = new Date().toISOString();
-  else if($('addDue').value) due_at = inputDateToISO($('addDue').value);
-  else if(unit !== 'none')   due_at = todayMidnightISO();
-  else                       due_at = null;
-  const task = { title, notes: $('addDesc').value.trim() || null, recur_unit: unit, recur_n: 1, due_at, done: false };
-  try{
-    await T.rpc('add_task', {p_task: task});
-    $('addTitle').value=''; $('addDesc').value=''; $('addDue').value='';
-    setSlider('addSlider','addTicks','addRlabel',0,addDueVis);
-    await load();
-  }catch(e){ if(e.message!=='no-pass') T.toast('Kunne ikke legge til: '+e.message); }
-}
 
 async function toggle(t){
   try{
@@ -343,58 +321,81 @@ async function del(t){
   catch(e){ if(e.message!=='no-pass') T.toast('Kunne ikke slette: '+e.message); }
 }
 
-/* ---------- redigeringsmodal ---------- */
-function openEdit(t){
-  editId = t.id;
-  $('edTitle').value = t.title || '';
-  $('edDesc').value  = t.notes || '';
-  setSlider('edSlider','edTicks','edRlabel', unitToIdx(t.recur_unit), v => {
-    $('edDueRow').style.display = idxToUnit(v)==='hour' ? 'none' : '';
-  });
-  $('edDue').value = t.due_at ? dateToInput(t.due_at) : '';
-  $('editModal').classList.add('show');
+/* ---------- modal (ny + rediger) ---------- */
+function mDueVis(v){
+  const u = idxToUnit(v);
+  $('mDueRow').style.display = u==='hour' ? 'none' : '';
+  $('mDueLbl').textContent = u==='none' ? 'Forfaller (valgfritt)' : 'Startdato';
 }
-function closeEdit(){ $('editModal').classList.remove('show'); editId=null; }
-async function saveEdit(){
-  const t = tasks.find(x=>x.id===editId); if(!t) return;
-  const unit = idxToUnit(+$('edSlider').value);
+function openModal(t){
+  editId = t ? t.id : null;
+  $('mTitle').textContent = t ? 'Rediger oppgave' : 'Ny oppgave';
+  $('mTitleIn').value  = t ? (t.title||'') : '';
+  $('mDesc').value     = t ? (t.notes||'') : '';
+  $('mAssignee').value = t ? (t.assignee||'') : '';
+  setSlider(t ? unitToIdx(t.recur_unit) : 0, mDueVis);
+  $('mDue').value = (t && t.due_at) ? dateToInput(t.due_at) : '';
+  $('taskModal').classList.add('show');
+  setTimeout(()=>$('mTitleIn').focus(), 30);
+}
+function closeModal(){ $('taskModal').classList.remove('show'); editId=null; }
+async function saveModal(){
+  const title = $('mTitleIn').value.trim();
+  if(!title){ $('mTitleIn').focus(); return; }
+  const unit = idxToUnit(+$('mSlider').value);
+  const existing = editId ? tasks.find(x=>x.id===editId) : null;
   let due_at;
-  if(unit === 'hour') due_at = t.due_at || new Date().toISOString();
-  else                due_at = $('edDue').value ? inputDateToISO($('edDue').value) : null;
-  const patch = {
-    title: $('edTitle').value.trim() || t.title,
-    notes: $('edDesc').value.trim() || null,
+  if(unit === 'hour')      due_at = (existing && existing.due_at) || new Date().toISOString();
+  else if($('mDue').value) due_at = inputDateToISO($('mDue').value);
+  else if(unit !== 'none') due_at = (existing && existing.due_at) || todayMidnightISO();
+  else                     due_at = null;
+  const payload = {
+    title,
+    notes:    $('mDesc').value.trim() || null,
+    assignee: $('mAssignee').value.trim() || null,
     recur_unit: unit, recur_n: 1, due_at
   };
-  try{ await T.rpc('update_task',{p_id:editId, p_task:patch}); closeEdit(); await load(); }
-  catch(e){ if(e.message!=='no-pass') T.toast('Kunne ikke lagre: '+e.message); }
+  try{
+    if(editId) await T.rpc('update_task', {p_id:editId, p_task:payload});
+    else       await T.rpc('add_task',   {p_task:payload});
+    closeModal(); await load();
+  }catch(e){ if(e.message!=='no-pass') T.toast('Kunne ikke lagre: '+e.message); }
+}
+
+/* ---------- admin ---------- */
+function refreshAdmin(){
+  isAdmin = !!T.getPass();
+  $('fab').classList.toggle('show', isAdmin);
+  $('lockBtn').textContent = isAdmin ? '🔓' : '🔒';
+  $('lockBtn').title = isAdmin ? 'Logg ut' : 'Logg inn som admin';
+  $('lockBtn').classList.toggle('on', isAdmin);
+  render();
 }
 
 /* ---------- hendelser ---------- */
-function addDueVis(v){
-  const u = idxToUnit(v);
-  $('addDueWrap').style.display = u==='hour' ? 'none' : '';
-  $('addDueLbl').textContent = u==='none' ? 'Forfaller (valgfritt)' : 'Startdato';
-}
-$('addBtn').addEventListener('click', addTask);
-$('addTitle').addEventListener('keydown', e=>{ if(e.key==='Enter') addTask(); });
+$('fab').addEventListener('click', ()=>openModal(null));
+$('lockBtn').addEventListener('click', async ()=>{
+  if(T.getPass()){ T.clearPass(); refreshAdmin(); T.toast('Logget ut'); }
+  else { const p = await T.ensurePass(); if(p){ refreshAdmin(); T.toast('Logget inn som admin'); } }
+});
 $('list').addEventListener('click', e=>{
   const li = e.target.closest('.task'); if(!li) return;
   const t = tasks.find(x=>x.id===li.dataset.id); if(!t) return;
+  if(!isAdmin) return;
   const cb = e.target.closest('.md-chk input[data-ci]');
   if(cb){ e.stopPropagation(); toggleDescCheck(t, +cb.dataset.ci); return; }
   const act = e.target.dataset.act;
   if(act==='check') toggle(t);
-  else if(act==='edit') openEdit(t);
+  else if(act==='edit') openModal(t);
   else if(act==='del') del(t);
 });
-$('edCancel').addEventListener('click', closeEdit);
-$('edSave').addEventListener('click', saveEdit);
-$('editModal').addEventListener('click', e=>{ if(e.target.id==='editModal') closeEdit(); });
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeEdit(); });
+$('mCancel').addEventListener('click', closeModal);
+$('mSave').addEventListener('click', saveModal);
+$('taskModal').addEventListener('click', e=>{ if(e.target.id==='taskModal') closeModal(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && $('taskModal').classList.contains('show')) closeModal(); });
 
 /* ---------- oppstart ---------- */
-setSlider('addSlider','addTicks','addRlabel',0,addDueVis);
+refreshAdmin();
 load();
 if(T.sb){
   T.sb.channel('tasks-rt').on('postgres_changes',{event:'*',schema:'public',table:'tasks'}, load).subscribe();
