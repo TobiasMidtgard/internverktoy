@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="no" class="h-full">
+<html lang="no" class="h-full dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -47,7 +47,6 @@
       <span id="admin-state" class="hidden sm:inline text-[11px] font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400"></span>
       <button onclick="toggleMobileSidebar()" class="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900" title="Vis ansatte"><i class="fa-solid fa-users text-lg"></i></button>
       <button onclick="toggleAlertsPanel()" class="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900"><i class="fa-solid fa-bell text-lg"></i><span id="alert-badge" class="absolute top-1 right-1 w-2.5 h-2.5 bg-thansen-red rounded-full hidden"></span></button>
-      <button onclick="toggleTheme()" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900"><i id="theme-icon" class="fa-solid fa-moon text-lg"></i></button>
       <button id="lockBtn" onclick="toggleAdmin()" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900" title="Logg inn som admin"><i class="fa-solid fa-lock text-lg"></i></button>
     </div>
   </header>
@@ -194,10 +193,17 @@
 <!-- Coworker modal -->
 <div id="coworker-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
   <div class="bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
-    <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between"><h3 class="font-bold flex items-center space-x-2"><i class="fa-solid fa-user-plus text-thansen-500"></i><span>Registrer Ansatt</span></h3><button onclick="closeCoworkerModal()" class="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"><i class="fa-solid fa-times"></i></button></div>
+    <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between"><h3 id="coworker-modal-title" class="font-bold flex items-center space-x-2"><i class="fa-solid fa-user-plus text-thansen-500"></i><span>Registrer Ansatt</span></h3><button onclick="closeCoworkerModal()" class="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"><i class="fa-solid fa-times"></i></button></div>
     <form id="coworker-form" onsubmit="handleCoworkerSubmit(event)" class="p-5 space-y-4">
       <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fullt Navn</label><input type="text" id="coworker-name" required placeholder="F.eks. Alexander Thomsen" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-thansen-500 focus:outline-none"></div>
-      <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Unik 4-bokstavskode</label><input type="text" id="coworker-tag" maxlength="4" minlength="4" required placeholder="ALEX" class="w-full uppercase bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-thansen-500 focus:outline-none"><p class="text-[10px] text-slate-400 mt-1">Nøyaktig 4 bokstaver (f.eks. MORT, EMIL)</p></div>
+      <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Unik 4-bokstavskode</label><input type="text" id="coworker-tag" maxlength="4" minlength="4" required placeholder="ALEX" class="w-full uppercase bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-thansen-500 focus:outline-none disabled:opacity-60"><p class="text-[10px] text-slate-400 mt-1">Nøyaktig 4 bokstaver (kan ikke endres etterpå)</p></div>
+      <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Stillingstittel</label>
+        <select id="coworker-title" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-thansen-500 focus:outline-none">
+          <option value="Deltid">Deltid</option>
+          <option value="Butikkmedarbeider" selected>Butikkmedarbeider</option>
+          <option value="BCT">BCT</option>
+          <option value="Butikksjef">Butikksjef</option>
+        </select></div>
       <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fargetema</label><div class="grid grid-cols-6 gap-2" id="color-grid"></div><input type="hidden" id="coworker-color" value="#004595"></div>
       <div class="pt-2 flex items-center justify-end space-x-2"><button type="button" onclick="closeCoworkerModal()" class="px-4 py-2 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 font-medium rounded-xl">Avbryt</button><button type="submit" class="px-4 py-2 text-xs bg-thansen-500 hover:bg-thansen-600 text-white font-bold rounded-xl shadow-md">Registrer</button></div>
     </form>
@@ -218,14 +224,15 @@ let state = { activeViewTab:'board', coworkers:[], tasks:[], alerts:[] };
 const F2U = { once:'none', daily:'day', weekly:'week', monthly:'month' };
 const U2F = { none:'once', day:'daily', week:'weekly', month:'monthly', hour:'daily' };
 const PALETTE = ['#004595','#e30613','#10b981','#f59e0b','#3b82f6','#ec4899'];
+// stable order so cards don't jump when only assignees/status change
+function stableOrder(a,b){
+  if(a.due && b.due){ const d=new Date(a.due)-new Date(b.due); if(d) return d; }
+  else if(a.due) return -1; else if(b.due) return 1;
+  return (a.createdAt||'').localeCompare(b.createdAt||'') || a.id.localeCompare(b.id);
+}
 
 /* ---------- boot ---------- */
 window.onload = function () {
-  if (localStorage.getItem('th.theme') === 'dark' ||
-      (!localStorage.getItem('th.theme') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    document.documentElement.classList.add('dark');
-    document.getElementById('theme-icon').className = 'fa-solid fa-sun text-lg';
-  }
   buildColorGrid();
   refreshAdminUI();
   loadAll();
@@ -250,8 +257,9 @@ async function loadAll(){
   state.coworkers = (cw.data||[]).sort((a,b)=>a.tag.localeCompare(b.tag));
   state.tasks = (tk.data||[]).map(r=>({
     id:r.id, title:r.title||'', desc:r.notes||'', assignees:r.assignees||[],
-    frequency:U2F[r.recur_unit]||'once', due:r.due_at, priority:r.priority||'medium', status:r.status||'todo'
-  }));
+    frequency:U2F[r.recur_unit]||'once', due:r.due_at, priority:r.priority||'medium', status:r.status||'todo',
+    createdAt:r.created_at||''
+  })).sort(stableOrder);
   recalculateAlerts(); renderCoworkerList(); renderScheduler(); renderStats(); renderAlertsList();
 }
 
@@ -268,12 +276,6 @@ function refreshAdminUI(){
 async function toggleAdmin(){
   if(T.getPass()){ T.clearPass(); refreshAdminUI(); showToast('Logget ut','#64748b'); }
   else { const p = await T.ensurePass(); if(p){ refreshAdminUI(); showToast('Logget inn som Butikksjef','#004595'); } }
-}
-function toggleTheme(){
-  const root=document.documentElement, icon=document.getElementById('theme-icon');
-  const dark=root.classList.toggle('dark');
-  icon.className = dark ? 'fa-solid fa-sun text-lg' : 'fa-solid fa-moon text-lg';
-  localStorage.setItem('th.theme', dark?'dark':'light');
 }
 function toggleMobileSidebar(){ document.getElementById('workspace-sidebar').classList.toggle('-translate-x-full'); }
 function toggleAlertsPanel(){ document.getElementById('alerts-panel').classList.toggle('translate-x-full'); }
@@ -293,10 +295,11 @@ function renderCoworkerList(){
     item.innerHTML=`
       <div class="flex items-center space-x-2.5">
         <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-[10px]" style="background-color:${c.color}">${esc(c.tag)}</div>
-        <div class="flex flex-col"><span class="text-xs font-semibold text-slate-700 dark:text-slate-200">${esc(c.name)}</span><span class="text-[9px] text-slate-400">${c.role==='admin'?'Sjef':'Medarbeider'}</span></div>
+        <div class="flex flex-col"><span class="text-xs font-semibold text-slate-700 dark:text-slate-200">${esc(c.name)}</span><span class="text-[9px] text-slate-400">${esc(c.title||'Butikkmedarbeider')}</span></div>
       </div>
       <div class="flex items-center space-x-2">
-        ${isAdmin?`<button onclick="deleteCoworker('${esc(c.tag)}')" class="text-slate-300 hover:text-thansen-red" title="Fjern"><i class="fa-solid fa-user-xmark text-xs"></i></button>`
+        ${isAdmin?`<button onclick="editCoworker('${esc(c.tag)}')" class="text-slate-300 hover:text-thansen-500" title="Rediger profil"><i class="fa-solid fa-pen text-xs"></i></button>
+                   <button onclick="deleteCoworker('${esc(c.tag)}')" class="text-slate-300 hover:text-thansen-red" title="Fjern"><i class="fa-solid fa-user-xmark text-xs"></i></button>`
                  :`<i class="fa-solid fa-grip-vertical text-xs text-slate-300 dark:text-slate-700"></i>`}
       </div>`;
     list.appendChild(item);
@@ -315,17 +318,52 @@ function buildColorGrid(){
   const g=document.getElementById('color-grid'); g.innerHTML='';
   PALETTE.forEach(col=>{ const b=document.createElement('button'); b.type='button'; b.className='h-8 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-white'; b.style.backgroundColor=col; b.onclick=()=>{ document.getElementById('coworker-color').value=col; }; g.appendChild(b); });
 }
-function openCoworkerModal(){ if(!isAdmin){ showToast('Kun Butikksjef kan registrere ansatte.','#e30613'); return; } document.getElementById('coworker-modal').classList.remove('hidden'); }
-function closeCoworkerModal(){ document.getElementById('coworker-modal').classList.add('hidden'); document.getElementById('coworker-form').reset(); document.getElementById('coworker-color').value='#004595'; }
+let editingCoworkerTag = null;
+function openCoworkerModal(tag){
+  if(!isAdmin){ showToast('Kun Butikksjef kan registrere/redigere ansatte.','#e30613'); return; }
+  editingCoworkerTag = (typeof tag==='string') ? tag : null;
+  document.getElementById('coworker-form').reset();
+  const tagInput=document.getElementById('coworker-tag');
+  if(editingCoworkerTag){
+    const c=state.coworkers.find(x=>x.tag===editingCoworkerTag); if(!c) return;
+    document.getElementById('coworker-modal-title').innerHTML='<i class="fa-solid fa-user-pen text-thansen-500"></i> <span>Rediger Profil</span>';
+    document.getElementById('coworker-name').value=c.name;
+    tagInput.value=c.tag; tagInput.disabled=true;
+    document.getElementById('coworker-color').value=c.color;
+    document.getElementById('coworker-title').value=c.title||'Butikkmedarbeider';
+  } else {
+    document.getElementById('coworker-modal-title').innerHTML='<i class="fa-solid fa-user-plus text-thansen-500"></i> <span>Registrer Ansatt</span>';
+    tagInput.disabled=false;
+    document.getElementById('coworker-color').value='#004595';
+  }
+  document.getElementById('coworker-modal').classList.remove('hidden');
+}
+function editCoworker(tag){ openCoworkerModal(tag); }
+function closeCoworkerModal(){
+  document.getElementById('coworker-modal').classList.add('hidden');
+  document.getElementById('coworker-form').reset();
+  document.getElementById('coworker-tag').disabled=false;
+  document.getElementById('coworker-color').value='#004595';
+  editingCoworkerTag=null;
+}
 async function handleCoworkerSubmit(e){
   e.preventDefault();
   const name=document.getElementById('coworker-name').value.trim();
   const tag=document.getElementById('coworker-tag').value.trim().toUpperCase();
   const color=document.getElementById('coworker-color').value;
+  const title=document.getElementById('coworker-title').value;
   if(tag.length!==4){ showToast('Koden må være nøyaktig 4 tegn.','#e30613'); return; }
-  if(state.coworkers.some(c=>c.tag===tag)){ showToast('Koden finnes allerede.','#e30613'); return; }
-  try{ await T.rpc('add_coworker',{p_tag:tag,p_name:name,p_color:color}); closeCoworkerModal(); await loadAll(); showToast(`Ansatt ${tag} registrert!`,color); }
-  catch(err){ if(err.message!=='no-pass') showToast('Feil: '+err.message,'#e30613'); }
+  try{
+    if(editingCoworkerTag){
+      await T.rpc('update_coworker',{p_tag:tag,p_name:name,p_color:color,p_title:title});
+      showToast(`${tag} oppdatert`,color);
+    } else {
+      if(state.coworkers.some(c=>c.tag===tag)){ showToast('Koden finnes allerede.','#e30613'); return; }
+      await T.rpc('add_coworker',{p_tag:tag,p_name:name,p_color:color,p_title:title});
+      showToast(`Ansatt ${tag} registrert!`,color);
+    }
+    closeCoworkerModal(); await loadAll();
+  }catch(err){ if(err.message!=='no-pass') showToast('Feil: '+err.message,'#e30613'); }
 }
 async function deleteCoworker(tag){
   if(!isAdmin) return;
@@ -392,7 +430,12 @@ function createTaskCard(task, weekly=false){
   const card=document.createElement('div');
   const overdue = task.due && new Date(task.due)<new Date() && task.status!=='done';
   card.id=`card-${task.id}`;
-  card.addEventListener('click',e=>{ if(e.target.tagName==='INPUT'||e.target.closest('button')||e.target.closest('[draggable="true"]')) return; openTaskDetailModal(task.id); });
+  card.addEventListener('click',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='A'||e.target.closest('button')) return;
+    const dg=e.target.closest('[draggable="true"]');
+    if(dg && dg!==card) return;   // clicked an assignee pill, not the card body
+    openTaskDetailModal(task.id);
+  });
   card.setAttribute('draggable','true');
   card.addEventListener('dragstart',e=>{ e.stopPropagation(); e.dataTransfer.setData('text/plain',`task:${task.id}`); card.classList.add('opacity-40'); });
   card.addEventListener('dragend',()=>card.classList.remove('opacity-40'));
