@@ -261,14 +261,15 @@ async function loadAll(){
     T.sb.from('tasks').select('*'),
     T.sb.from('planner_notes').select('*')
   ]);
-  if(cw.error || tk.error){
-    const msg=(cw.error||tk.error).message||'';
-    if(/relation|does not exist|column|schema cache/i.test(msg)) showToast('Kjør migreringen tasks_v7.sql','#e30613');
-    else showToast('Lastefeil: '+msg,'#e30613');
+  if(tk.error){
+    const msg=tk.error.message||'';
+    showToast(/relation|does not exist|column|schema cache/i.test(msg) ? 'Kjør migreringene (tasks.sql … tasks_v8.sql)' : 'Lastefeil: '+msg,'#e30613');
     return;
   }
+  // oppgaver vises uansett; ansattregisteret tåler at v7-viewet mangler
+  if(cw.error){ state.coworkers=[]; showToast('Ansattregister mangler — kjør tasks_v7.sql','#f59e0b'); }
+  else state.coworkers = (cw.data||[]).sort((a,b)=>a.tag.localeCompare(b.tag));
   state.notes = (nt && !nt.error && nt.data) ? nt.data : [];
-  state.coworkers = (cw.data||[]).sort((a,b)=>a.tag.localeCompare(b.tag));
   state.tasks = (tk.data||[]).map(r=>({
     id:r.id, title:r.title||'', desc:r.notes||'', assignees:r.assignees||[],
     frequency:U2F[r.recur_unit]||'once', due:r.due_at, priority:r.priority||'medium', status:r.status||'todo',
