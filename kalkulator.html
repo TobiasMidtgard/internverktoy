@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#00529c">
+<title>Kalkulator · Thansen Verktøykasse</title>
+<style>
+  :root{ --bg:#0f1318; --panel:#161b22; --card:#1b212a; --line:#2a323d; --text:#f1f4f8; --muted:#97a3b2;
+    --primary:#2684e6; --primary-700:#00529c; --cta:#1aa64d; --yellow:#ffd400; }
+  *{box-sizing:border-box;} html,body{margin:0;}
+  body{background:radial-gradient(1100px 560px at 50% -8%,#13243a 0%,var(--bg) 58%);color:var(--text);
+    font:400 16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh;}
+  .topbar{height:4px;background:linear-gradient(90deg,var(--primary-700),var(--primary) 60%,var(--yellow));}
+  header{display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line);}
+  .hub{color:var(--muted);text-decoration:none;font-weight:600;}
+  .hub:hover{color:var(--text);}
+  .brand{font-weight:800;letter-spacing:.13em;}
+  main{max-width:640px;margin:0 auto;padding:20px 16px 60px;display:flex;flex-direction:column;gap:16px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;}
+  .card h2{margin:0 0 14px;font-size:16px;display:flex;align-items:center;gap:8px;}
+  .card h2 .ic{color:var(--yellow);}
+  .row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;}
+  .field{display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px;}
+  label{color:var(--muted);font-size:12px;}
+  input,select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;
+    padding:10px 12px;font:inherit;font-size:15px;width:100%;}
+  input:focus,select:focus{outline:none;border-color:var(--primary);}
+  .out{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;
+    display:flex;flex-direction:column;gap:6px;}
+  .out .line{display:flex;justify-content:space-between;font-size:14px;}
+  .out .line .v{font-weight:700;}
+  .out .big{font-size:20px;color:var(--cta);font-weight:800;}
+  .hint{color:var(--muted);font-size:12px;margin-top:6px;}
+  .seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .seg button{background:transparent;color:var(--muted);border:0;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer;}
+  .seg button.on{background:var(--primary);color:#fff;font-weight:700;}
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<header>
+  <a class="hub" href="index.html">‹ Hjem</a>
+  <span class="brand">KALKULATOR</span>
+</header>
+
+<main>
+  <!-- MVA -->
+  <div class="card">
+    <h2><span class="ic">🧾</span> MVA</h2>
+    <div class="row">
+      <div class="field"><label>Beløp</label><input type="number" id="mvaAmount" value="1000" step="0.01" inputmode="decimal"></div>
+      <div class="field" style="flex:0 0 auto;min-width:0">
+        <label>Beløpet er</label>
+        <div class="seg" id="mvaMode">
+          <button data-m="ex" class="on">Eks. mva</button>
+          <button data-m="inc">Ink. mva</button>
+        </div>
+      </div>
+      <div class="field" style="max-width:110px"><label>Sats %</label><input type="number" id="mvaRate" value="25" step="1" inputmode="decimal"></div>
+    </div>
+    <div class="out" id="mvaOut"></div>
+  </div>
+
+  <!-- Margin / påslag -->
+  <div class="card">
+    <h2><span class="ic">📈</span> Margin & påslag</h2>
+    <div class="row">
+      <div class="field"><label>Innkjøp (kost, eks. mva)</label><input type="number" id="cost" value="600" step="0.01" inputmode="decimal"></div>
+      <div class="field"><label>Salgspris (eks. mva)</label><input type="number" id="price" value="999" step="0.01" inputmode="decimal"></div>
+    </div>
+    <div class="out" id="marginOut"></div>
+    <p class="hint">Margin = fortjeneste / salgspris. Påslag = fortjeneste / innkjøp.</p>
+  </div>
+
+  <!-- Rabatt -->
+  <div class="card">
+    <h2><span class="ic">🏷️</span> Rabatt</h2>
+    <div class="row">
+      <div class="field"><label>Pris</label><input type="number" id="discPrice" value="999" step="0.01" inputmode="decimal"></div>
+      <div class="field" style="max-width:120px"><label>Rabatt %</label><input type="number" id="discPct" value="20" step="1" inputmode="decimal"></div>
+    </div>
+    <div class="out" id="discOut"></div>
+  </div>
+
+  <!-- Del på antall -->
+  <div class="card">
+    <h2><span class="ic">➗</span> Stykkpris</h2>
+    <div class="row">
+      <div class="field"><label>Totalpris</label><input type="number" id="splitTotal" value="1200" step="0.01" inputmode="decimal"></div>
+      <div class="field" style="max-width:120px"><label>Antall</label><input type="number" id="splitQty" value="6" step="1" inputmode="numeric"></div>
+    </div>
+    <div class="out" id="splitOut"></div>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const num = id => { const v = parseFloat($(id).value.replace(',', '.')); return isNaN(v) ? 0 : v; };
+const kr = n => (isFinite(n) ? n : 0).toLocaleString('nb-NO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kr';
+const pct = n => (isFinite(n) ? n : 0).toLocaleString('nb-NO', { maximumFractionDigits: 1 }) + ' %';
+let mvaMode = 'ex';
+
+function calcMva(){
+  const a = num('mvaAmount'), r = num('mvaRate') / 100;
+  let net, vat, gross;
+  if (mvaMode === 'ex') { net = a; vat = a * r; gross = a + vat; }
+  else { gross = a; net = a / (1 + r); vat = gross - net; }
+  $('mvaOut').innerHTML =
+    `<div class="line"><span>Eks. mva</span><span class="v">${kr(net)}</span></div>
+     <div class="line"><span>MVA (${num('mvaRate')} %)</span><span class="v">${kr(vat)}</span></div>
+     <div class="line"><span>Ink. mva</span><span class="v big">${kr(gross)}</span></div>`;
+}
+function calcMargin(){
+  const c = num('cost'), p = num('price');
+  const profit = p - c;
+  const margin = p ? profit / p * 100 : 0;
+  const markup = c ? profit / c * 100 : 0;
+  $('marginOut').innerHTML =
+    `<div class="line"><span>Fortjeneste</span><span class="v ${profit<0?'':''}" style="${profit<0?'color:#e44b4b':''}">${kr(profit)}</span></div>
+     <div class="line"><span>Margin</span><span class="v big">${pct(margin)}</span></div>
+     <div class="line"><span>Påslag</span><span class="v">${pct(markup)}</span></div>`;
+}
+function calcDisc(){
+  const p = num('discPrice'), d = num('discPct') / 100;
+  const off = p * d, final = p - off;
+  $('discOut').innerHTML =
+    `<div class="line"><span>Du sparer</span><span class="v">${kr(off)}</span></div>
+     <div class="line"><span>Ny pris</span><span class="v big">${kr(final)}</span></div>`;
+}
+function calcSplit(){
+  const tot = num('splitTotal'), q = num('splitQty');
+  $('splitOut').innerHTML =
+    `<div class="line"><span>Per stk</span><span class="v big">${kr(q ? tot / q : 0)}</span></div>`;
+}
+function recalc(){ calcMva(); calcMargin(); calcDisc(); calcSplit(); }
+
+document.querySelectorAll('#mvaMode button').forEach(b => b.addEventListener('click', () => {
+  mvaMode = b.dataset.m;
+  document.querySelectorAll('#mvaMode button').forEach(x => x.classList.toggle('on', x === b));
+  calcMva();
+}));
+document.querySelectorAll('input').forEach(i => i.addEventListener('input', recalc));
+recalc();
+</script>
+</body>
+</html>

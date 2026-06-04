@@ -1,385 +1,619 @@
 <!DOCTYPE html>
-<html lang="no">
+<html lang="no" class="h-full">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#00529c">
-<title>Oppgaver · Thansen Verktøykasse</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#004595">
+<title>ButikkPlanlegger · Thansen Verktøykasse</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { darkMode:'class', theme:{ extend:{ colors:{ thansen:{
+    50:'#f0f6fc',100:'#e1edf9',500:'#004595',600:'#003573',700:'#002552',
+    yellow:'#ffcc00', red:'#e30613' } }, fontFamily:{ sans:['Inter','sans-serif'] } } } }
+</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root{
-    --bg:#0f1318; --panel:#161b22; --card:#1b212a; --card-h:#222a35;
-    --line:#2a323d; --text:#f1f4f8; --muted:#97a3b2;
-    --primary:#2684e6; --primary-700:#00529c; --cta:#1aa64d; --yellow:#ffd400;
-    --over:#e44b4b; --today:#ffb300; --soon:#39b6e6; --ok:#1aa64d;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;}
-  body{background:radial-gradient(1100px 560px at 50% -8%,#13243a 0%,var(--bg) 58%);
-    color:var(--text);font:400 16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh;}
-  .topbar{height:4px;background:linear-gradient(90deg,var(--primary-700),var(--primary) 60%,var(--yellow));
-    position:sticky;top:0;z-index:11;}
-  header{display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line);
-    position:sticky;top:4px;background:rgba(15,19,24,.88);backdrop-filter:blur(8px);z-index:10;}
-  .hub{color:var(--muted);text-decoration:none;font-weight:600;opacity:.85;}
-  .hub:hover{opacity:1;color:var(--text);}
-  .brand{font-weight:800;letter-spacing:.13em;}
-  .lock{margin-left:auto;background:transparent;border:1px solid var(--line);color:var(--text);
-    border-radius:10px;padding:6px 11px;cursor:pointer;font-size:15px;}
-  .lock:hover{border-color:var(--primary);}
-  .lock.on{border-color:var(--cta);}
-  main{max-width:720px;margin:0 auto;padding:18px 16px 96px;}
-
-  input,select,textarea,button{font:inherit;}
-  textarea,input[type=text],input[type=date],input[type=datetime-local]{background:var(--panel);color:var(--text);
-    border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px;}
-  textarea{resize:vertical;width:100%;}
-  input:focus,textarea:focus{outline:none;border-color:var(--primary);}
-  .btn{background:var(--cta);color:#fff;border:0;border-radius:10px;padding:10px 18px;
-    font-weight:700;font-size:15px;cursor:pointer;}
-  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text);}
-
-  .recur{display:flex;flex-direction:column;gap:2px;}
-  .recur .rlabel b{color:var(--primary);}
-  .recur input[type=range]{width:100%;accent-color:var(--primary);margin:2px 0 0;}
-  .ticks{display:flex;justify-content:space-between;}
-  .ticks span{font-size:11px;color:var(--muted);cursor:pointer;flex:1;text-align:center;user-select:none;}
-  .ticks span:first-child{text-align:left;}
-  .ticks span:last-child{text-align:right;}
-  .ticks span.on{color:var(--primary);font-weight:700;}
-
-  .banner{background:#3a2a14;border:1px solid #7c5a1e;color:#f6d18f;border-radius:12px;
-    padding:12px 14px;font-size:14px;margin-bottom:16px;display:none;}
-  .hint{color:var(--muted);font-size:12px;}
-
-  .sec-h{color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:18px 4px 8px;}
-  ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}
-  .task{display:flex;align-items:flex-start;gap:12px;background:var(--card);border:1px solid var(--line);
-    border-radius:14px;padding:12px 14px;}
-  .task.done .t-title{text-decoration:line-through;color:var(--muted);}
-  .check{appearance:none;width:22px;height:22px;border:2px solid var(--line);border-radius:7px;cursor:pointer;
-    flex:0 0 auto;margin-top:2px;position:relative;background:var(--panel);}
-  .check:hover{border-color:var(--cta);}
-  .check:checked{background:var(--ok);border-color:var(--ok);}
-  .check:checked::after{content:"✓";position:absolute;inset:0;color:#06210f;font-size:14px;
-    display:flex;align-items:center;justify-content:center;font-weight:800;}
-  .t-main{flex:1;min-width:0;}
-  .t-title{font-weight:600;word-break:break-word;}
-  .t-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
-  .chip{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);}
-  .chip.recur{border-color:#1f3a5c;color:#9ecbff;}
-  .chip.who{border-color:#2a4d33;color:#9be0b0;}
-  .chip.over{border-color:var(--over);color:#ffb4b4;}
-  .chip.today{border-color:var(--today);color:#ffd591;}
-  .chip.soon{border-color:var(--soon);color:#aee5ff;}
-  .t-act{display:flex;gap:4px;flex:0 0 auto;}
-  .icobtn{background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:16px;padding:4px 6px;border-radius:8px;}
-  .icobtn:hover{background:var(--card-h);color:var(--text);}
-  .empty{color:var(--muted);text-align:center;padding:36px 10px;}
-
-  .t-desc{margin-top:8px;display:flex;flex-direction:column;gap:3px;}
-  .md-chk{display:flex;align-items:flex-start;gap:8px;font-size:14px;color:var(--text);cursor:pointer;}
-  .md-chk input{margin:3px 0 0;width:16px;height:16px;accent-color:var(--ok);cursor:pointer;flex:0 0 auto;}
-  .md-chk.on span{text-decoration:line-through;color:var(--muted);}
-  .md-li{font-size:14px;color:var(--text);}
-  .md-li::before{content:"•";color:var(--muted);margin-right:6px;}
-  .md-h{font-weight:700;font-size:14px;margin-top:4px;}
-  .md-p{font-size:14px;color:var(--muted);word-break:break-word;}
-  .md-sp{height:6px;}
-  code{background:#0c1422;padding:0 4px;border-radius:4px;font-size:12px;}
-
-  .fab{position:fixed;right:20px;bottom:20px;width:56px;height:56px;border-radius:50%;background:var(--cta);
-    color:#fff;border:0;font-size:30px;line-height:1;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,.5);
-    display:none;align-items:center;justify-content:center;z-index:40;}
-  .fab.show{display:flex;}
-  .fab:hover{filter:brightness(1.08);}
-
-  .modal{position:fixed;inset:0;background:rgba(6,9,13,.62);display:none;align-items:center;justify-content:center;
-    z-index:50;padding:16px;}
-  .modal.show{display:flex;}
-  .sheet{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--primary);
-    border-radius:18px;padding:18px;width:100%;max-width:460px;max-height:90vh;overflow:auto;}
-  .sheet h3{margin:0 0 14px;}
-  .sheet .row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
-  .sheet label{color:var(--muted);font-size:13px;}
-  .sheet .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:6px;}
+  body{font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent;}
+  ::-webkit-scrollbar{width:6px;height:6px;} ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px;} .dark ::-webkit-scrollbar-thumb{background:#475569;}
+  .glass{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
+  .dark .glass{background:rgba(15,23,42,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
+  @keyframes subtle-pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.02);}}
+  .pulse-alert{animation:subtle-pulse 2s infinite ease-in-out;}
+  .snap-x-container{scroll-snap-type:x mandatory;} .snap-column{scroll-snap-align:center;}
 </style>
 </head>
-<body>
-<div class="topbar"></div>
-<header>
-  <a class="hub" href="index.html">‹ Hjem</a>
-  <span class="brand">OPPGAVER</span>
-  <button class="lock" id="lockBtn" title="Logg inn som admin">🔒</button>
-</header>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
 
-<main>
-  <div class="banner" id="banner"></div>
-  <div id="list"></div>
-</main>
-
-<button class="fab" id="fab" title="Ny oppgave" aria-label="Ny oppgave">＋</button>
-
-<div class="modal" id="taskModal">
-  <div class="sheet">
-    <h3 id="mTitle">Ny oppgave</h3>
-    <div class="row"><label>Tittel</label><input type="text" id="mTitleIn" placeholder="Hva skal gjøres?"></div>
-    <div class="row">
-      <label>Beskrivelse</label>
-      <textarea id="mDesc" style="min-height:84px" placeholder="Valgfritt — «- [ ] punkt» for avkrysning"></textarea>
-      <span class="hint">«- [ ] punkt» = avkrysning · «- » = kulepunkt · «# » = overskrift · **fet**</span>
-    </div>
-    <div class="row">
-      <label>Tildelt kollega</label>
-      <input type="text" id="mAssignee" list="assigneeList" placeholder="Navn (valgfritt)" autocomplete="off">
-      <datalist id="assigneeList"></datalist>
-    </div>
-    <div class="row recur">
-      <label>Gjentas: <b id="mRlabel">Aldri</b></label>
-      <input type="range" id="mSlider" min="0" max="4" step="1" value="0">
-      <div class="ticks" id="mTicks">
-        <span data-v="0">Aldri</span><span data-v="1">Månedlig</span><span data-v="2">Ukentlig</span><span data-v="3">Daglig</span><span data-v="4">Hver time</span>
+<div id="app" class="flex flex-col h-screen overflow-hidden">
+  <header class="glass border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 flex items-center justify-between z-30 shrink-0">
+    <div class="flex items-center space-x-3">
+      <a href="index.html" title="Til Verktøykassen" class="text-slate-400 hover:text-thansen-500 mr-1"><i class="fa-solid fa-chevron-left"></i></a>
+      <div class="bg-gradient-to-tr from-thansen-500 to-thansen-600 p-2.5 rounded-xl shadow-lg shadow-thansen-500/20 text-white flex items-center justify-center">
+        <i class="fa-solid fa-store text-lg sm:text-xl text-thansen-yellow"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="text-xs font-black tracking-widest text-thansen-yellow bg-thansen-500 px-1.5 py-0.5 rounded">thansen</span>
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white">ButikkPlanlegger</h1>
+        </div>
+        <p class="text-[10px] text-slate-400 dark:text-slate-500">Intern oppgavefordeling og vaktstyring</p>
       </div>
     </div>
-    <div class="row"><label>Frist (valgfritt) — dato &amp; klokkeslett, ned til sekund</label><input type="datetime-local" id="mDue" step="1"></div>
-    <div class="actions">
-      <button class="btn ghost" id="mCancel">Avbryt</button>
-      <button class="btn" id="mSave">Lagre</button>
+
+    <div class="flex items-center space-x-2 sm:space-x-3">
+      <span id="admin-state" class="hidden sm:inline text-[11px] font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400"></span>
+      <button onclick="toggleMobileSidebar()" class="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900" title="Vis ansatte"><i class="fa-solid fa-users text-lg"></i></button>
+      <button onclick="toggleAlertsPanel()" class="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900"><i class="fa-solid fa-bell text-lg"></i><span id="alert-badge" class="absolute top-1 right-1 w-2.5 h-2.5 bg-thansen-red rounded-full hidden"></span></button>
+      <button onclick="toggleTheme()" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900"><i id="theme-icon" class="fa-solid fa-moon text-lg"></i></button>
+      <button id="lockBtn" onclick="toggleAdmin()" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900" title="Logg inn som admin"><i class="fa-solid fa-lock text-lg"></i></button>
+    </div>
+  </header>
+
+  <div class="flex-1 flex overflow-hidden relative">
+    <!-- Sidebar -->
+    <aside id="workspace-sidebar" class="fixed lg:static inset-y-0 left-0 w-80 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 flex flex-col shrink-0 overflow-y-auto z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
+      <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 lg:hidden bg-slate-50 dark:bg-slate-900/40">
+        <span class="font-bold text-sm flex items-center"><i class="fa-solid fa-users mr-2 text-thansen-500"></i>Ansatte & Oversikt</span>
+        <button onclick="toggleMobileSidebar()" class="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-6 border-b border-slate-200 dark:border-slate-800">
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Butikkens Gjøremål</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-thansen-50/50 dark:bg-thansen-500/10 p-3 rounded-xl border border-thansen-100 dark:border-thansen-500/20">
+            <span class="text-xs text-thansen-600 dark:text-thansen-400 font-medium">Planlagt</span>
+            <div id="stat-total-tasks" class="text-2xl font-black text-thansen-700 dark:text-white mt-1">0</div>
+          </div>
+          <div class="bg-emerald-50/50 dark:bg-emerald-950/20 p-3 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
+            <span class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Fullført</span>
+            <div id="stat-completed-tasks" class="text-2xl font-black text-emerald-900 dark:text-emerald-100 mt-1">0</div>
+          </div>
+        </div>
+      </div>
+      <div class="p-6 flex-1 flex flex-col">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Ansattregister</h3>
+            <p class="text-[10px] text-slate-400">Unike 4-bokstavskoder</p>
+          </div>
+          <button id="add-coworker-btn" onclick="openCoworkerModal()" class="hidden text-xs bg-thansen-500 hover:bg-thansen-600 text-white font-bold py-1.5 px-2.5 rounded-lg flex items-center space-x-1 shadow-md">
+            <i class="fa-solid fa-plus text-[10px]"></i><span>Ny ansatt</span>
+          </button>
+        </div>
+        <div id="coworkers-list" class="space-y-2 overflow-y-auto max-h-[280px] pr-1"></div>
+        <div class="mt-6 bg-slate-50 dark:bg-slate-900/60 rounded-xl p-4 border border-slate-200/60 dark:border-slate-800/60 text-xs">
+          <p class="font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center"><i class="fa-solid fa-circle-info text-thansen-500 mr-1.5"></i> Endre Oppgaveansvar</p>
+          <p class="text-slate-500 leading-relaxed mb-2"><strong>Tildel:</strong> Dra en ansatt og slipp på en oppgave (krever admin).</p>
+          <p class="text-slate-500 leading-relaxed"><strong>Fjern:</strong> Dra en person ut fra kortet til den røde slett-sonen.</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 flex flex-col bg-slate-50/50 dark:bg-slate-900/30 overflow-hidden w-full">
+      <div class="p-4 sm:p-6 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex flex-col gap-4 md:flex-row md:items-center md:justify-between shrink-0">
+        <div class="flex flex-col">
+          <h2 class="text-base sm:text-lg font-bold tracking-tight flex items-center"><span id="current-board-title">Gjøremålstavle for butikk</span></h2>
+          <p class="text-[11px] sm:text-xs text-slate-400">Planlegg oppgaver, administrer ukesvakter og overvåk tidsfrister.</p>
+        </div>
+        <div class="flex items-center flex-wrap gap-3">
+          <div class="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200/60 dark:border-slate-800">
+            <button onclick="setViewTab('board')" id="tab-btn-board" class="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm"><i class="fa-solid fa-columns text-thansen-500"></i><span>Tavle</span></button>
+            <button onclick="setViewTab('weekly')" id="tab-btn-weekly" class="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 text-slate-500 dark:text-slate-400"><i class="fa-solid fa-calendar-days"></i><span>Ukesplan</span></button>
+          </div>
+          <button id="add-task-global-btn" onclick="openTaskModal()" class="hidden bg-thansen-500 hover:bg-thansen-600 text-white font-bold text-xs px-3 sm:px-4 py-2 rounded-xl shadow-lg shadow-thansen-500/20 flex items-center space-x-2"><i class="fa-solid fa-plus text-thansen-yellow"></i><span>Ny Oppgave</span></button>
+        </div>
+      </div>
+      <div id="mobile-snap-notif" class="flex lg:hidden items-center justify-center space-x-2 py-2 px-4 bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-900 text-[10px] text-slate-400">
+        <i class="fa-solid fa-angles-left animate-pulse"></i><span>Sveip sidelengs for å se alle kolonner</span><i class="fa-solid fa-angles-right animate-pulse"></i>
+      </div>
+      <div id="workspace-viewport" class="flex-1 overflow-x-auto overflow-y-auto p-4 sm:p-6 relative snap-x-container scroll-smooth">
+        <div id="view-kanban" class="h-full flex space-x-4 sm:space-x-6 min-w-full lg:min-w-[1000px]"></div>
+        <div id="view-weekly" class="h-full space-x-4 min-w-[1200px] hidden grid grid-cols-7 gap-4"></div>
+      </div>
+    </main>
+
+    <!-- Alerts -->
+    <div id="alerts-panel" class="absolute top-0 right-0 h-full w-80 bg-white dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800 shadow-2xl z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+      <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div><h3 class="font-bold flex items-center space-x-2"><i class="fa-solid fa-bell text-thansen-red"></i><span>Varslingssenter</span></h3><p class="text-[10px] text-slate-400">Gjøremål med utgått eller kort frist</p></div>
+        <button onclick="toggleAlertsPanel()" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-400"><i class="fa-solid fa-times"></i></button>
+      </div>
+      <div id="alerts-list" class="flex-1 overflow-y-auto p-6 space-y-4"></div>
+      <div class="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40">
+        <button onclick="clearCompletedAlerts()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-xl flex items-center justify-center space-x-2"><i class="fa-solid fa-check-double text-thansen-500"></i><span>Oppdater statusvarsler</span></button>
+      </div>
     </div>
   </div>
+</div>
+
+<!-- Detail modal -->
+<div id="task-detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+  <div class="bg-white dark:bg-slate-950 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
+    <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/20">
+      <div class="flex items-center space-x-2 text-thansen-500"><i class="fa-solid fa-circle-info text-xl text-thansen-yellow bg-thansen-500 p-1.5 rounded-lg"></i><h3 class="font-bold text-base sm:text-lg">Oppgavedetaljer</h3></div>
+      <button onclick="closeTaskDetailModal()" class="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"><i class="fa-solid fa-times"></i></button>
+    </div>
+    <div class="p-6 overflow-y-auto flex-1 space-y-4">
+      <div><span id="detail-task-priority" class="text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wide"></span><span id="detail-task-frequency" class="bg-slate-100 dark:bg-slate-900 text-slate-500 text-[9px] font-medium px-1.5 py-0.5 rounded ml-2"></span></div>
+      <div><h2 id="detail-task-title" class="text-lg font-bold leading-tight"></h2><div class="flex items-center space-x-1.5 text-slate-400 text-xs mt-1"><i class="fa-regular fa-clock"></i><span id="detail-task-due"></span></div></div>
+      <hr class="border-slate-100 dark:border-slate-800" />
+      <div><h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Beskrivelse & Sjekkliste</h4><div id="detail-task-parsed-desc" class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-xs space-y-2"></div></div>
+      <div><h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Ansvarlige medarbeidere</h4><div id="detail-task-assignees" class="flex flex-wrap gap-2.5"></div></div>
+      <div class="bg-slate-50 dark:bg-slate-900/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Endre Status</label>
+        <select id="detail-task-status-select" onchange="handleDetailStatusChange()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-thansen-500">
+          <option value="todo">🔴 Gjøremål (Ikke startet)</option><option value="progress">🔵 Pågår</option><option value="review">🟡 Venter Godkjenning</option><option value="done">🟢 Fullført / Arkivert</option>
+        </select>
+      </div>
+    </div>
+    <div class="p-6 border-t border-slate-100 dark:border-slate-900 flex items-center justify-between">
+      <button id="detail-btn-delete" onclick="triggerDeleteFromDetail()" class="text-xs text-red-500 hover:text-red-700 font-bold hidden flex items-center space-x-1"><i class="fa-solid fa-trash"></i><span>Slett</span></button>
+      <div class="flex items-center space-x-2 ml-auto">
+        <button onclick="closeTaskDetailModal()" class="px-4 py-2 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 font-bold rounded-xl">Lukk</button>
+        <button id="detail-btn-edit" onclick="triggerEditFromDetail()" class="px-4 py-2 text-xs bg-thansen-500 hover:bg-thansen-600 text-white font-bold rounded-xl shadow-md hidden"><i class="fa-solid fa-pen mr-1"></i> Rediger</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Task create/edit modal -->
+<div id="task-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+  <div class="bg-white dark:bg-slate-950 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
+    <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/20">
+      <h3 id="task-modal-title" class="font-bold text-base sm:text-lg flex items-center space-x-2"><i class="fa-solid fa-circle-plus text-thansen-500"></i><span>Opprett Gjøremål</span></h3>
+      <button onclick="closeTaskModal()" class="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"><i class="fa-solid fa-times"></i></button>
+    </div>
+    <form id="task-form" onsubmit="handleTaskSubmit(event)" class="p-6 space-y-4 overflow-y-auto flex-1 text-xs sm:text-sm">
+      <input type="hidden" id="form-task-id">
+      <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Tittel</label><input type="text" id="task-title" required placeholder="F.eks. Klargjøre dekkskift-stasjon" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"></div>
+      <div>
+        <div class="flex items-center justify-between mb-2"><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Beskrivelse og sjekkliste</label><span class="text-[9px] text-slate-400">@navn, lenker, !viktig, ?avklare, - [ ]</span></div>
+        <textarea id="task-desc" rows="4" placeholder="Rydd verkstedet. @MORT !viktig&#10;- [ ] Rengjør verktøytavlen&#10;?avklare Nok sykkelfett på lager?" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none font-mono text-xs"></textarea>
+      </div>
+      <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Tildel medarbeidere</label><div id="modal-assignees-grid" class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl"></div></div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Gjentakelse</label><select id="task-frequency" onchange="toggleFrequencyNotice()" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"><option value="once">Én gang</option><option value="daily">Daglig</option><option value="weekly">Ukentlig</option><option value="monthly">Månedlig</option></select></div>
+        <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Prioritet</label><select id="task-priority" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"><option value="low">🟢 Lav</option><option value="medium">🟡 Middels</option><option value="high">🔴 Kritisk</option></select></div>
+      </div>
+      <div id="smart-recurring-info" class="hidden p-3 rounded-xl border border-thansen-100 dark:border-thansen-500/30 bg-thansen-50/50 dark:bg-thansen-500/10 text-[10px] text-thansen-600 dark:text-thansen-400 leading-relaxed"><p class="font-bold flex items-center mb-1"><i class="fa-solid fa-circle-nodes mr-1 text-thansen-yellow"></i> Intelligent rotasjon aktiv</p>Fullføres oppgaven i tide, settes neste frist nøyaktig 1 syklus frem. Ved forsinkelse hoppes det til neste kommende intervall for å unngå opphopning.</div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Frist (dato & tid)</label><input type="datetime-local" id="task-due-date" step="1" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"></div>
+        <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status</label><select id="task-status" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"><option value="todo">Gjøremål</option><option value="progress">Pågår</option><option value="review">Godkjenning</option><option value="done">Fullført</option></select></div>
+      </div>
+      <div class="pt-4 border-t border-slate-100 dark:border-slate-900 flex items-center justify-end space-x-3">
+        <button type="button" onclick="closeTaskModal()" class="px-5 py-2.5 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 font-medium rounded-xl">Avbryt</button>
+        <button type="submit" id="task-form-submit-btn" class="px-5 py-2.5 text-xs bg-thansen-500 hover:bg-thansen-600 text-white font-bold rounded-xl shadow-md">Lagre Oppgave</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Coworker modal -->
+<div id="coworker-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+  <div class="bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
+    <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between"><h3 class="font-bold flex items-center space-x-2"><i class="fa-solid fa-user-plus text-thansen-500"></i><span>Registrer Ansatt</span></h3><button onclick="closeCoworkerModal()" class="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"><i class="fa-solid fa-times"></i></button></div>
+    <form id="coworker-form" onsubmit="handleCoworkerSubmit(event)" class="p-5 space-y-4">
+      <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fullt Navn</label><input type="text" id="coworker-name" required placeholder="F.eks. Alexander Thomsen" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-thansen-500 focus:outline-none"></div>
+      <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Unik 4-bokstavskode</label><input type="text" id="coworker-tag" maxlength="4" minlength="4" required placeholder="ALEX" class="w-full uppercase bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-thansen-500 focus:outline-none"><p class="text-[10px] text-slate-400 mt-1">Nøyaktig 4 bokstaver (f.eks. MORT, EMIL)</p></div>
+      <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fargetema</label><div class="grid grid-cols-6 gap-2" id="color-grid"></div><input type="hidden" id="coworker-color" value="#004595"></div>
+      <div class="pt-2 flex items-center justify-end space-x-2"><button type="button" onclick="closeCoworkerModal()" class="px-4 py-2 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 font-medium rounded-xl">Avbryt</button><button type="submit" class="px-4 py-2 text-xs bg-thansen-500 hover:bg-thansen-600 text-white font-bold rounded-xl shadow-md">Registrer</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Trash zone -->
+<div id="assignee-trash-zone" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-thansen-red text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center space-x-3 border-2 border-dashed border-red-300 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
+  <i class="fa-solid fa-user-minus text-xl animate-bounce"></i>
+  <div><p class="text-xs font-bold">Fjern fra oppgave</p><p class="text-[10px] opacity-90">Slipp ansatt-kortet her.</p></div>
 </div>
 
 <script src="shared.js"></script>
 <script>
 const T = window.THelper;
-const $ = id => document.getElementById(id);
-const LOC = 'nb-NO';
-let tasks = [], editId = null, isAdmin = false;
+let isAdmin = false;
+let state = { activeViewTab:'board', coworkers:[], tasks:[], alerts:[] };
+const F2U = { once:'none', daily:'day', weekly:'week', monthly:'month' };
+const U2F = { none:'once', day:'daily', week:'weekly', month:'monthly', hour:'daily' };
+const PALETTE = ['#004595','#e30613','#10b981','#f59e0b','#3b82f6','#ec4899'];
 
-const RECUR       = ['none','month','week','day','hour'];
-const RECUR_LABEL = ['Aldri','Månedlig','Ukentlig','Daglig','Hver time'];
-const idxToUnit = i => RECUR[i] || 'none';
-const unitToIdx = u => { const i = RECUR.indexOf(u); return i < 0 ? 0 : i; };
-const recurChip = u => u==='hour'?'Hver time':u==='day'?'Daglig':u==='week'?'Ukentlig':u==='month'?'Månedlig':'Engang';
-
-/* ---------- datoer ---------- */
-function dueChip(dueAt){
-  if(!dueAt) return null;
-  const ms = new Date(dueAt) - new Date();
-  if(ms < 0){
-    const as = -ms/1000;
-    if(as < 60) return {txt:`Forfalt ${Math.round(as)}s`, cls:'over'};
-    const min = as/60; if(min < 60) return {txt:`Forfalt ${Math.round(min)} min`, cls:'over'};
-    const h = min/60;  if(h < 24)  return {txt:`Forfalt ${Math.round(h)}t`, cls:'over'};
-    return {txt:`Forfalt ${Math.round(h/24)}d`, cls:'over'};
+/* ---------- boot ---------- */
+window.onload = function () {
+  if (localStorage.getItem('th.theme') === 'dark' ||
+      (!localStorage.getItem('th.theme') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+    document.getElementById('theme-icon').className = 'fa-solid fa-sun text-lg';
   }
-  const s = ms/1000;
-  if(s < 60) return {txt:`Om ${Math.round(s)}s`, cls:'today'};
-  const min = s/60; if(min < 60) return {txt:`Om ${Math.round(min)} min`, cls:'today'};
-  const hrs = min/60; if(hrs < 24) return {txt:`Om ${Math.round(hrs)}t`, cls:'today'};
-  const days = Math.round(hrs/24);
-  if(days === 1) return {txt:'I morgen', cls:'soon'};
-  if(days <= 7)  return {txt:`Om ${days}d`, cls:'soon'};
-  return {txt:new Date(dueAt).toLocaleDateString(LOC,{day:'numeric',month:'short'}), cls:''};
-}
-const pad = n => String(n).padStart(2,'0');
-function dtToInput(dt){ const d=new Date(dt);
-  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); }
-function inputToISO(v){ return v ? new Date(v).toISOString() : null; }
+  buildColorGrid();
+  refreshAdminUI();
+  loadAll();
+  setInterval(() => { recalculateAlerts(); renderAlertsList(); renderStats(); }, 30000);
+  if (T.sb) {
+    T.sb.channel('board-rt')
+      .on('postgres_changes',{event:'*',schema:'public',table:'tasks'}, loadAll)
+      .on('postgres_changes',{event:'*',schema:'public',table:'coworkers'}, loadAll)
+      .subscribe();
+  }
+};
 
-/* ---------- markdown (trygt: escape først) ---------- */
-function mdInline(s){
-  s = T.esc(s);
-  s = s.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
-  s = s.replace(/(^|[^*])\*([^*]+)\*/g,'$1<i>$2</i>');
-  s = s.replace(/`([^`]+)`/g,'<code>$1</code>');
-  return s;
+async function loadAll(){
+  if(!T.sb){ showToast('Supabase utilgjengelig','#e30613'); return; }
+  const [cw, tk] = await Promise.all([ T.sb.from('coworkers').select('*'), T.sb.from('tasks').select('*') ]);
+  if(cw.error || tk.error){
+    const msg=(cw.error||tk.error).message||'';
+    if(/relation|does not exist|column|schema cache/i.test(msg)) showToast('Kjør migreringen tasks_v5.sql','#e30613');
+    else showToast('Lastefeil: '+msg,'#e30613');
+    return;
+  }
+  state.coworkers = (cw.data||[]).sort((a,b)=>a.tag.localeCompare(b.tag));
+  state.tasks = (tk.data||[]).map(r=>({
+    id:r.id, title:r.title||'', desc:r.notes||'', assignees:r.assignees||[],
+    frequency:U2F[r.recur_unit]||'once', due:r.due_at, priority:r.priority||'medium', status:r.status||'todo'
+  }));
+  recalculateAlerts(); renderCoworkerList(); renderScheduler(); renderStats(); renderAlertsList();
 }
-function mdToHtml(src){
-  if(!src) return '';
-  let ci=-1; const out=[];
-  for(const raw of src.split('\n')){
-    const line = raw.replace(/\s+$/,'');
-    let m;
-    if(m = line.match(/^\s*[-*]\s+\[([ xX])\]\s+(.*)$/)){
-      ci++; const on = m[1].toLowerCase()==='x';
-      out.push(`<label class="md-chk ${on?'on':''}"><input type="checkbox" data-ci="${ci}" ${on?'checked':''}><span>${mdInline(m[2])}</span></label>`);
-    } else if(m = line.match(/^\s*[-*]\s+(.*)$/)){
-      out.push(`<div class="md-li">${mdInline(m[1])}</div>`);
-    } else if(m = line.match(/^#{1,3}\s+(.*)$/)){
-      out.push(`<div class="md-h">${mdInline(m[1])}</div>`);
-    } else if(line.trim()===''){
-      out.push('<div class="md-sp"></div>');
-    } else {
-      out.push(`<div class="md-p">${mdInline(line)}</div>`);
+
+/* ---------- admin / theme ---------- */
+function refreshAdminUI(){
+  isAdmin = !!T.getPass();
+  document.getElementById('lockBtn').innerHTML = `<i class="fa-solid ${isAdmin?'fa-lock-open':'fa-lock'} text-lg"></i>`;
+  document.getElementById('lockBtn').title = isAdmin ? 'Logg ut' : 'Logg inn som admin';
+  document.getElementById('admin-state').textContent = isAdmin ? '🔓 Butikksjef' : '👁 Visning';
+  document.getElementById('add-task-global-btn').classList.toggle('hidden', !isAdmin);
+  document.getElementById('add-coworker-btn').classList.toggle('hidden', !isAdmin);
+  renderScheduler(); renderCoworkerList();
+}
+async function toggleAdmin(){
+  if(T.getPass()){ T.clearPass(); refreshAdminUI(); showToast('Logget ut','#64748b'); }
+  else { const p = await T.ensurePass(); if(p){ refreshAdminUI(); showToast('Logget inn som Butikksjef','#004595'); } }
+}
+function toggleTheme(){
+  const root=document.documentElement, icon=document.getElementById('theme-icon');
+  const dark=root.classList.toggle('dark');
+  icon.className = dark ? 'fa-solid fa-sun text-lg' : 'fa-solid fa-moon text-lg';
+  localStorage.setItem('th.theme', dark?'dark':'light');
+}
+function toggleMobileSidebar(){ document.getElementById('workspace-sidebar').classList.toggle('-translate-x-full'); }
+function toggleAlertsPanel(){ document.getElementById('alerts-panel').classList.toggle('translate-x-full'); }
+
+/* ---------- coworkers ---------- */
+function renderCoworkerList(){
+  const list=document.getElementById('coworkers-list'); list.innerHTML='';
+  if(!state.coworkers.length){ list.innerHTML='<p class="text-xs text-slate-400 italic p-2">Ingen ansatte registrert.</p>'; return; }
+  state.coworkers.forEach(c=>{
+    const item=document.createElement('div');
+    item.className="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 transition-all"+(isAdmin?' cursor-grab active:cursor-grabbing':'');
+    if(isAdmin){
+      item.setAttribute('draggable','true');
+      item.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text/plain',`coworker:${c.tag}`); item.classList.add('opacity-40'); });
+      item.addEventListener('dragend',()=>item.classList.remove('opacity-40'));
     }
-  }
+    item.innerHTML=`
+      <div class="flex items-center space-x-2.5">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-[10px]" style="background-color:${c.color}">${esc(c.tag)}</div>
+        <div class="flex flex-col"><span class="text-xs font-semibold text-slate-700 dark:text-slate-200">${esc(c.name)}</span><span class="text-[9px] text-slate-400">${c.role==='admin'?'Sjef':'Medarbeider'}</span></div>
+      </div>
+      <div class="flex items-center space-x-2">
+        ${isAdmin?`<button onclick="deleteCoworker('${esc(c.tag)}')" class="text-slate-300 hover:text-thansen-red" title="Fjern"><i class="fa-solid fa-user-xmark text-xs"></i></button>`
+                 :`<i class="fa-solid fa-grip-vertical text-xs text-slate-300 dark:text-slate-700"></i>`}
+      </div>`;
+    list.appendChild(item);
+  });
+}
+function renderAssigneeGridForm(){
+  const grid=document.getElementById('modal-assignees-grid'); grid.innerHTML='';
+  state.coworkers.forEach(c=>{
+    const item=document.createElement('label');
+    item.className="flex items-center space-x-2 p-2 bg-white dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900";
+    item.innerHTML=`<input type="checkbox" value="${esc(c.tag)}" name="task-assignees-check" class="rounded text-thansen-500 focus:ring-thansen-500"><span class="w-4 h-4 rounded text-[8px] font-bold text-white flex items-center justify-center" style="background-color:${c.color}">${esc(c.tag)}</span><span class="text-xs text-slate-700 dark:text-slate-300 font-medium truncate">${esc(c.name)}</span>`;
+    grid.appendChild(item);
+  });
+}
+function buildColorGrid(){
+  const g=document.getElementById('color-grid'); g.innerHTML='';
+  PALETTE.forEach(col=>{ const b=document.createElement('button'); b.type='button'; b.className='h-8 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-white'; b.style.backgroundColor=col; b.onclick=()=>{ document.getElementById('coworker-color').value=col; }; g.appendChild(b); });
+}
+function openCoworkerModal(){ if(!isAdmin){ showToast('Kun Butikksjef kan registrere ansatte.','#e30613'); return; } document.getElementById('coworker-modal').classList.remove('hidden'); }
+function closeCoworkerModal(){ document.getElementById('coworker-modal').classList.add('hidden'); document.getElementById('coworker-form').reset(); document.getElementById('coworker-color').value='#004595'; }
+async function handleCoworkerSubmit(e){
+  e.preventDefault();
+  const name=document.getElementById('coworker-name').value.trim();
+  const tag=document.getElementById('coworker-tag').value.trim().toUpperCase();
+  const color=document.getElementById('coworker-color').value;
+  if(tag.length!==4){ showToast('Koden må være nøyaktig 4 tegn.','#e30613'); return; }
+  if(state.coworkers.some(c=>c.tag===tag)){ showToast('Koden finnes allerede.','#e30613'); return; }
+  try{ await T.rpc('add_coworker',{p_tag:tag,p_name:name,p_color:color}); closeCoworkerModal(); await loadAll(); showToast(`Ansatt ${tag} registrert!`,color); }
+  catch(err){ if(err.message!=='no-pass') showToast('Feil: '+err.message,'#e30613'); }
+}
+async function deleteCoworker(tag){
+  if(!isAdmin) return;
+  if(!confirm('Fjerne ansatt '+tag+' fra registeret?')) return;
+  try{ await T.rpc('delete_coworker',{p_tag:tag}); await loadAll(); showToast('Ansatt fjernet','#e30613'); }
+  catch(e){ if(e.message!=='no-pass') showToast('Feil: '+e.message,'#e30613'); }
+}
+
+/* ---------- view tabs ---------- */
+function setViewTab(tab){
+  state.activeViewTab=tab;
+  const b=document.getElementById('tab-btn-board'), w=document.getElementById('tab-btn-weekly');
+  const vb=document.getElementById('view-kanban'), vw=document.getElementById('view-weekly');
+  const on="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm";
+  const off="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 text-slate-500 dark:text-slate-400";
+  if(tab==='board'){ b.className=on; w.className=off; vb.classList.remove('hidden'); vw.classList.add('hidden'); vw.classList.remove('grid'); document.getElementById('current-board-title').innerText='Gjøremålstavle for butikk'; }
+  else { w.className=on; b.className=off; vb.classList.add('hidden'); vw.classList.remove('hidden'); vw.classList.add('grid'); document.getElementById('current-board-title').innerText='Vaktskjema & Ukesplan'; }
+  renderScheduler();
+}
+function renderScheduler(){ state.activeViewTab==='board' ? renderKanbanView() : renderWeeklyPlannerView(); }
+
+/* ---------- kanban ---------- */
+function renderKanbanView(){
+  const c=document.getElementById('view-kanban'); c.innerHTML='';
+  const cols=[ {id:'todo',title:'🔴 Gjøremål'},{id:'progress',title:'🔵 Pågår'},{id:'review',title:'🟡 Godkjenning'},{id:'done',title:'🟢 Fullført'} ];
+  cols.forEach(col=>{
+    const el=document.createElement('div');
+    el.className="w-[85vw] sm:w-80 flex flex-col h-full shrink-0 bg-slate-100/30 dark:bg-slate-950/40 rounded-2xl p-4 border border-slate-200/50 dark:border-slate-800/40 snap-column";
+    el.addEventListener('dragover',e=>{ e.preventDefault(); el.classList.add('border-thansen-500'); });
+    el.addEventListener('dragleave',()=>el.classList.remove('border-thansen-500'));
+    el.addEventListener('drop',e=>{ el.classList.remove('border-thansen-500'); const d=e.dataTransfer.getData('text/plain'); if(d.startsWith('task:')) moveTaskStatus(d.slice(5), col.id); });
+    const colTasks=state.tasks.filter(t=>t.status===col.id);
+    el.innerHTML=`<div class="flex items-center justify-between mb-4 shrink-0"><div class="flex items-center space-x-2"><span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300">${col.title}</span><span class="text-xs text-slate-400 font-medium">${colTasks.length}</span></div></div><div class="flex-1 overflow-y-auto space-y-3 pb-4" id="kanban-col-${col.id}"></div>`;
+    c.appendChild(el);
+    const cl=document.getElementById(`kanban-col-${col.id}`);
+    if(!colTasks.length){ cl.innerHTML=`<div class="h-28 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center text-slate-400 text-xs"><i class="fa-solid fa-clipboard-list mb-1.5"></i><span>Ingen oppgaver</span></div>`; }
+    else colTasks.forEach(t=>cl.appendChild(createTaskCard(t,false)));
+  });
+}
+
+/* ---------- rich text ---------- */
+function parseDescriptionToHTML(taskId, desc, readOnly=false){
+  if(!desc) return '<p class="text-[11px] text-slate-400 italic">Ingen beskrivelse.</p>';
+  const lines=desc.split('\n'); const out=[]; let ci=0;
+  lines.forEach(line=>{
+    let p=line;
+    const cm=p.match(/^-\s*\[([ xX])\]\s*(.+)/);
+    if(cm){ const on=cm[1].toLowerCase()==='x'; const idx=ci++; out.push(`<label class="flex items-start space-x-2.5 my-1.5 cursor-pointer select-none"><input type="checkbox" onchange="toggleTaskCheckline('${taskId}',${idx})" ${on?'checked':''} ${readOnly?'disabled':''} class="mt-0.5 rounded text-thansen-500 focus:ring-thansen-500 w-4 h-4"><span class="text-xs leading-normal ${on?'line-through text-slate-400':'text-slate-600 dark:text-slate-300'}">${esc(cm[2])}</span></label>`); return; }
+    if(p.includes('!viktig')||p.includes('!important')){ p=p.replace('!viktig','').replace('!important','').trim(); out.push(`<div class="bg-red-500/10 border-l-4 border-thansen-red p-2 my-2 rounded-r text-[11px] text-red-700 dark:text-red-400 font-bold flex items-center space-x-1.5"><i class="fa-solid fa-triangle-exclamation text-thansen-red"></i><span>VIKTIG: ${esc(p)}</span></div>`); return; }
+    if(p.startsWith('?avklare')||p.startsWith('?clarify')){ p=p.replace('?avklare','').replace('?clarify','').trim(); out.push(`<div class="bg-amber-500/10 border-l-4 border-thansen-yellow p-2 my-2 rounded-r text-[11px] text-amber-800 dark:text-amber-400 font-bold flex items-center space-x-1.5"><i class="fa-solid fa-circle-question text-amber-600"></i><span>SPØRSMÅL: ${esc(p)}</span></div>`); return; }
+    p=esc(p).replace(/(https?:\/\/[^\s]+)/g,m=>`<a href="${m}" target="_blank" rel="noopener" class="text-thansen-500 dark:text-thansen-yellow hover:underline font-bold"><i class="fa-solid fa-external-link text-[9px] mr-0.5"></i>Lenke</a>`);
+    state.coworkers.forEach(c=>{ p=p.replace(new RegExp(`@${c.tag}\\b`,'g'),`<span class="inline-flex items-center px-1.5 py-0.5 rounded-md font-extrabold text-[9px] text-white" style="background-color:${c.color}">@${c.tag}</span>`); });
+    if(p.trim()!=='') out.push(`<p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-1">${p}</p>`);
+  });
   return out.join('');
 }
-
-/* ---------- glidebryter ---------- */
-function setSlider(idx){
-  const s = $('mSlider'), ticks = $('mTicks'), lbl = $('mRlabel');
-  s.value = idx;
-  const paint = () => {
-    const v = +s.value;
-    lbl.textContent = RECUR_LABEL[v];
-    [...ticks.children].forEach(c => c.classList.toggle('on', +c.dataset.v === v));
-  };
-  s.oninput = paint;
-  ticks.onclick = e => { const sp = e.target.closest('span'); if(!sp) return; s.value = sp.dataset.v; paint(); };
-  paint();
+async function toggleTaskCheckline(taskId, idx){
+  try{ const {error}=await T.sb.rpc('toggle_check',{p_id:taskId,p_ci:idx}); if(error) throw error; await loadAll(); showToast('Sjekkliste oppdatert','#10b981'); }
+  catch(e){ showToast('Feil: '+e.message,'#e30613'); }
 }
 
-/* ---------- visning ---------- */
-function fillAssignees(){
-  const names = [...new Set(tasks.map(t=>t.assignee).filter(Boolean))].sort((a,b)=>a.localeCompare(b,LOC));
-  $('assigneeList').innerHTML = names.map(n=>`<option value="${T.esc(n)}">`).join('');
-}
-function render(){
-  const box = $('list');
-  if(!tasks.length){ box.innerHTML = '<div class="empty">Ingen oppgaver ennå.</div>'; return; }
-  const open = tasks.filter(t=>!t.done).sort((a,b)=>{
-    if(!a.due_at) return 1; if(!b.due_at) return -1;
-    return new Date(a.due_at) - new Date(b.due_at);
-  });
-  const done = tasks.filter(t=>t.done);
-  let html = '<ul>'+open.map(row).join('')+'</ul>';
-  if(done.length) html += `<div class="sec-h">Fullført (${done.length})</div><ul>`+done.map(row).join('')+'</ul>';
-  box.innerHTML = html;
-}
-function row(t){
-  const e = T.esc, meta = [];
-  meta.push(`<span class="chip recur">${e(recurChip(t.recur_unit))}</span>`);
-  if(t.assignee) meta.push(`<span class="chip who">👤 ${e(t.assignee)}</span>`);
-  if(!t.done){ const c = dueChip(t.due_at); if(c) meta.push(`<span class="chip ${c.cls}">${e(c.txt)}</span>`); }
-  const acts = isAdmin
-    ? `<div class="t-act"><button class="icobtn" data-act="edit" title="Rediger">✎</button><button class="icobtn" data-act="del" title="Slett">🗑</button></div>`
-    : '';
-  return `<li class="task ${t.done?'done':''}" data-id="${e(t.id)}">
-    <input type="checkbox" class="check" data-act="check" ${t.done?'checked':''}>
-    <div class="t-main">
-      <div class="t-title">${e(t.title)}</div>
-      ${t.notes ? `<div class="t-desc">${mdToHtml(t.notes)}</div>` : ''}
-      <div class="t-meta">${meta.join('')}</div>
-    </div>
-    ${acts}
-  </li>`;
-}
+/* ---------- task cards ---------- */
+function createTaskCard(task, weekly=false){
+  const card=document.createElement('div');
+  const overdue = task.due && new Date(task.due)<new Date() && task.status!=='done';
+  card.id=`card-${task.id}`;
+  card.addEventListener('click',e=>{ if(e.target.tagName==='INPUT'||e.target.closest('button')||e.target.closest('[draggable="true"]')) return; openTaskDetailModal(task.id); });
+  card.setAttribute('draggable','true');
+  card.addEventListener('dragstart',e=>{ e.stopPropagation(); e.dataTransfer.setData('text/plain',`task:${task.id}`); card.classList.add('opacity-40'); });
+  card.addEventListener('dragend',()=>card.classList.remove('opacity-40'));
 
-/* ---------- data ---------- */
-async function load(){
-  if(!T.sb){ showBanner('Kunne ikke laste Supabase-biblioteket.'); return; }
-  const {data,error} = await T.sb.from('tasks').select('*');
-  if(error){
-    if(/relation|does not exist|schema cache|column/i.test(error.message||''))
-      showBanner('Oppgave-backend mangler migreringen (tasks.sql + _v2 + _v3 + _v4). Kjør dem og last inn på nytt.');
-    else showBanner('Lastefeil: '+error.message);
-    tasks=[]; render(); return;
+  const dot = task.priority==='high'?'bg-red-500':task.priority==='medium'?'bg-amber-500':'bg-emerald-500';
+  if(weekly){
+    card.className=`p-3 rounded-xl border bg-white dark:bg-slate-950 shadow-sm hover:shadow-md transition-all cursor-pointer ${overdue?'border-red-300 dark:border-red-900':'border-slate-200 dark:border-slate-800/80 hover:border-thansen-500/50'}`;
+    const time = task.due ? new Date(task.due).toLocaleTimeString('no-NO',{hour:'2-digit',minute:'2-digit'}) : '--:--';
+    const d1 = task.desc ? task.desc.split('\n')[0] : '';
+    let w=''; (task.assignees||[]).forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<div class="w-4 h-4 rounded text-[7px] font-bold text-white flex items-center justify-center border border-white dark:border-slate-900" style="background-color:${c.color}" title="${tag}">${esc(tag)}</div>`; });
+    card.innerHTML=`<div class="flex flex-col space-y-1"><div class="flex items-center justify-between"><span class="text-[9px] font-black text-slate-400 flex items-center space-x-1"><span class="w-1.5 h-1.5 rounded-full ${dot}"></span><span>kl. ${time}</span></span>${overdue?'<span class="text-[8px] text-red-500 font-extrabold">OVERTID</span>':''}</div><h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate pr-4">${esc(task.title)}</h4><p class="text-[10px] text-slate-400 truncate">${esc(d1)}</p><div class="flex flex-wrap gap-1.5 mt-2">${w}</div></div>`;
+    return card;
   }
-  hideBanner(); tasks = data || []; fillAssignees(); render();
-}
-const showBanner = m => { const b=$('banner'); b.textContent=m; b.style.display='block'; };
-const hideBanner = () => { $('banner').style.display='none'; };
 
-/* ---------- avkryssing (åpen — krever ikke admin) ---------- */
-async function toggle(t){
+  card.className=`p-4 rounded-xl border bg-white dark:bg-slate-950 shadow-sm hover:shadow-md transition-all cursor-pointer ${overdue?'border-red-300 dark:border-red-900 bg-red-50/10':'border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700'}`;
+  card.addEventListener('dragover',e=>{ e.preventDefault(); if(isAdmin) card.classList.add('ring-2','ring-thansen-500'); });
+  card.addEventListener('dragleave',()=>card.classList.remove('ring-2','ring-thansen-500'));
+  card.addEventListener('drop',e=>{ e.preventDefault(); card.classList.remove('ring-2','ring-thansen-500'); const d=e.dataTransfer.getData('text/plain'); if(d.startsWith('coworker:')) appendAssigneeToTask(task.id, d.slice(9)); });
+
+  let pri = task.priority==='high'?`<span class="bg-red-100 text-red-700 dark:bg-red-950/45 dark:text-red-400 text-[9px] font-bold px-2 py-0.5 rounded uppercase">Kritisk</span>`
+           :task.priority==='medium'?`<span class="bg-amber-100 text-amber-700 dark:bg-amber-950/45 dark:text-amber-400 text-[9px] font-bold px-2 py-0.5 rounded uppercase">Middels</span>`
+           :`<span class="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/45 dark:text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded uppercase">Lav</span>`;
+  const FR={ once:{i:'fa-bullseye',d:'Én gang'},daily:{i:'fa-arrows-spin',d:'Daglig'},weekly:{i:'fa-rotate',d:'Ukentlig'},monthly:{i:'fa-calendar-days',d:'Månedlig'} };
+  const fr=FR[task.frequency]||FR.once;
+  let asg=''; if((task.assignees||[]).length){ asg='<div class="flex items-center gap-2 flex-wrap">'; task.assignees.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{name:tag,color:'#64748b'}; asg+=`<div ${isAdmin?`draggable="true" ondragstart="handleAssigneeDragStart(event,'${task.id}','${tag}')" ondragend="handleAssigneeDragEnd()"`:''} class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-white text-[9px] shadow-sm ring-2 ring-slate-100 dark:ring-slate-900 ${isAdmin?'cursor-grab active:cursor-grabbing hover:scale-110':''} transition-transform relative group/pill" style="background-color:${c.color}" title="${esc(c.name)}">${esc(tag)}${isAdmin?`<button onclick="removeAssigneeFromTask('${task.id}','${tag}')" class="absolute -top-1 -right-1 hidden group-hover/pill:flex bg-thansen-red rounded-full w-3.5 h-3.5 items-center justify-center text-[8px] text-white">×</button>`:''}</div>`; }); asg+='</div>'; }
+  else asg=`<span class="text-[9px] text-slate-400 italic">Ingen tildelt</span>`;
+
+  card.innerHTML=`<div class="flex flex-col space-y-2.5">
+    <div class="flex items-center justify-between"><div class="flex items-center space-x-1.5 flex-wrap">${pri}<span class="bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-[9px] font-medium px-1.5 py-0.5 rounded flex items-center space-x-1"><i class="fa-solid ${fr.i}"></i><span>${fr.d}</span></span></div>${overdue?'<span class="text-[9px] font-bold text-red-500 flex items-center space-x-1"><i class="fa-solid fa-triangle-exclamation"></i><span>OVERTID</span></span>':''}</div>
+    <div><h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight mb-2">${esc(task.title)}</h4><div class="space-y-1 mt-1">${parseDescriptionToHTML(task.id, task.desc)}</div></div>
+    <div class="pt-2 border-t border-slate-100 dark:border-slate-900 flex items-center justify-between">${asg}<div class="flex items-center space-x-1 text-slate-400 text-[10px]" title="Frist"><i class="fa-regular fa-clock text-[9px]"></i><span>${formatCardDate(task.due)}</span></div></div>
+  </div>`;
+  return card;
+}
+
+/* ---------- assignee drag-out ---------- */
+let activeDragAssignee=null;
+function handleAssigneeDragStart(e, taskId, tag){
+  if(!isAdmin){ showToast('Kun Butikksjef kan endre ansvar.','#e30613'); e.preventDefault(); return; }
+  e.stopPropagation(); activeDragAssignee={taskId,tag};
+  const z=document.getElementById('assignee-trash-zone'); z.classList.remove('translate-y-24','opacity-0','pointer-events-none'); z.classList.add('translate-y-0','opacity-100');
+}
+function handleAssigneeDragEnd(){ const z=document.getElementById('assignee-trash-zone'); z.classList.remove('translate-y-0','opacity-100'); z.classList.add('translate-y-24','opacity-0','pointer-events-none'); activeDragAssignee=null; }
+(function(){ const z=document.getElementById('assignee-trash-zone');
+  z.addEventListener('dragover',e=>{ e.preventDefault(); z.classList.add('scale-105'); });
+  z.addEventListener('dragleave',()=>z.classList.remove('scale-105'));
+  z.addEventListener('drop',e=>{ e.preventDefault(); z.classList.remove('scale-105'); if(activeDragAssignee) removeAssigneeFromTask(activeDragAssignee.taskId, activeDragAssignee.tag); });
+})();
+
+/* ---------- weekly ---------- */
+function renderWeeklyPlannerView(){
+  const w=document.getElementById('view-weekly'); w.innerHTML='';
+  const days=['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag','Søndag'];
+  const cur=(new Date().getDay()===0)?6:new Date().getDay()-1;
+  days.forEach((dn,idx)=>{
+    const col=document.createElement('div'); const today=idx===cur;
+    col.className=`flex flex-col h-full bg-slate-100/20 dark:bg-slate-950/20 rounded-2xl p-4 border transition-all snap-column ${today?'border-thansen-500/40 bg-thansen-500/5':'border-slate-200/60 dark:border-slate-800/60'}`;
+    col.addEventListener('dragover',e=>{ e.preventDefault(); col.classList.add('border-thansen-500'); });
+    col.addEventListener('dragleave',()=>col.classList.remove('border-thansen-500'));
+    col.addEventListener('drop',e=>{ col.classList.remove('border-thansen-500'); const d=e.dataTransfer.getData('text/plain'); if(d.startsWith('task:')) rescheduleTaskToWeekday(d.slice(5), idx); });
+    const dt=state.tasks.filter(t=>{ if(!t.due||t.status==='done') return false; const x=new Date(t.due); const di=x.getDay()===0?6:x.getDay()-1; return di===idx; });
+    col.innerHTML=`<div class="flex items-center justify-between mb-3 shrink-0 pb-2 border-b border-slate-100 dark:border-slate-900"><div class="flex flex-col"><span class="text-xs font-bold ${today?'text-thansen-500 dark:text-thansen-yellow':'text-slate-700 dark:text-slate-300'}">${dn}</span><span class="text-[9px] text-slate-400 font-semibold">${today?'I dag':'Vaktplan'}</span></div><span class="text-xs font-bold bg-slate-100 dark:bg-slate-900 text-slate-500 px-2 py-0.5 rounded-lg">${dt.length}</span></div><div class="flex-1 overflow-y-auto space-y-3 pb-2" id="weekly-day-${idx}"></div>`;
+    w.appendChild(col);
+    const cl=document.getElementById(`weekly-day-${idx}`);
+    if(!dt.length) cl.innerHTML=`<div class="h-16 border-2 border-dashed border-slate-200/50 dark:border-slate-800/50 rounded-xl flex items-center justify-center text-slate-400 text-[10px]"><span>Ingen oppgaver</span></div>`;
+    else dt.forEach(t=>cl.appendChild(createTaskCard(t,true)));
+  });
+}
+
+/* ---------- detail modal ---------- */
+let currentTaskId=null;
+function openTaskDetailModal(taskId){
+  const t=state.tasks.find(x=>x.id===taskId); if(!t) return; currentTaskId=taskId;
+  document.getElementById('detail-task-title').innerText=t.title;
+  document.getElementById('detail-task-due').innerText=formatCardDate(t.due);
+  const pb=document.getElementById('detail-task-priority'); pb.className="text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wide";
+  if(t.priority==='high'){ pb.innerText='Kritisk'; pb.classList.add('bg-red-100','text-red-700'); }
+  else if(t.priority==='medium'){ pb.innerText='Middels'; pb.classList.add('bg-amber-100','text-amber-700'); }
+  else { pb.innerText='Lav'; pb.classList.add('bg-emerald-100','text-emerald-700'); }
+  document.getElementById('detail-task-frequency').innerText={once:'Én gang',daily:'Daglig',weekly:'Ukentlig',monthly:'Månedlig'}[t.frequency]||t.frequency;
+  document.getElementById('detail-task-parsed-desc').innerHTML=parseDescriptionToHTML(t.id,t.desc,false);
+  const ac=document.getElementById('detail-task-assignees'); ac.innerHTML='';
+  if((t.assignees||[]).length) t.assignees.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{name:tag,color:'#64748b'}; const b=document.createElement('div'); b.className="px-3 py-1.5 rounded-lg text-white text-xs font-bold flex items-center space-x-1.5 shadow-sm"; b.style.backgroundColor=c.color; b.innerHTML=`<span>${esc(tag)}</span><span class="text-[10px] opacity-80">(${esc(c.name.split(' ')[0])})</span>`; ac.appendChild(b); });
+  else ac.innerHTML=`<span class="text-xs text-slate-400 italic">Ingen tildelt.</span>`;
+  document.getElementById('detail-task-status-select').value=t.status;
+  document.getElementById('detail-btn-delete').classList.toggle('hidden',!isAdmin);
+  document.getElementById('detail-btn-edit').classList.toggle('hidden',!isAdmin);
+  document.getElementById('task-detail-modal').classList.remove('hidden');
+}
+function closeTaskDetailModal(){ document.getElementById('task-detail-modal').classList.add('hidden'); currentTaskId=null; }
+function handleDetailStatusChange(){ if(currentTaskId) moveTaskStatus(currentTaskId, document.getElementById('detail-task-status-select').value); }
+function triggerDeleteFromDetail(){ const id=currentTaskId; closeTaskDetailModal(); deleteTask(id); }
+function triggerEditFromDetail(){ const id=currentTaskId; closeTaskDetailModal(); editTask(id); }
+
+/* ---------- mutations ---------- */
+async function moveTaskStatus(taskId, target){
   try{
-    const {data,error} = await T.sb.rpc('set_done',{p_id:t.id, p_done:!t.done});
-    if(error) throw error;
-    const nt = Array.isArray(data) ? data[0] : data;
-    if(!t.done && nt && nt.recur_unit && nt.recur_unit!=='none' && nt.due_at){
-      const d = new Date(nt.due_at);
-      const when = nt.recur_unit==='hour'
-        ? 'kl. '+d.toLocaleTimeString(LOC,{hour:'2-digit',minute:'2-digit'})
-        : d.toLocaleDateString(LOC,{day:'numeric',month:'short'});
-      T.toast('Flyttet til → '+when);
-    }
-    await load();
-  }catch(e){ T.toast('Feil: '+e.message); load(); }
+    const {data,error}=await T.sb.rpc('set_status',{p_id:taskId,p_status:target}); if(error) throw error;
+    const nt=Array.isArray(data)?data[0]:data; await loadAll();
+    if(target==='done' && nt && nt.recur_unit!=='none' && nt.due_at) showToast('Rutine fullført — neste: '+formatCardDate(nt.due_at),'#10b981');
+    else showToast('Status oppdatert','#004595');
+  }catch(e){ showToast('Feil: '+e.message,'#e30613'); loadAll(); }
 }
-async function toggleDescCheck(t, ci){
-  try{ const {error} = await T.sb.rpc('toggle_check',{p_id:t.id, p_ci:ci}); if(error) throw error; await load(); }
-  catch(e){ T.toast('Feil: '+e.message); load(); }
+async function appendAssigneeToTask(taskId, tag){
+  if(!isAdmin){ showToast('Kun Butikksjef kan tildele.','#e30613'); return; }
+  const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
+  if(t.assignees.includes(tag)){ showToast(`${tag} er allerede tildelt.`,'#f59e0b'); return; }
+  try{ await T.rpc('set_assignees',{p_id:taskId,p_assignees:[...t.assignees,tag]}); await loadAll(); showToast(`Tildelte ${tag}`,'#004595'); }
+  catch(e){ if(e.message!=='no-pass') showToast('Feil: '+e.message,'#e30613'); }
+}
+async function removeAssigneeFromTask(taskId, tag){
+  if(!isAdmin){ showToast('Kun Butikksjef kan endre ansvar.','#e30613'); return; }
+  const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
+  try{ await T.rpc('set_assignees',{p_id:taskId,p_assignees:t.assignees.filter(a=>a!==tag)}); await loadAll(); showToast(`Fjernet ${tag}`,'#e30613'); }
+  catch(e){ if(e.message!=='no-pass') showToast('Feil: '+e.message,'#e30613'); }
+}
+async function rescheduleTaskToWeekday(taskId, dayIndex){
+  if(!isAdmin){ showToast('Kun Butikksjef kan flytte vakter.','#e30613'); return; }
+  const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
+  const today=new Date(); const cur=today.getDay()===0?6:today.getDay()-1;
+  const target=new Date(); target.setDate(today.getDate()+(dayIndex-cur));
+  const o=t.due?new Date(t.due):new Date(); target.setHours(o.getHours(),o.getMinutes(),0,0);
+  try{ await T.rpc('update_task',{p_id:taskId,p_task:{due_at:target.toISOString()}}); await loadAll(); const days=['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag','Søndag']; showToast('Flyttet til '+days[dayIndex],'#10b981'); }
+  catch(e){ if(e.message!=='no-pass') showToast('Feil: '+e.message,'#e30613'); }
 }
 
-/* ---------- admin-handlinger ---------- */
-async function del(t){
-  if(!confirm('Slette «'+t.title+'»?')) return;
-  try{ await T.rpc('delete_task',{p_id:t.id}); await load(); }
-  catch(e){ if(e.message!=='no-pass') T.toast('Kunne ikke slette: '+e.message); }
+/* ---------- create / edit ---------- */
+function toggleFrequencyNotice(){ document.getElementById('smart-recurring-info').classList.toggle('hidden', document.getElementById('task-frequency').value==='once'); }
+function openTaskModal(){
+  if(!isAdmin){ showToast('Kun Butikksjef kan opprette oppgaver.','#e30613'); return; }
+  document.getElementById('task-modal-title').innerHTML=`<i class="fa-solid fa-circle-plus text-thansen-500"></i> <span>Opprett Gjøremål</span>`;
+  document.getElementById('task-form-submit-btn').innerText='Lagre & Publiser';
+  document.getElementById('form-task-id').value=''; document.getElementById('task-form').reset();
+  renderAssigneeGridForm(); toggleFrequencyNotice();
+  const d=new Date(); d.setHours(d.getHours()+24); document.getElementById('task-due-date').value=toLocalInput(d.toISOString());
+  document.getElementById('task-modal').classList.remove('hidden');
 }
-function openModal(t){
-  editId = t ? t.id : null;
-  $('mTitle').textContent = t ? 'Rediger oppgave' : 'Ny oppgave';
-  $('mTitleIn').value  = t ? (t.title||'') : '';
-  $('mDesc').value     = t ? (t.notes||'') : '';
-  $('mAssignee').value = t ? (t.assignee||'') : '';
-  setSlider(t ? unitToIdx(t.recur_unit) : 0);
-  $('mDue').value = (t && t.due_at) ? dtToInput(t.due_at) : '';
-  $('taskModal').classList.add('show');
-  setTimeout(()=>$('mTitleIn').focus(), 30);
+function closeTaskModal(){ document.getElementById('task-modal').classList.add('hidden'); document.getElementById('task-form').reset(); }
+function editTask(taskId){
+  if(!isAdmin){ showToast('Kun Butikksjef kan redigere.','#e30613'); return; }
+  const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
+  renderAssigneeGridForm();
+  document.getElementById('form-task-id').value=t.id;
+  document.getElementById('task-title').value=t.title;
+  document.getElementById('task-desc').value=t.desc;
+  document.getElementById('task-frequency').value=t.frequency;
+  document.getElementById('task-due-date').value=t.due?toLocalInput(t.due):'';
+  document.getElementById('task-priority').value=t.priority;
+  document.getElementById('task-status').value=t.status;
+  document.getElementsByName('task-assignees-check').forEach(b=>{ b.checked=(t.assignees||[]).includes(b.value); });
+  toggleFrequencyNotice();
+  document.getElementById('task-modal-title').innerHTML=`<i class="fa-solid fa-pen text-thansen-500"></i> <span>Rediger Oppgave</span>`;
+  document.getElementById('task-form-submit-btn').innerText='Lagre Endringer';
+  document.getElementById('task-modal').classList.remove('hidden');
 }
-function closeModal(){ $('taskModal').classList.remove('show'); editId=null; }
-async function saveModal(){
-  const title = $('mTitleIn').value.trim();
-  if(!title){ $('mTitleIn').focus(); return; }
-  const unit = idxToUnit(+$('mSlider').value);
-  const existing = editId ? tasks.find(x=>x.id===editId) : null;
-  const v = $('mDue').value;
-  let due_at;
-  if(v)                    due_at = inputToISO(v);
-  else if(unit !== 'none') due_at = (existing && existing.due_at) || new Date().toISOString();
-  else                     due_at = null;
-  const payload = {
-    title,
-    notes:    $('mDesc').value.trim() || null,
-    assignee: $('mAssignee').value.trim() || null,
-    recur_unit: unit, recur_n: 1, due_at
-  };
+async function handleTaskSubmit(e){
+  e.preventDefault();
+  if(!isAdmin){ showToast('Kun Butikksjef kan lagre oppgaver.','#e30613'); return; }
+  const id=document.getElementById('form-task-id').value;
+  const sel=[]; document.getElementsByName('task-assignees-check').forEach(b=>{ if(b.checked) sel.push(b.value); });
+  const due=document.getElementById('task-due-date').value;
+  const payload={ title:document.getElementById('task-title').value.trim(), notes:document.getElementById('task-desc').value.trim()||null,
+    assignees:sel, recur_unit:F2U[document.getElementById('task-frequency').value], recur_n:1,
+    due_at:due?new Date(due).toISOString():null, status:document.getElementById('task-status').value, priority:document.getElementById('task-priority').value };
   try{
-    if(editId) await T.rpc('update_task', {p_id:editId, p_task:payload});
-    else       await T.rpc('add_task',   {p_task:payload});
-    closeModal(); await load();
-  }catch(e){ if(e.message!=='no-pass') T.toast('Kunne ikke lagre: '+e.message); }
+    if(id) await T.rpc('update_task',{p_id:id,p_task:payload}); else await T.rpc('add_task',{p_task:payload});
+    closeTaskModal(); await loadAll(); showToast(id?'Oppgave oppdatert!':'Ny oppgave opprettet!','#004595');
+  }catch(err){ if(err.message!=='no-pass') showToast('Feil: '+err.message,'#e30613'); }
+}
+async function deleteTask(taskId){
+  if(!isAdmin){ showToast('Kun Butikksjef kan slette.','#e30613'); return; }
+  const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
+  if(!confirm(`Slette oppgaven "${t.title}" permanent?`)) return;
+  try{ await T.rpc('delete_task',{p_id:taskId}); await loadAll(); showToast('Oppgaven ble slettet','#e30613'); }
+  catch(e){ if(e.message!=='no-pass') showToast('Feil: '+e.message,'#e30613'); }
 }
 
-/* ---------- admin ---------- */
-function refreshAdmin(){
-  isAdmin = !!T.getPass();
-  $('fab').classList.toggle('show', isAdmin);
-  $('lockBtn').textContent = isAdmin ? '🔓' : '🔒';
-  $('lockBtn').title = isAdmin ? 'Logg ut' : 'Logg inn som admin';
-  $('lockBtn').classList.toggle('on', isAdmin);
-  render();
+/* ---------- alerts ---------- */
+function recalculateAlerts(){
+  const now=new Date(); const a=[];
+  state.tasks.forEach(t=>{ if(t.status==='done'||!t.due) return; const h=(new Date(t.due)-now)/3600000;
+    if(h<0) a.push({taskId:t.id,type:'critical',title:'RØD FRIST: OVERTID',message:`"${t.title}" skulle vært gjort innen ${formatCardDate(t.due)}.`,assignees:t.assignees||[]});
+    else if(h<12) a.push({taskId:t.id,type:'warning',title:'Frist nærmer seg (< 12t)',message:`Husk å fullføre "${t.title}".`,assignees:t.assignees||[]});
+  });
+  if(a.length>state.alerts.length) playSound(a.some(x=>x.type==='critical')?'critical':'info');
+  state.alerts=a;
+  document.getElementById('alert-badge').classList.toggle('hidden', a.length===0);
 }
+function renderAlertsList(){
+  const l=document.getElementById('alerts-list'); l.innerHTML='';
+  if(!state.alerts.length){ l.innerHTML=`<div class="h-48 flex flex-col items-center justify-center text-center text-slate-400"><i class="fa-solid fa-square-check text-slate-300 dark:text-slate-800 text-3xl mb-2"></i><p class="text-xs font-bold text-slate-500">Alt er i rute!</p></div>`; return; }
+  state.alerts.forEach(al=>{ const crit=al.type==='critical'; const c=document.createElement('div');
+    c.className=`p-4 rounded-xl border flex flex-col space-y-2 ${crit?'bg-red-50/50 border-red-200 dark:bg-red-950/15 dark:border-red-900/40 pulse-alert':'bg-amber-50/50 border-amber-200 dark:bg-amber-950/15 dark:border-amber-900/40'}`;
+    let ah=''; (al.assignees||[]).forEach(tag=>{ const cw=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; ah+=`<div class="w-4 h-4 rounded text-[7px] font-bold text-white flex items-center justify-center" style="background-color:${cw.color}">${esc(tag)}</div>`; });
+    c.innerHTML=`<div class="flex items-center justify-between"><span class="text-[10px] font-bold uppercase tracking-wider ${crit?'text-red-600 dark:text-red-400':'text-amber-700 dark:text-amber-400'}">${esc(al.title)}</span><div class="flex items-center -space-x-1">${ah}</div></div><p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">${esc(al.message)}</p><div class="flex items-center justify-end pt-1"><button onclick="focusOnTaskCard('${al.taskId}')" class="text-[10px] text-thansen-500 dark:text-thansen-yellow font-bold hover:underline">Vis i plan</button></div>`;
+    l.appendChild(c);
+  });
+}
+function focusOnTaskCard(taskId){ setViewTab('board'); document.getElementById('alerts-panel').classList.add('translate-x-full');
+  setTimeout(()=>{ const c=document.getElementById(`card-${taskId}`); if(c){ c.scrollIntoView({behavior:'smooth',block:'center'}); c.classList.add('ring-4','ring-thansen-500/80'); setTimeout(()=>c.classList.remove('ring-4','ring-thansen-500/80'),3000); } },150); }
+function clearCompletedAlerts(){ recalculateAlerts(); renderAlertsList(); showToast('Varsler oppdatert.','#004595'); }
 
-/* ---------- hendelser ---------- */
-$('fab').addEventListener('click', ()=>openModal(null));
-$('lockBtn').addEventListener('click', async ()=>{
-  if(T.getPass()){ T.clearPass(); refreshAdmin(); T.toast('Logget ut'); }
-  else { const p = await T.ensurePass(); if(p){ refreshAdmin(); T.toast('Logget inn som admin'); } }
-});
-$('list').addEventListener('click', e=>{
-  const li = e.target.closest('.task'); if(!li) return;
-  const t = tasks.find(x=>x.id===li.dataset.id); if(!t) return;
-  const cb = e.target.closest('.md-chk input[data-ci]');
-  if(cb){ e.stopPropagation(); toggleDescCheck(t, +cb.dataset.ci); return; }
-  const act = e.target.dataset.act;
-  if(act==='check') toggle(t);                       // åpen for alle
-  else if(act==='edit'){ if(isAdmin) openModal(t); }  // kun admin
-  else if(act==='del'){ if(isAdmin) del(t); }         // kun admin
-});
-$('mCancel').addEventListener('click', closeModal);
-$('mSave').addEventListener('click', saveModal);
-$('taskModal').addEventListener('click', e=>{ if(e.target.id==='taskModal') closeModal(); });
-document.addEventListener('keydown', e=>{ if(e.key==='Escape' && $('taskModal').classList.contains('show')) closeModal(); });
-
-/* ---------- oppstart ---------- */
-refreshAdmin();
-load();
-if(T.sb){
-  T.sb.channel('tasks-rt').on('postgres_changes',{event:'*',schema:'public',table:'tasks'}, load).subscribe();
+/* ---------- helpers ---------- */
+function renderStats(){ document.getElementById('stat-total-tasks').innerText=state.tasks.length; document.getElementById('stat-completed-tasks').innerText=state.tasks.filter(t=>t.status==='done').length; }
+function formatCardDate(iso){ if(!iso) return 'Ingen frist'; return new Date(iso).toLocaleDateString('no-NO',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function toLocalInput(iso){ const d=new Date(iso); const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); }
+function esc(s){ return T.esc(s); }
+function showToast(message, color='#004595'){
+  const t=document.createElement('div');
+  t.className="fixed bottom-5 left-5 z-50 glass border border-slate-200/80 dark:border-slate-800 shadow-2xl p-4 rounded-xl flex items-center space-x-3 transition-all duration-300 transform translate-y-20 opacity-0";
+  t.style.borderLeft=`4px solid ${color}`;
+  t.innerHTML=`<div class="w-2 h-2 rounded-full" style="background-color:${color}"></div><p class="text-xs font-bold text-slate-700 dark:text-slate-200">${esc(message)}</p>`;
+  document.body.appendChild(t);
+  setTimeout(()=>t.classList.remove('translate-y-20','opacity-0'),50);
+  setTimeout(()=>{ t.classList.add('translate-y-20','opacity-0'); setTimeout(()=>t.remove(),300); },3500);
+}
+function playSound(type='info'){
+  try{ const ctx=new (window.AudioContext||window.webkitAudioContext)(); const o=ctx.createOscillator(), g=ctx.createGain(); o.connect(g); g.connect(ctx.destination);
+    if(type==='critical'){ o.type='triangle'; o.frequency.setValueAtTime(800,ctx.currentTime); o.frequency.exponentialRampToValueAtTime(350,ctx.currentTime+0.35); g.gain.setValueAtTime(0.1,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+0.35); o.start(); o.stop(ctx.currentTime+0.4); }
+    else { o.type='sine'; o.frequency.setValueAtTime(600,ctx.currentTime); o.frequency.setValueAtTime(750,ctx.currentTime+0.12); g.gain.setValueAtTime(0.07,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+0.3); o.start(); o.stop(ctx.currentTime+0.35); }
+  }catch(e){}
 }
 </script>
 </body>
