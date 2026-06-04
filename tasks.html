@@ -1,38 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="no">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Tasks · Thansen Helper</title>
+<meta name="theme-color" content="#00529c">
+<title>Oppgaver · Thansen Verktøykasse</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
-    --bg:#0e1014; --panel:#171a21; --card:#1c1f27; --card-h:#222632;
-    --line:#2a2f3a; --text:#eef1f6; --muted:#9aa3b2; --accent:#3b82f6;
-    --over:#ef4444; --today:#f59e0b; --soon:#38bdf8; --ok:#22c55e;
+    --bg:#0f1318; --panel:#161b22; --card:#1b212a; --card-h:#222a35;
+    --line:#2a323d; --text:#f1f4f8; --muted:#97a3b2;
+    --primary:#2684e6; --primary-700:#00529c; --cta:#1aa64d; --yellow:#ffd400;
+    --over:#e44b4b; --today:#ffb300; --soon:#39b6e6; --ok:#1aa64d;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;}
-  body{background:radial-gradient(1200px 600px at 50% -10%,#1a2030 0%,var(--bg) 60%);
-    color:var(--text);font:400 16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-    min-height:100vh;}
-  header{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line);
-    position:sticky;top:0;background:rgba(14,16,20,.85);backdrop-filter:blur(8px);z-index:10;}
-  .hub{color:var(--muted);text-decoration:none;font-weight:600;opacity:.8;}
-  .hub:hover{opacity:1;}
-  .brand{font-weight:800;letter-spacing:.12em;}
+  body{background:radial-gradient(1100px 560px at 50% -8%,#13243a 0%,var(--bg) 58%);
+    color:var(--text);font:400 16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh;}
+  .topbar{height:4px;background:linear-gradient(90deg,var(--primary-700),var(--primary) 60%,var(--yellow));
+    position:sticky;top:0;z-index:11;}
+  header{display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line);
+    position:sticky;top:4px;background:rgba(15,19,24,.88);backdrop-filter:blur(8px);z-index:10;}
+  .hub{color:var(--muted);text-decoration:none;font-weight:600;opacity:.85;}
+  .hub:hover{opacity:1;color:var(--text);}
+  .brand{font-weight:800;letter-spacing:.13em;}
   main{max-width:720px;margin:0 auto;padding:18px 16px 80px;}
 
   input,select,textarea,button{font:inherit;}
-  textarea,input[type=text],input[type=date]{
-    background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;
-    padding:10px 12px;font-size:15px;}
+  textarea,input[type=text],input[type=date]{background:var(--panel);color:var(--text);
+    border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px;}
   textarea{resize:vertical;width:100%;}
-  .btn{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:10px 16px;
-    font-weight:600;font-size:15px;cursor:pointer;}
+  input:focus,textarea:focus{outline:none;border-color:var(--primary);}
+  .btn{background:var(--cta);color:#fff;border:0;border-radius:10px;padding:10px 18px;
+    font-weight:700;font-size:15px;cursor:pointer;}
   .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text);}
 
-  /* add box */
   .add{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:18px;
     display:flex;flex-direction:column;gap:10px;}
   .add .title-in{width:100%;}
@@ -42,21 +44,20 @@
   .due-wrap label{color:var(--muted);font-size:12px;}
   .add .btn{margin-left:auto;}
 
-  /* recurrence slider */
   .recur{display:flex;flex-direction:column;gap:2px;}
   .recur .rlabel{color:var(--muted);font-size:12px;}
-  .recur input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0 0;}
+  .recur .rlabel b{color:var(--primary);}
+  .recur input[type=range]{width:100%;accent-color:var(--primary);margin:2px 0 0;}
   .ticks{display:flex;justify-content:space-between;}
   .ticks span{font-size:11px;color:var(--muted);cursor:pointer;flex:1;text-align:center;user-select:none;}
   .ticks span:first-child{text-align:left;}
   .ticks span:last-child{text-align:right;}
-  .ticks span.on{color:var(--accent);font-weight:700;}
+  .ticks span.on{color:var(--primary);font-weight:700;}
 
-  .banner{background:#3a2418;border:1px solid #7c4a1e;color:#f6c590;border-radius:12px;
+  .banner{background:#3a2a14;border:1px solid #7c5a1e;color:#f6d18f;border-radius:12px;
     padding:12px 14px;font-size:14px;margin-bottom:16px;display:none;}
   .hint{color:var(--muted);font-size:12px;}
 
-  /* list */
   .sec-h{color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:18px 4px 8px;}
   ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}
   .task{display:flex;align-items:flex-start;gap:12px;background:var(--card);border:1px solid var(--line);
@@ -64,7 +65,7 @@
   .task.done .t-title{text-decoration:line-through;color:var(--muted);}
   .check{appearance:none;width:22px;height:22px;border:2px solid var(--line);border-radius:7px;cursor:pointer;
     flex:0 0 auto;margin-top:2px;position:relative;background:var(--panel);}
-  .check:hover{border-color:var(--accent);}
+  .check:hover{border-color:var(--cta);}
   .check:checked{background:var(--ok);border-color:var(--ok);}
   .check:checked::after{content:"✓";position:absolute;inset:0;color:#06210f;font-size:14px;
     display:flex;align-items:center;justify-content:center;font-weight:800;}
@@ -72,7 +73,7 @@
   .t-title{font-weight:600;word-break:break-word;}
   .t-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
   .chip{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);}
-  .chip.recur{border-color:#314a6b;color:#9ec5ff;}
+  .chip.recur{border-color:#1f3a5c;color:#9ecbff;}
   .chip.over{border-color:var(--over);color:#ffb4b4;}
   .chip.today{border-color:var(--today);color:#ffd591;}
   .chip.soon{border-color:var(--soon);color:#aee5ff;}
@@ -81,7 +82,6 @@
   .icobtn:hover{background:var(--card-h);color:var(--text);}
   .empty{color:var(--muted);text-align:center;padding:36px 10px;}
 
-  /* markdown description */
   .t-desc{margin-top:8px;display:flex;flex-direction:column;gap:3px;}
   .md-chk{display:flex;align-items:flex-start;gap:8px;font-size:14px;cursor:pointer;color:var(--text);}
   .md-chk input{margin:3px 0 0;width:16px;height:16px;accent-color:var(--ok);cursor:pointer;flex:0 0 auto;}
@@ -91,14 +91,13 @@
   .md-h{font-weight:700;font-size:14px;margin-top:4px;}
   .md-p{font-size:14px;color:var(--muted);word-break:break-word;}
   .md-sp{height:6px;}
-  code{background:#0d1830;padding:0 4px;border-radius:4px;font-size:12px;}
+  code{background:#0c1422;padding:0 4px;border-radius:4px;font-size:12px;}
 
-  /* edit modal */
-  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;
+  .modal{position:fixed;inset:0;background:rgba(6,9,13,.62);display:none;align-items:center;justify-content:center;
     z-index:50;padding:16px;}
   .modal.show{display:flex;}
-  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;width:100%;
-    max-width:460px;max-height:90vh;overflow:auto;}
+  .sheet{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--primary);
+    border-radius:18px;padding:18px;width:100%;max-width:460px;max-height:90vh;overflow:auto;}
   .sheet h3{margin:0 0 14px;}
   .sheet .row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
   .sheet label{color:var(--muted);font-size:13px;}
@@ -107,57 +106,57 @@
 </style>
 </head>
 <body>
+<div class="topbar"></div>
 <header>
-  <a class="hub" href="index.html">‹ Hub</a>
-  <span class="brand">TASKS</span>
+  <a class="hub" href="index.html">‹ Hjem</a>
+  <span class="brand">OPPGAVER</span>
 </header>
 
 <main>
   <div class="banner" id="banner"></div>
 
   <div class="add">
-    <input type="text" class="title-in" id="addTitle" placeholder="Add a task…" autocomplete="off">
-    <textarea class="desc-in" id="addDesc" placeholder="Description (optional) — use “- [ ] item” for checkboxes, “- ” for bullets, **bold**"></textarea>
+    <input type="text" class="title-in" id="addTitle" placeholder="Legg til oppgave…" autocomplete="off">
+    <textarea class="desc-in" id="addDesc" placeholder="Beskrivelse (valgfritt) — bruk «- [ ] punkt» for avkrysning, «- » for kulepunkt, **fet**"></textarea>
     <div class="recur">
-      <span class="rlabel">Repeat: <b id="addRlabel">Never</b></span>
+      <span class="rlabel">Gjentas: <b id="addRlabel">Aldri</b></span>
       <input type="range" id="addSlider" min="0" max="4" step="1" value="0">
       <div class="ticks" id="addTicks">
-        <span data-v="0">Never</span><span data-v="1">Monthly</span><span data-v="2">Weekly</span><span data-v="3">Daily</span><span data-v="4">Hourly</span>
+        <span data-v="0">Aldri</span><span data-v="1">Månedlig</span><span data-v="2">Ukentlig</span><span data-v="3">Daglig</span><span data-v="4">Hver time</span>
       </div>
     </div>
     <div class="foot">
       <div class="due-wrap" id="addDueWrap">
-        <label id="addDueLbl">Due (optional)</label>
+        <label id="addDueLbl">Forfaller (valgfritt)</label>
         <input type="date" id="addDue">
       </div>
-      <button class="btn" id="addBtn">Add</button>
+      <button class="btn" id="addBtn">Legg til</button>
     </div>
   </div>
 
   <div id="list"></div>
 </main>
 
-<!-- edit modal -->
 <div class="modal" id="editModal">
   <div class="sheet">
-    <h3>Edit task</h3>
-    <div class="row"><label>Title</label><input type="text" id="edTitle"></div>
+    <h3>Rediger oppgave</h3>
+    <div class="row"><label>Tittel</label><input type="text" id="edTitle"></div>
     <div class="row">
-      <label>Description</label>
+      <label>Beskrivelse</label>
       <textarea id="edDesc" style="min-height:90px"></textarea>
-      <span class="hint">“- [ ] item” = checkbox · “- ” = bullet · “# ” = heading · **bold**</span>
+      <span class="hint">«- [ ] punkt» = avkrysning · «- » = kulepunkt · «# » = overskrift · **fet**</span>
     </div>
     <div class="row">
-      <label>Repeat: <b id="edRlabel">Never</b></label>
+      <label>Gjentas: <b id="edRlabel">Aldri</b></label>
       <input type="range" id="edSlider" min="0" max="4" step="1" value="0">
       <div class="ticks" id="edTicks">
-        <span data-v="0">Never</span><span data-v="1">Monthly</span><span data-v="2">Weekly</span><span data-v="3">Daily</span><span data-v="4">Hourly</span>
+        <span data-v="0">Aldri</span><span data-v="1">Månedlig</span><span data-v="2">Ukentlig</span><span data-v="3">Daglig</span><span data-v="4">Hver time</span>
       </div>
     </div>
-    <div class="row" id="edDueRow"><label>Due date</label><input type="date" id="edDue"></div>
+    <div class="row" id="edDueRow"><label>Forfallsdato</label><input type="date" id="edDue"></div>
     <div class="actions">
-      <button class="btn ghost" id="edCancel">Cancel</button>
-      <button class="btn" id="edSave">Save</button>
+      <button class="btn ghost" id="edCancel">Avbryt</button>
+      <button class="btn" id="edSave">Lagre</button>
     </div>
   </div>
 </div>
@@ -166,37 +165,38 @@
 <script>
 const T = window.THelper;
 const $ = id => document.getElementById(id);
+const LOC = 'nb-NO';
 let tasks = [], editId = null;
 
 const RECUR       = ['none','month','week','day','hour'];
-const RECUR_LABEL = ['Never','Monthly','Weekly','Daily','Hourly'];
+const RECUR_LABEL = ['Aldri','Månedlig','Ukentlig','Daglig','Hver time'];
 const idxToUnit = i => RECUR[i] || 'none';
 const unitToIdx = u => { const i = RECUR.indexOf(u); return i < 0 ? 0 : i; };
-const recurChip = (u) => u==='hour'?'Hourly':u==='day'?'Daily':u==='week'?'Weekly':u==='month'?'Monthly':'One-off';
+const recurChip = u => u==='hour'?'Hver time':u==='day'?'Daglig':u==='week'?'Ukentlig':u==='month'?'Månedlig':'Engang';
 
-/* ---------- dates ---------- */
+/* ---------- datoer ---------- */
 function dueChip(dueAt){
   if(!dueAt) return null;
   const ms = new Date(dueAt) - new Date();
   const hrs = ms/3600000;
   if(ms < 0){
     const a = Math.abs(hrs);
-    return a < 24 ? {txt:`Overdue ${Math.max(1,Math.round(a))}h`,cls:'over'}
-                  : {txt:`Overdue ${Math.round(a/24)}d`,cls:'over'};
+    return a < 24 ? {txt:`Forfalt ${Math.max(1,Math.round(a))}t`, cls:'over'}
+                  : {txt:`Forfalt ${Math.round(a/24)}d`, cls:'over'};
   }
-  if(hrs < 1)  return {txt:`Due in ${Math.max(1,Math.round(hrs*60))}m`, cls:'today'};
-  if(hrs < 24) return {txt:`Due in ${Math.round(hrs)}h`, cls:'today'};
+  if(hrs < 1)  return {txt:`Om ${Math.max(1,Math.round(hrs*60))} min`, cls:'today'};
+  if(hrs < 24) return {txt:`Om ${Math.round(hrs)}t`, cls:'today'};
   const days = Math.round(hrs/24);
-  if(days === 1) return {txt:'Due tomorrow', cls:'soon'};
-  if(days <= 7)  return {txt:`Due in ${days}d`, cls:'soon'};
-  return {txt:'Due '+new Date(dueAt).toLocaleDateString(undefined,{month:'short',day:'numeric'}), cls:''};
+  if(days === 1) return {txt:'I morgen', cls:'soon'};
+  if(days <= 7)  return {txt:`Om ${days}d`, cls:'soon'};
+  return {txt:new Date(dueAt).toLocaleDateString(LOC,{day:'numeric',month:'short'}), cls:''};
 }
 const pad = n => String(n).padStart(2,'0');
 function dateToInput(dt){ const d=new Date(dt); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
-function inputDateToISO(v){ return v ? new Date(v+'T00:00').toISOString() : null; }   // local midnight
+function inputDateToISO(v){ return v ? new Date(v+'T00:00').toISOString() : null; }
 function todayMidnightISO(){ const d=new Date(); d.setHours(0,0,0,0); return d.toISOString(); }
 
-/* ---------- markdown (safe: escape first) ---------- */
+/* ---------- markdown (trygt: escape først) ---------- */
 function mdInline(s){
   s = T.esc(s);
   s = s.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
@@ -225,7 +225,6 @@ function mdToHtml(src){
   }
   return out.join('');
 }
-// flip the ci-th checkbox in the source markdown
 function toggleCheckbox(src, ci){
   let i = -1;
   return src.split('\n').map(line=>{
@@ -235,7 +234,7 @@ function toggleCheckbox(src, ci){
   }).join('\n');
 }
 
-/* ---------- slider component ---------- */
+/* ---------- glidebryter ---------- */
 function setSlider(sliderId, ticksId, labelId, idx, onChange){
   const s = $(sliderId), ticks = $(ticksId), lbl = $(labelId);
   s.value = idx;
@@ -250,17 +249,17 @@ function setSlider(sliderId, ticksId, labelId, idx, onChange){
   paint();
 }
 
-/* ---------- render ---------- */
+/* ---------- visning ---------- */
 function render(){
   const box = $('list');
-  if(!tasks.length){ box.innerHTML = '<div class="empty">No tasks yet — add one above.</div>'; return; }
+  if(!tasks.length){ box.innerHTML = '<div class="empty">Ingen oppgaver ennå — legg til en over.</div>'; return; }
   const open = tasks.filter(t=>!t.done).sort((a,b)=>{
     if(!a.due_at) return 1; if(!b.due_at) return -1;
     return new Date(a.due_at) - new Date(b.due_at);
   });
   const done = tasks.filter(t=>t.done);
   let html = '<ul>'+open.map(row).join('')+'</ul>';
-  if(done.length) html += `<div class="sec-h">Done (${done.length})</div><ul>`+done.map(row).join('')+'</ul>';
+  if(done.length) html += `<div class="sec-h">Fullført (${done.length})</div><ul>`+done.map(row).join('')+'</ul>';
   box.innerHTML = html;
 }
 function row(t){
@@ -275,20 +274,20 @@ function row(t){
       <div class="t-meta">${meta.join('')}</div>
     </div>
     <div class="t-act">
-      <button class="icobtn" data-act="edit" title="Edit">✎</button>
-      <button class="icobtn" data-act="del" title="Delete">🗑</button>
+      <button class="icobtn" data-act="edit" title="Rediger">✎</button>
+      <button class="icobtn" data-act="del" title="Slett">🗑</button>
     </div>
   </li>`;
 }
 
 /* ---------- data ---------- */
 async function load(){
-  if(!T.sb){ showBanner('Supabase library failed to load.'); return; }
+  if(!T.sb){ showBanner('Kunne ikke laste Supabase-biblioteket.'); return; }
   const {data,error} = await T.sb.from('tasks').select('*');
   if(error){
     if(/relation|does not exist|schema cache|column/i.test(error.message||''))
-      showBanner('Tasks backend needs the migration (tasks.sql + tasks_v2.sql). Run them, then reload.');
-    else showBanner('Load error: '+error.message);
+      showBanner('Oppgave-backend mangler migreringen (tasks.sql + tasks_v2.sql). Kjør dem og last inn på nytt.');
+    else showBanner('Lastefeil: '+error.message);
     tasks=[]; render(); return;
   }
   hideBanner(); tasks = data || []; render();
@@ -301,17 +300,17 @@ async function addTask(){
   if(!title) return;
   const unit = idxToUnit(+$('addSlider').value);
   let due_at;
-  if(unit === 'hour')      due_at = new Date().toISOString();              // start now, repeat hourly
+  if(unit === 'hour')        due_at = new Date().toISOString();
   else if($('addDue').value) due_at = inputDateToISO($('addDue').value);
-  else if(unit !== 'none') due_at = todayMidnightISO();                    // recurring needs a start
-  else                     due_at = null;
+  else if(unit !== 'none')   due_at = todayMidnightISO();
+  else                       due_at = null;
   const task = { title, notes: $('addDesc').value.trim() || null, recur_unit: unit, recur_n: 1, due_at, done: false };
   try{
     await T.rpc('add_task', {p_task: task});
     $('addTitle').value=''; $('addDesc').value=''; $('addDue').value='';
     setSlider('addSlider','addTicks','addRlabel',0,addDueVis);
     await load();
-  }catch(e){ if(e.message!=='no-pass') T.toast('Could not add: '+e.message); }
+  }catch(e){ if(e.message!=='no-pass') T.toast('Kunne ikke legge til: '+e.message); }
 }
 
 async function toggle(t){
@@ -323,28 +322,28 @@ async function toggle(t){
       if(nt && nt.recur_unit && nt.recur_unit!=='none' && nt.due_at){
         const d = new Date(nt.due_at);
         const when = nt.recur_unit==='hour'
-          ? d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})
-          : d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
-        T.toast('Rescheduled → '+when);
+          ? 'kl. '+d.toLocaleTimeString(LOC,{hour:'2-digit',minute:'2-digit'})
+          : d.toLocaleDateString(LOC,{day:'numeric',month:'short'});
+        T.toast('Flyttet til → '+when);
       }
     }
     await load();
-  }catch(e){ if(e.message!=='no-pass') T.toast('Error: '+e.message); load(); }
+  }catch(e){ if(e.message!=='no-pass') T.toast('Feil: '+e.message); load(); }
 }
 
 async function toggleDescCheck(t, ci){
   const next = toggleCheckbox(t.notes||'', ci);
   try{ await T.rpc('update_task',{p_id:t.id, p_task:{notes:next}}); await load(); }
-  catch(e){ if(e.message!=='no-pass') T.toast('Error: '+e.message); load(); }
+  catch(e){ if(e.message!=='no-pass') T.toast('Feil: '+e.message); load(); }
 }
 
 async function del(t){
-  if(!confirm('Delete “'+t.title+'”?')) return;
+  if(!confirm('Slette «'+t.title+'»?')) return;
   try{ await T.rpc('delete_task',{p_id:t.id}); await load(); }
-  catch(e){ if(e.message!=='no-pass') T.toast('Could not delete: '+e.message); }
+  catch(e){ if(e.message!=='no-pass') T.toast('Kunne ikke slette: '+e.message); }
 }
 
-/* ---------- edit modal ---------- */
+/* ---------- redigeringsmodal ---------- */
 function openEdit(t){
   editId = t.id;
   $('edTitle').value = t.title || '';
@@ -368,14 +367,14 @@ async function saveEdit(){
     recur_unit: unit, recur_n: 1, due_at
   };
   try{ await T.rpc('update_task',{p_id:editId, p_task:patch}); closeEdit(); await load(); }
-  catch(e){ if(e.message!=='no-pass') T.toast('Could not save: '+e.message); }
+  catch(e){ if(e.message!=='no-pass') T.toast('Kunne ikke lagre: '+e.message); }
 }
 
-/* ---------- events ---------- */
+/* ---------- hendelser ---------- */
 function addDueVis(v){
-  const hourly = idxToUnit(v)==='hour';
-  $('addDueWrap').style.display = hourly ? 'none' : '';
-  $('addDueLbl').textContent = idxToUnit(v)==='none' ? 'Due (optional)' : 'Start date';
+  const u = idxToUnit(v);
+  $('addDueWrap').style.display = u==='hour' ? 'none' : '';
+  $('addDueLbl').textContent = u==='none' ? 'Forfaller (valgfritt)' : 'Startdato';
 }
 $('addBtn').addEventListener('click', addTask);
 $('addTitle').addEventListener('keydown', e=>{ if(e.key==='Enter') addTask(); });
@@ -394,7 +393,7 @@ $('edSave').addEventListener('click', saveEdit);
 $('editModal').addEventListener('click', e=>{ if(e.target.id==='editModal') closeEdit(); });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeEdit(); });
 
-/* ---------- boot ---------- */
+/* ---------- oppstart ---------- */
 setSlider('addSlider','addTicks','addRlabel',0,addDueVis);
 load();
 if(T.sb){

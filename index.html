@@ -1,54 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="no">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Thansen Helper</title>
+<meta name="theme-color" content="#00529c">
+<title>Thansen Verktøykasse</title>
 <style>
   :root{
-    --bg:#0e1014; --panel:#171a21; --card:#1c1f27; --card-h:#222632;
-    --line:#2a2f3a; --text:#eef1f6; --muted:#9aa3b2; --accent:#3b82f6;
+    --bg:#0f1318; --panel:#161b22; --card:#1b212a; --card-h:#222a35;
+    --line:#2a323d; --text:#f1f4f8; --muted:#97a3b2;
+    --primary:#2684e6; --primary-700:#00529c; --cta:#1aa64d; --yellow:#ffd400;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;height:100%;}
   body{
-    background:radial-gradient(1200px 600px at 50% -10%,#1a2030 0%,var(--bg) 60%);
+    background:radial-gradient(1100px 560px at 50% -8%,#13243a 0%,var(--bg) 58%);
     color:var(--text);font:400 16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
     min-height:100%;display:flex;flex-direction:column;
   }
-  header{
-    padding:26px 22px 10px;text-align:center;
-  }
-  .brand{font-weight:800;letter-spacing:.14em;font-size:20px;}
-  .brand .dot{color:var(--accent);}
-  .tag{color:var(--muted);font-size:14px;margin-top:4px;}
+  .topbar{height:4px;background:linear-gradient(90deg,var(--primary-700),var(--primary) 60%,var(--yellow));}
+  header{padding:30px 22px 12px;text-align:center;}
+  .brand{font-weight:800;letter-spacing:.16em;font-size:22px;display:inline-flex;align-items:center;gap:2px;}
+  .brand .sep{color:var(--yellow);}
+  .brand .k{color:var(--muted);font-weight:700;}
+  .tag{color:var(--muted);font-size:14px;margin-top:6px;}
   main{flex:1;width:100%;max-width:920px;margin:0 auto;padding:24px 18px 60px;}
-  .grid{
-    display:grid;gap:16px;
-    grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
-  }
+  .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));}
   .tool{
     display:flex;flex-direction:column;gap:8px;text-decoration:none;color:inherit;
-    background:var(--card);border:1px solid var(--line);border-radius:18px;
-    padding:20px;transition:transform .12s ease,background .12s ease,border-color .12s ease;
+    background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;
+    position:relative;overflow:hidden;
+    transition:transform .12s ease,background .12s ease,border-color .12s ease;
   }
-  .tool:hover{transform:translateY(-2px);background:var(--card-h);border-color:#3a4250;}
+  .tool::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--primary);
+    opacity:.0;transition:opacity .12s ease;}
+  .tool:hover{transform:translateY(-2px);background:var(--card-h);border-color:#3a4656;}
+  .tool:hover::before{opacity:1;}
   .tool .ico{font-size:34px;line-height:1;}
   .tool .name{font-weight:700;font-size:18px;}
   .tool .desc{color:var(--muted);font-size:14px;}
-  .tool .go{margin-top:auto;color:var(--accent);font-size:13px;font-weight:600;}
+  .tool .go{margin-top:auto;color:var(--primary);font-size:13px;font-weight:700;}
   .tool.soon{opacity:.5;pointer-events:none;border-style:dashed;}
   footer{text-align:center;color:var(--muted);font-size:12px;padding:18px;}
-  @media(max-width:520px){
-    .grid{grid-template-columns:1fr;}
-    header{padding-top:20px;}
-  }
+  @media(max-width:520px){ .grid{grid-template-columns:1fr;} header{padding-top:22px;} }
 </style>
 </head>
 <body>
+<div class="topbar"></div>
 <header>
-  <div class="brand">THANSEN<span class="dot">·</span>HELPER</div>
-  <div class="tag">Internal tools</div>
+  <div class="brand">THANSEN<span class="sep">·</span><span class="k">VERKTØYKASSE</span></div>
+  <div class="tag">Interne verktøy</div>
 </header>
 
 <main>
@@ -56,26 +57,26 @@
     <a class="tool" href="bikes.html">
       <div class="ico">🚲</div>
       <div class="name">Velodex</div>
-      <div class="desc">Bike showroom registry — searchable cards, specs, barcodes, spare parts.</div>
-      <div class="go">Open →</div>
+      <div class="desc">Sykkelregister — søkbare kort, spesifikasjoner, strekkoder og reservedeler.</div>
+      <div class="go">Åpne →</div>
     </a>
 
     <a class="tool" href="tasks.html">
       <div class="ico">✅</div>
-      <div class="name">Tasks</div>
-      <div class="desc">Checklist with one-off and recurring items — daily, weekly, or custom.</div>
-      <div class="go">Open →</div>
+      <div class="name">Oppgaver</div>
+      <div class="desc">Sjekkliste med engangs- og gjentakende oppgaver — daglig, ukentlig eller egendefinert.</div>
+      <div class="go">Åpne →</div>
     </a>
 
     <div class="tool soon">
       <div class="ico">➕</div>
-      <div class="name">More tools soon</div>
-      <div class="desc">Room to grow as new helpers are added.</div>
-      <div class="go">Coming soon</div>
+      <div class="name">Flere verktøy kommer</div>
+      <div class="desc">Plass til å vokse etter hvert som nye hjelpere legges til.</div>
+      <div class="go">Kommer snart</div>
     </div>
   </div>
 </main>
 
-<footer>Thansen Helper</footer>
+<footer>Thansen Verktøykasse</footer>
 </body>
 </html>
