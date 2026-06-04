@@ -31,7 +31,7 @@
   main{max-width:720px;margin:0 auto;padding:18px 16px 96px;}
 
   input,select,textarea,button{font:inherit;}
-  textarea,input[type=text],input[type=date]{background:var(--panel);color:var(--text);
+  textarea,input[type=text],input[type=date],input[type=datetime-local]{background:var(--panel);color:var(--text);
     border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px;}
   textarea{resize:vertical;width:100%;}
   input:focus,textarea:focus{outline:none;border-color:var(--primary);}
@@ -60,7 +60,6 @@
   .check{appearance:none;width:22px;height:22px;border:2px solid var(--line);border-radius:7px;cursor:pointer;
     flex:0 0 auto;margin-top:2px;position:relative;background:var(--panel);}
   .check:hover{border-color:var(--cta);}
-  .check:disabled{cursor:default;opacity:.8;}
   .check:checked{background:var(--ok);border-color:var(--ok);}
   .check:checked::after{content:"✓";position:absolute;inset:0;color:#06210f;font-size:14px;
     display:flex;align-items:center;justify-content:center;font-weight:800;}
@@ -79,9 +78,8 @@
   .empty{color:var(--muted);text-align:center;padding:36px 10px;}
 
   .t-desc{margin-top:8px;display:flex;flex-direction:column;gap:3px;}
-  .md-chk{display:flex;align-items:flex-start;gap:8px;font-size:14px;color:var(--text);}
+  .md-chk{display:flex;align-items:flex-start;gap:8px;font-size:14px;color:var(--text);cursor:pointer;}
   .md-chk input{margin:3px 0 0;width:16px;height:16px;accent-color:var(--ok);cursor:pointer;flex:0 0 auto;}
-  .md-chk input:disabled{cursor:default;}
   .md-chk.on span{text-decoration:line-through;color:var(--muted);}
   .md-li{font-size:14px;color:var(--text);}
   .md-li::before{content:"•";color:var(--muted);margin-right:6px;}
@@ -105,7 +103,6 @@
   .sheet .row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
   .sheet label{color:var(--muted);font-size:13px;}
   .sheet .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:6px;}
-  @media(max-width:520px){ }
 </style>
 </head>
 <body>
@@ -144,7 +141,7 @@
         <span data-v="0">Aldri</span><span data-v="1">Månedlig</span><span data-v="2">Ukentlig</span><span data-v="3">Daglig</span><span data-v="4">Hver time</span>
       </div>
     </div>
-    <div class="row" id="mDueRow"><label id="mDueLbl">Forfaller (valgfritt)</label><input type="date" id="mDue"></div>
+    <div class="row"><label>Frist (valgfritt) — dato &amp; klokkeslett, ned til sekund</label><input type="datetime-local" id="mDue" step="1"></div>
     <div class="actions">
       <button class="btn ghost" id="mCancel">Avbryt</button>
       <button class="btn" id="mSave">Lagre</button>
@@ -169,23 +166,26 @@ const recurChip = u => u==='hour'?'Hver time':u==='day'?'Daglig':u==='week'?'Uke
 function dueChip(dueAt){
   if(!dueAt) return null;
   const ms = new Date(dueAt) - new Date();
-  const hrs = ms/3600000;
   if(ms < 0){
-    const a = Math.abs(hrs);
-    return a < 24 ? {txt:`Forfalt ${Math.max(1,Math.round(a))}t`, cls:'over'}
-                  : {txt:`Forfalt ${Math.round(a/24)}d`, cls:'over'};
+    const as = -ms/1000;
+    if(as < 60) return {txt:`Forfalt ${Math.round(as)}s`, cls:'over'};
+    const min = as/60; if(min < 60) return {txt:`Forfalt ${Math.round(min)} min`, cls:'over'};
+    const h = min/60;  if(h < 24)  return {txt:`Forfalt ${Math.round(h)}t`, cls:'over'};
+    return {txt:`Forfalt ${Math.round(h/24)}d`, cls:'over'};
   }
-  if(hrs < 1)  return {txt:`Om ${Math.max(1,Math.round(hrs*60))} min`, cls:'today'};
-  if(hrs < 24) return {txt:`Om ${Math.round(hrs)}t`, cls:'today'};
+  const s = ms/1000;
+  if(s < 60) return {txt:`Om ${Math.round(s)}s`, cls:'today'};
+  const min = s/60; if(min < 60) return {txt:`Om ${Math.round(min)} min`, cls:'today'};
+  const hrs = min/60; if(hrs < 24) return {txt:`Om ${Math.round(hrs)}t`, cls:'today'};
   const days = Math.round(hrs/24);
   if(days === 1) return {txt:'I morgen', cls:'soon'};
   if(days <= 7)  return {txt:`Om ${days}d`, cls:'soon'};
   return {txt:new Date(dueAt).toLocaleDateString(LOC,{day:'numeric',month:'short'}), cls:''};
 }
 const pad = n => String(n).padStart(2,'0');
-function dateToInput(dt){ const d=new Date(dt); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
-function inputDateToISO(v){ return v ? new Date(v+'T00:00').toISOString() : null; }
-function todayMidnightISO(){ const d=new Date(); d.setHours(0,0,0,0); return d.toISOString(); }
+function dtToInput(dt){ const d=new Date(dt);
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); }
+function inputToISO(v){ return v ? new Date(v).toISOString() : null; }
 
 /* ---------- markdown (trygt: escape først) ---------- */
 function mdInline(s){
@@ -195,7 +195,7 @@ function mdInline(s){
   s = s.replace(/`([^`]+)`/g,'<code>$1</code>');
   return s;
 }
-function mdToHtml(src, interactive){
+function mdToHtml(src){
   if(!src) return '';
   let ci=-1; const out=[];
   for(const raw of src.split('\n')){
@@ -203,7 +203,7 @@ function mdToHtml(src, interactive){
     let m;
     if(m = line.match(/^\s*[-*]\s+\[([ xX])\]\s+(.*)$/)){
       ci++; const on = m[1].toLowerCase()==='x';
-      out.push(`<label class="md-chk ${on?'on':''}"><input type="checkbox" data-ci="${ci}" ${on?'checked':''} ${interactive?'':'disabled'}><span>${mdInline(m[2])}</span></label>`);
+      out.push(`<label class="md-chk ${on?'on':''}"><input type="checkbox" data-ci="${ci}" ${on?'checked':''}><span>${mdInline(m[2])}</span></label>`);
     } else if(m = line.match(/^\s*[-*]\s+(.*)$/)){
       out.push(`<div class="md-li">${mdInline(m[1])}</div>`);
     } else if(m = line.match(/^#{1,3}\s+(.*)$/)){
@@ -216,24 +216,15 @@ function mdToHtml(src, interactive){
   }
   return out.join('');
 }
-function toggleCheckbox(src, ci){
-  let i = -1;
-  return src.split('\n').map(line=>{
-    const m = line.match(/^(\s*[-*]\s+\[)([ xX])(\]\s+.*)$/);
-    if(m){ i++; if(i === ci){ const on = m[2].toLowerCase()==='x'; return m[1]+(on?' ':'x')+m[3]; } }
-    return line;
-  }).join('\n');
-}
 
 /* ---------- glidebryter ---------- */
-function setSlider(idx, onChange){
+function setSlider(idx){
   const s = $('mSlider'), ticks = $('mTicks'), lbl = $('mRlabel');
   s.value = idx;
   const paint = () => {
     const v = +s.value;
     lbl.textContent = RECUR_LABEL[v];
     [...ticks.children].forEach(c => c.classList.toggle('on', +c.dataset.v === v));
-    onChange && onChange(v);
   };
   s.oninput = paint;
   ticks.onclick = e => { const sp = e.target.closest('span'); if(!sp) return; s.value = sp.dataset.v; paint(); };
@@ -266,10 +257,10 @@ function row(t){
     ? `<div class="t-act"><button class="icobtn" data-act="edit" title="Rediger">✎</button><button class="icobtn" data-act="del" title="Slett">🗑</button></div>`
     : '';
   return `<li class="task ${t.done?'done':''}" data-id="${e(t.id)}">
-    <input type="checkbox" class="check" ${isAdmin?'data-act="check"':'disabled'} ${t.done?'checked':''}>
+    <input type="checkbox" class="check" data-act="check" ${t.done?'checked':''}>
     <div class="t-main">
       <div class="t-title">${e(t.title)}</div>
-      ${t.notes ? `<div class="t-desc">${mdToHtml(t.notes, isAdmin)}</div>` : ''}
+      ${t.notes ? `<div class="t-desc">${mdToHtml(t.notes)}</div>` : ''}
       <div class="t-meta">${meta.join('')}</div>
     </div>
     ${acts}
@@ -282,7 +273,7 @@ async function load(){
   const {data,error} = await T.sb.from('tasks').select('*');
   if(error){
     if(/relation|does not exist|schema cache|column/i.test(error.message||''))
-      showBanner('Oppgave-backend mangler migreringen (tasks.sql + tasks_v2.sql + tasks_v3.sql). Kjør dem og last inn på nytt.');
+      showBanner('Oppgave-backend mangler migreringen (tasks.sql + _v2 + _v3 + _v4). Kjør dem og last inn på nytt.');
     else showBanner('Lastefeil: '+error.message);
     tasks=[]; render(); return;
   }
@@ -291,41 +282,32 @@ async function load(){
 const showBanner = m => { const b=$('banner'); b.textContent=m; b.style.display='block'; };
 const hideBanner = () => { $('banner').style.display='none'; };
 
+/* ---------- avkryssing (åpen — krever ikke admin) ---------- */
 async function toggle(t){
   try{
-    if(t.done){ await T.rpc('update_task',{p_id:t.id, p_task:{done:false}}); }
-    else{
-      const res = await T.rpc('complete_task',{p_id:t.id});
-      const nt = Array.isArray(res) ? res[0] : res;
-      if(nt && nt.recur_unit && nt.recur_unit!=='none' && nt.due_at){
-        const d = new Date(nt.due_at);
-        const when = nt.recur_unit==='hour'
-          ? 'kl. '+d.toLocaleTimeString(LOC,{hour:'2-digit',minute:'2-digit'})
-          : d.toLocaleDateString(LOC,{day:'numeric',month:'short'});
-        T.toast('Flyttet til → '+when);
-      }
+    const {data,error} = await T.sb.rpc('set_done',{p_id:t.id, p_done:!t.done});
+    if(error) throw error;
+    const nt = Array.isArray(data) ? data[0] : data;
+    if(!t.done && nt && nt.recur_unit && nt.recur_unit!=='none' && nt.due_at){
+      const d = new Date(nt.due_at);
+      const when = nt.recur_unit==='hour'
+        ? 'kl. '+d.toLocaleTimeString(LOC,{hour:'2-digit',minute:'2-digit'})
+        : d.toLocaleDateString(LOC,{day:'numeric',month:'short'});
+      T.toast('Flyttet til → '+when);
     }
     await load();
-  }catch(e){ if(e.message!=='no-pass') T.toast('Feil: '+e.message); load(); }
+  }catch(e){ T.toast('Feil: '+e.message); load(); }
 }
-
 async function toggleDescCheck(t, ci){
-  const next = toggleCheckbox(t.notes||'', ci);
-  try{ await T.rpc('update_task',{p_id:t.id, p_task:{notes:next}}); await load(); }
-  catch(e){ if(e.message!=='no-pass') T.toast('Feil: '+e.message); load(); }
+  try{ const {error} = await T.sb.rpc('toggle_check',{p_id:t.id, p_ci:ci}); if(error) throw error; await load(); }
+  catch(e){ T.toast('Feil: '+e.message); load(); }
 }
 
+/* ---------- admin-handlinger ---------- */
 async function del(t){
   if(!confirm('Slette «'+t.title+'»?')) return;
   try{ await T.rpc('delete_task',{p_id:t.id}); await load(); }
   catch(e){ if(e.message!=='no-pass') T.toast('Kunne ikke slette: '+e.message); }
-}
-
-/* ---------- modal (ny + rediger) ---------- */
-function mDueVis(v){
-  const u = idxToUnit(v);
-  $('mDueRow').style.display = u==='hour' ? 'none' : '';
-  $('mDueLbl').textContent = u==='none' ? 'Forfaller (valgfritt)' : 'Startdato';
 }
 function openModal(t){
   editId = t ? t.id : null;
@@ -333,8 +315,8 @@ function openModal(t){
   $('mTitleIn').value  = t ? (t.title||'') : '';
   $('mDesc').value     = t ? (t.notes||'') : '';
   $('mAssignee').value = t ? (t.assignee||'') : '';
-  setSlider(t ? unitToIdx(t.recur_unit) : 0, mDueVis);
-  $('mDue').value = (t && t.due_at) ? dateToInput(t.due_at) : '';
+  setSlider(t ? unitToIdx(t.recur_unit) : 0);
+  $('mDue').value = (t && t.due_at) ? dtToInput(t.due_at) : '';
   $('taskModal').classList.add('show');
   setTimeout(()=>$('mTitleIn').focus(), 30);
 }
@@ -344,10 +326,10 @@ async function saveModal(){
   if(!title){ $('mTitleIn').focus(); return; }
   const unit = idxToUnit(+$('mSlider').value);
   const existing = editId ? tasks.find(x=>x.id===editId) : null;
+  const v = $('mDue').value;
   let due_at;
-  if(unit === 'hour')      due_at = (existing && existing.due_at) || new Date().toISOString();
-  else if($('mDue').value) due_at = inputDateToISO($('mDue').value);
-  else if(unit !== 'none') due_at = (existing && existing.due_at) || todayMidnightISO();
+  if(v)                    due_at = inputToISO(v);
+  else if(unit !== 'none') due_at = (existing && existing.due_at) || new Date().toISOString();
   else                     due_at = null;
   const payload = {
     title,
@@ -381,13 +363,12 @@ $('lockBtn').addEventListener('click', async ()=>{
 $('list').addEventListener('click', e=>{
   const li = e.target.closest('.task'); if(!li) return;
   const t = tasks.find(x=>x.id===li.dataset.id); if(!t) return;
-  if(!isAdmin) return;
   const cb = e.target.closest('.md-chk input[data-ci]');
   if(cb){ e.stopPropagation(); toggleDescCheck(t, +cb.dataset.ci); return; }
   const act = e.target.dataset.act;
-  if(act==='check') toggle(t);
-  else if(act==='edit') openModal(t);
-  else if(act==='del') del(t);
+  if(act==='check') toggle(t);                       // åpen for alle
+  else if(act==='edit'){ if(isAdmin) openModal(t); }  // kun admin
+  else if(act==='del'){ if(isAdmin) del(t); }         // kun admin
 });
 $('mCancel').addEventListener('click', closeModal);
 $('mSave').addEventListener('click', saveModal);
