@@ -23,41 +23,53 @@
   .brand{font-weight:800;letter-spacing:.12em;}
   main{max-width:720px;margin:0 auto;padding:18px 16px 80px;}
 
-  /* add row */
-  .add{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:18px;}
-  .add input[type=text],.add input[type=date],.add input[type=number],.add select{
+  input,select,textarea,button{font:inherit;}
+  textarea,input[type=text],input[type=date]{
     background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;
-    padding:10px 12px;font:inherit;font-size:15px;}
-  .add .title-in{width:100%;margin-bottom:10px;}
-  .add .opts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
-  .add .opts label{color:var(--muted);font-size:13px;}
-  .add .num{width:64px;}
-  .add .unit{display:none;}
-  .add.custom .unit{display:inline-block;}
+    padding:10px 12px;font-size:15px;}
+  textarea{resize:vertical;width:100%;}
   .btn{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:10px 16px;
-    font:600 15px system-ui;cursor:pointer;}
+    font-weight:600;font-size:15px;cursor:pointer;}
   .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text);}
+
+  /* add box */
+  .add{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:18px;
+    display:flex;flex-direction:column;gap:10px;}
+  .add .title-in{width:100%;}
+  .add .desc-in{min-height:46px;}
+  .add .foot{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;}
+  .due-wrap{display:flex;flex-direction:column;gap:4px;}
+  .due-wrap label{color:var(--muted);font-size:12px;}
   .add .btn{margin-left:auto;}
+
+  /* recurrence slider */
+  .recur{display:flex;flex-direction:column;gap:2px;}
+  .recur .rlabel{color:var(--muted);font-size:12px;}
+  .recur input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0 0;}
+  .ticks{display:flex;justify-content:space-between;}
+  .ticks span{font-size:11px;color:var(--muted);cursor:pointer;flex:1;text-align:center;user-select:none;}
+  .ticks span:first-child{text-align:left;}
+  .ticks span:last-child{text-align:right;}
+  .ticks span.on{color:var(--accent);font-weight:700;}
 
   .banner{background:#3a2418;border:1px solid #7c4a1e;color:#f6c590;border-radius:12px;
     padding:12px 14px;font-size:14px;margin-bottom:16px;display:none;}
+  .hint{color:var(--muted);font-size:12px;}
 
   /* list */
-  .sec-h{color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
-    margin:18px 4px 8px;}
+  .sec-h{color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:18px 4px 8px;}
   ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}
   .task{display:flex;align-items:flex-start;gap:12px;background:var(--card);border:1px solid var(--line);
     border-radius:14px;padding:12px 14px;}
   .task.done .t-title{text-decoration:line-through;color:var(--muted);}
-  .check{appearance:none;width:22px;height:22px;border:2px solid var(--line);border-radius:7px;
-    cursor:pointer;flex:0 0 auto;margin-top:2px;position:relative;background:var(--panel);}
+  .check{appearance:none;width:22px;height:22px;border:2px solid var(--line);border-radius:7px;cursor:pointer;
+    flex:0 0 auto;margin-top:2px;position:relative;background:var(--panel);}
   .check:hover{border-color:var(--accent);}
   .check:checked{background:var(--ok);border-color:var(--ok);}
   .check:checked::after{content:"✓";position:absolute;inset:0;color:#06210f;font-size:14px;
     display:flex;align-items:center;justify-content:center;font-weight:800;}
   .t-main{flex:1;min-width:0;}
   .t-title{font-weight:600;word-break:break-word;}
-  .t-notes{color:var(--muted);font-size:13px;margin-top:2px;word-break:break-word;}
   .t-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
   .chip{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);}
   .chip.recur{border-color:#314a6b;color:#9ec5ff;}
@@ -65,28 +77,33 @@
   .chip.today{border-color:var(--today);color:#ffd591;}
   .chip.soon{border-color:var(--soon);color:#aee5ff;}
   .t-act{display:flex;gap:4px;flex:0 0 auto;}
-  .icobtn{background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:16px;
-    padding:4px 6px;border-radius:8px;}
+  .icobtn{background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:16px;padding:4px 6px;border-radius:8px;}
   .icobtn:hover{background:var(--card-h);color:var(--text);}
   .empty{color:var(--muted);text-align:center;padding:36px 10px;}
 
+  /* markdown description */
+  .t-desc{margin-top:8px;display:flex;flex-direction:column;gap:3px;}
+  .md-chk{display:flex;align-items:flex-start;gap:8px;font-size:14px;cursor:pointer;color:var(--text);}
+  .md-chk input{margin:3px 0 0;width:16px;height:16px;accent-color:var(--ok);cursor:pointer;flex:0 0 auto;}
+  .md-chk.on span{text-decoration:line-through;color:var(--muted);}
+  .md-li{font-size:14px;color:var(--text);}
+  .md-li::before{content:"•";color:var(--muted);margin-right:6px;}
+  .md-h{font-weight:700;font-size:14px;margin-top:4px;}
+  .md-p{font-size:14px;color:var(--muted);word-break:break-word;}
+  .md-sp{height:6px;}
+  code{background:#0d1830;padding:0 4px;border-radius:4px;font-size:12px;}
+
   /* edit modal */
-  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;
-    justify-content:center;z-index:50;padding:16px;}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;
+    z-index:50;padding:16px;}
   .modal.show{display:flex;}
-  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;
-    width:100%;max-width:440px;}
+  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;width:100%;
+    max-width:460px;max-height:90vh;overflow:auto;}
   .sheet h3{margin:0 0 14px;}
   .sheet .row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
   .sheet label{color:var(--muted);font-size:13px;}
-  .sheet input,.sheet select,.sheet textarea{background:var(--card);color:var(--text);
-    border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;font-size:15px;}
-  .sheet textarea{resize:vertical;min-height:54px;}
-  .sheet .inline{flex-direction:row;align-items:center;gap:10px;}
   .sheet .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:6px;}
-  .unit2{display:none;}
-  .sheet.custom .unit2{display:inline-block;}
-  @media(max-width:520px){ .add .btn{margin-left:0;width:100%;} .add .opts{gap:10px;} }
+  @media(max-width:520px){ .add .btn{margin-left:0;width:100%;} }
 </style>
 </head>
 <body>
@@ -98,24 +115,21 @@
 <main>
   <div class="banner" id="banner"></div>
 
-  <div class="add" id="addBox">
+  <div class="add">
     <input type="text" class="title-in" id="addTitle" placeholder="Add a task…" autocomplete="off">
-    <div class="opts">
-      <label>Repeat</label>
-      <select id="addRecur">
-        <option value="none">One-off</option>
-        <option value="day:1">Daily</option>
-        <option value="week:1">Weekly</option>
-        <option value="month:1">Monthly</option>
-        <option value="custom">Custom…</option>
-      </select>
-      <input type="number" class="num unit" id="addN" min="1" value="2" title="Every N">
-      <select class="unit" id="addUnit">
-        <option value="day">days</option>
-        <option value="week">weeks</option>
-        <option value="month">months</option>
-      </select>
-      <label class="unit2-wrap">Due <input type="date" id="addDue"></label>
+    <textarea class="desc-in" id="addDesc" placeholder="Description (optional) — use “- [ ] item” for checkboxes, “- ” for bullets, **bold**"></textarea>
+    <div class="recur">
+      <span class="rlabel">Repeat: <b id="addRlabel">Never</b></span>
+      <input type="range" id="addSlider" min="0" max="4" step="1" value="0">
+      <div class="ticks" id="addTicks">
+        <span data-v="0">Never</span><span data-v="1">Monthly</span><span data-v="2">Weekly</span><span data-v="3">Daily</span><span data-v="4">Hourly</span>
+      </div>
+    </div>
+    <div class="foot">
+      <div class="due-wrap" id="addDueWrap">
+        <label id="addDueLbl">Due (optional)</label>
+        <input type="date" id="addDue">
+      </div>
       <button class="btn" id="addBtn">Add</button>
     </div>
   </div>
@@ -125,28 +139,22 @@
 
 <!-- edit modal -->
 <div class="modal" id="editModal">
-  <div class="sheet" id="editSheet">
+  <div class="sheet">
     <h3>Edit task</h3>
     <div class="row"><label>Title</label><input type="text" id="edTitle"></div>
-    <div class="row"><label>Notes</label><textarea id="edNotes"></textarea></div>
-    <div class="row"><label>Repeat</label>
-      <div class="inline">
-        <select id="edRecur">
-          <option value="none">One-off</option>
-          <option value="day:1">Daily</option>
-          <option value="week:1">Weekly</option>
-          <option value="month:1">Monthly</option>
-          <option value="custom">Custom…</option>
-        </select>
-        <input type="number" class="unit2" id="edN" min="1" value="2" style="width:64px">
-        <select class="unit2" id="edUnit">
-          <option value="day">days</option>
-          <option value="week">weeks</option>
-          <option value="month">months</option>
-        </select>
+    <div class="row">
+      <label>Description</label>
+      <textarea id="edDesc" style="min-height:90px"></textarea>
+      <span class="hint">“- [ ] item” = checkbox · “- ” = bullet · “# ” = heading · **bold**</span>
+    </div>
+    <div class="row">
+      <label>Repeat: <b id="edRlabel">Never</b></label>
+      <input type="range" id="edSlider" min="0" max="4" step="1" value="0">
+      <div class="ticks" id="edTicks">
+        <span data-v="0">Never</span><span data-v="1">Monthly</span><span data-v="2">Weekly</span><span data-v="3">Daily</span><span data-v="4">Hourly</span>
       </div>
     </div>
-    <div class="row"><label>Due date</label><input type="date" id="edDue"></div>
+    <div class="row" id="edDueRow"><label>Due date</label><input type="date" id="edDue"></div>
     <div class="actions">
       <button class="btn ghost" id="edCancel">Cancel</button>
       <button class="btn" id="edSave">Save</button>
@@ -158,69 +166,112 @@
 <script>
 const T = window.THelper;
 const $ = id => document.getElementById(id);
-let tasks = [];
-let editId = null;
+let tasks = [], editId = null;
 
-/* ---------- helpers ---------- */
-function recurLabel(u, n){
-  if(!u || u==='none') return 'One-off';
-  if(n==1) return ({day:'Daily',week:'Weekly',month:'Monthly'})[u] || 'Repeats';
-  return `Every ${n} ${u}${n>1?'s':''}`;
+const RECUR       = ['none','month','week','day','hour'];
+const RECUR_LABEL = ['Never','Monthly','Weekly','Daily','Hourly'];
+const idxToUnit = i => RECUR[i] || 'none';
+const unitToIdx = u => { const i = RECUR.indexOf(u); return i < 0 ? 0 : i; };
+const recurChip = (u) => u==='hour'?'Hourly':u==='day'?'Daily':u==='week'?'Weekly':u==='month'?'Monthly':'One-off';
+
+/* ---------- dates ---------- */
+function dueChip(dueAt){
+  if(!dueAt) return null;
+  const ms = new Date(dueAt) - new Date();
+  const hrs = ms/3600000;
+  if(ms < 0){
+    const a = Math.abs(hrs);
+    return a < 24 ? {txt:`Overdue ${Math.max(1,Math.round(a))}h`,cls:'over'}
+                  : {txt:`Overdue ${Math.round(a/24)}d`,cls:'over'};
+  }
+  if(hrs < 1)  return {txt:`Due in ${Math.max(1,Math.round(hrs*60))}m`, cls:'today'};
+  if(hrs < 24) return {txt:`Due in ${Math.round(hrs)}h`, cls:'today'};
+  const days = Math.round(hrs/24);
+  if(days === 1) return {txt:'Due tomorrow', cls:'soon'};
+  if(days <= 7)  return {txt:`Due in ${days}d`, cls:'soon'};
+  return {txt:'Due '+new Date(dueAt).toLocaleDateString(undefined,{month:'short',day:'numeric'}), cls:''};
 }
-function todayISO(){
-  const d=new Date(); d.setHours(0,0,0,0);
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const pad = n => String(n).padStart(2,'0');
+function dateToInput(dt){ const d=new Date(dt); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function inputDateToISO(v){ return v ? new Date(v+'T00:00').toISOString() : null; }   // local midnight
+function todayMidnightISO(){ const d=new Date(); d.setHours(0,0,0,0); return d.toISOString(); }
+
+/* ---------- markdown (safe: escape first) ---------- */
+function mdInline(s){
+  s = T.esc(s);
+  s = s.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
+  s = s.replace(/(^|[^*])\*([^*]+)\*/g,'$1<i>$2</i>');
+  s = s.replace(/`([^`]+)`/g,'<code>$1</code>');
+  return s;
 }
-function dueChip(due){
-  if(!due) return null;
-  const today=new Date(); today.setHours(0,0,0,0);
-  const d=new Date(due+'T00:00:00');
-  const diff=Math.round((d-today)/86400000);
-  if(diff<0)  return {txt:`Overdue ${-diff}d`, cls:'over'};
-  if(diff===0)return {txt:'Due today', cls:'today'};
-  if(diff===1)return {txt:'Due tomorrow', cls:'soon'};
-  if(diff<=7) return {txt:`Due in ${diff}d`, cls:'soon'};
-  return {txt:'Due '+d.toLocaleDateString(undefined,{month:'short',day:'numeric'}), cls:''};
+function mdToHtml(src){
+  if(!src) return '';
+  let ci=-1; const out=[];
+  for(const raw of src.split('\n')){
+    const line = raw.replace(/\s+$/,'');
+    let m;
+    if(m = line.match(/^\s*[-*]\s+\[([ xX])\]\s+(.*)$/)){
+      ci++; const on = m[1].toLowerCase()==='x';
+      out.push(`<label class="md-chk ${on?'on':''}"><input type="checkbox" data-ci="${ci}" ${on?'checked':''}><span>${mdInline(m[2])}</span></label>`);
+    } else if(m = line.match(/^\s*[-*]\s+(.*)$/)){
+      out.push(`<div class="md-li">${mdInline(m[1])}</div>`);
+    } else if(m = line.match(/^#{1,3}\s+(.*)$/)){
+      out.push(`<div class="md-h">${mdInline(m[1])}</div>`);
+    } else if(line.trim()===''){
+      out.push('<div class="md-sp"></div>');
+    } else {
+      out.push(`<div class="md-p">${mdInline(line)}</div>`);
+    }
+  }
+  return out.join('');
 }
-// recurrence <select> value "unit:n" | "none" | "custom" → {unit,n}
-function parseRecurSel(sel, nEl, unitEl){
-  if(sel==='none') return {unit:'none', n:1};
-  if(sel==='custom') return {unit:unitEl.value, n:Math.max(1, parseInt(nEl.value)||1)};
-  const [u,n]=sel.split(':'); return {unit:u, n:parseInt(n)||1};
+// flip the ci-th checkbox in the source markdown
+function toggleCheckbox(src, ci){
+  let i = -1;
+  return src.split('\n').map(line=>{
+    const m = line.match(/^(\s*[-*]\s+\[)([ xX])(\]\s+.*)$/);
+    if(m){ i++; if(i === ci){ const on = m[2].toLowerCase()==='x'; return m[1]+(on?' ':'x')+m[3]; } }
+    return line;
+  }).join('\n');
 }
-// {unit,n} → which <select> value + whether custom
-function recurToSel(u, n){
-  if(!u || u==='none') return {sel:'none', custom:false};
-  if(n==1 && (u==='day'||u==='week'||u==='month')) return {sel:`${u}:1`, custom:false};
-  return {sel:'custom', custom:true};
+
+/* ---------- slider component ---------- */
+function setSlider(sliderId, ticksId, labelId, idx, onChange){
+  const s = $(sliderId), ticks = $(ticksId), lbl = $(labelId);
+  s.value = idx;
+  const paint = () => {
+    const v = +s.value;
+    lbl.textContent = RECUR_LABEL[v];
+    [...ticks.children].forEach(c => c.classList.toggle('on', +c.dataset.v === v));
+    onChange && onChange(v);
+  };
+  s.oninput = paint;
+  ticks.onclick = e => { const sp = e.target.closest('span'); if(!sp) return; s.value = sp.dataset.v; paint(); };
+  paint();
 }
 
 /* ---------- render ---------- */
 function render(){
-  const box=$('list');
-  if(!tasks.length){ box.innerHTML='<div class="empty">No tasks yet — add one above.</div>'; return; }
-  const open=tasks.filter(t=>!t.done).sort((a,b)=>{
-    if(!a.due_date) return 1; if(!b.due_date) return -1;
-    return a.due_date<b.due_date?-1:a.due_date>b.due_date?1:0;
+  const box = $('list');
+  if(!tasks.length){ box.innerHTML = '<div class="empty">No tasks yet — add one above.</div>'; return; }
+  const open = tasks.filter(t=>!t.done).sort((a,b)=>{
+    if(!a.due_at) return 1; if(!b.due_at) return -1;
+    return new Date(a.due_at) - new Date(b.due_at);
   });
-  const done=tasks.filter(t=>t.done);
-  let html='';
-  html+='<ul>'+open.map(row).join('')+'</ul>';
-  if(done.length){
-    html+=`<div class="sec-h">Done (${done.length})</div><ul>`+done.map(row).join('')+'</ul>';
-  }
-  box.innerHTML=html;
+  const done = tasks.filter(t=>t.done);
+  let html = '<ul>'+open.map(row).join('')+'</ul>';
+  if(done.length) html += `<div class="sec-h">Done (${done.length})</div><ul>`+done.map(row).join('')+'</ul>';
+  box.innerHTML = html;
 }
 function row(t){
-  const e=T.esc;
-  const meta=[];
-  meta.push(`<span class="chip recur">${e(recurLabel(t.recur_unit,t.recur_n))}</span>`);
-  if(!t.done){ const c=dueChip(t.due_date); if(c) meta.push(`<span class="chip ${c.cls}">${e(c.txt)}</span>`); }
+  const e = T.esc, meta = [];
+  meta.push(`<span class="chip recur">${e(recurChip(t.recur_unit))}</span>`);
+  if(!t.done){ const c = dueChip(t.due_at); if(c) meta.push(`<span class="chip ${c.cls}">${e(c.txt)}</span>`); }
   return `<li class="task ${t.done?'done':''}" data-id="${e(t.id)}">
     <input type="checkbox" class="check" data-act="check" ${t.done?'checked':''}>
     <div class="t-main">
       <div class="t-title">${e(t.title)}</div>
-      ${t.notes?`<div class="t-notes">${e(t.notes)}</div>`:''}
+      ${t.notes ? `<div class="t-desc">${mdToHtml(t.notes)}</div>` : ''}
       <div class="t-meta">${meta.join('')}</div>
     </div>
     <div class="t-act">
@@ -233,46 +284,58 @@ function row(t){
 /* ---------- data ---------- */
 async function load(){
   if(!T.sb){ showBanner('Supabase library failed to load.'); return; }
-  const {data,error}=await T.sb.from('tasks').select('*');
+  const {data,error} = await T.sb.from('tasks').select('*');
   if(error){
-    if(/relation|does not exist|schema cache/i.test(error.message||'')){
-      showBanner('Tasks backend isn’t set up yet. Run the Supabase migration, then reload.');
-    } else { showBanner('Load error: '+error.message); }
+    if(/relation|does not exist|schema cache|column/i.test(error.message||''))
+      showBanner('Tasks backend needs the migration (tasks.sql + tasks_v2.sql). Run them, then reload.');
+    else showBanner('Load error: '+error.message);
     tasks=[]; render(); return;
   }
-  hideBanner(); tasks=data||[]; render();
+  hideBanner(); tasks = data || []; render();
 }
-function showBanner(m){ const b=$('banner'); b.textContent=m; b.style.display='block'; }
-function hideBanner(){ $('banner').style.display='none'; }
+const showBanner = m => { const b=$('banner'); b.textContent=m; b.style.display='block'; };
+const hideBanner = () => { $('banner').style.display='none'; };
 
 async function addTask(){
-  const title=$('addTitle').value.trim();
+  const title = $('addTitle').value.trim();
   if(!title) return;
-  const r=parseRecurSel($('addRecur').value, $('addN'), $('addUnit'));
-  let due=$('addDue').value || null;
-  if(!due && r.unit!=='none') due=todayISO();   // recurring tasks need a starting due date
-  const task={title, notes:null, recur_unit:r.unit, recur_n:r.n, due_date:due, done:false};
+  const unit = idxToUnit(+$('addSlider').value);
+  let due_at;
+  if(unit === 'hour')      due_at = new Date().toISOString();              // start now, repeat hourly
+  else if($('addDue').value) due_at = inputDateToISO($('addDue').value);
+  else if(unit !== 'none') due_at = todayMidnightISO();                    // recurring needs a start
+  else                     due_at = null;
+  const task = { title, notes: $('addDesc').value.trim() || null, recur_unit: unit, recur_n: 1, due_at, done: false };
   try{
-    await T.rpc('add_task',{p_task:task});
-    $('addTitle').value=''; $('addDue').value='';
+    await T.rpc('add_task', {p_task: task});
+    $('addTitle').value=''; $('addDesc').value=''; $('addDue').value='';
+    setSlider('addSlider','addTicks','addRlabel',0,addDueVis);
     await load();
   }catch(e){ if(e.message!=='no-pass') T.toast('Could not add: '+e.message); }
 }
 
 async function toggle(t){
   try{
-    if(t.done){ // un-complete a one-off
-      await T.rpc('update_task',{p_id:t.id, p_task:{done:false}});
-    }else{
-      const res=await T.rpc('complete_task',{p_id:t.id});
-      const nt=Array.isArray(res)?res[0]:res;
-      if(nt && nt.recur_unit && nt.recur_unit!=='none' && nt.due_date){
-        const c=dueChip(nt.due_date);
-        T.toast('Rescheduled → '+new Date(nt.due_date+'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'}));
+    if(t.done){ await T.rpc('update_task',{p_id:t.id, p_task:{done:false}}); }
+    else{
+      const res = await T.rpc('complete_task',{p_id:t.id});
+      const nt = Array.isArray(res) ? res[0] : res;
+      if(nt && nt.recur_unit && nt.recur_unit!=='none' && nt.due_at){
+        const d = new Date(nt.due_at);
+        const when = nt.recur_unit==='hour'
+          ? d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})
+          : d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+        T.toast('Rescheduled → '+when);
       }
     }
     await load();
   }catch(e){ if(e.message!=='no-pass') T.toast('Error: '+e.message); load(); }
+}
+
+async function toggleDescCheck(t, ci){
+  const next = toggleCheckbox(t.notes||'', ci);
+  try{ await T.rpc('update_task',{p_id:t.id, p_task:{notes:next}}); await load(); }
+  catch(e){ if(e.message!=='no-pass') T.toast('Error: '+e.message); load(); }
 }
 
 async function del(t){
@@ -283,43 +346,45 @@ async function del(t){
 
 /* ---------- edit modal ---------- */
 function openEdit(t){
-  editId=t.id;
-  $('edTitle').value=t.title||'';
-  $('edNotes').value=t.notes||'';
-  $('edDue').value=t.due_date||'';
-  const rs=recurToSel(t.recur_unit,t.recur_n);
-  $('edRecur').value=rs.sel;
-  $('editSheet').classList.toggle('custom', rs.custom);
-  if(rs.custom){ $('edUnit').value=t.recur_unit; $('edN').value=t.recur_n; }
+  editId = t.id;
+  $('edTitle').value = t.title || '';
+  $('edDesc').value  = t.notes || '';
+  setSlider('edSlider','edTicks','edRlabel', unitToIdx(t.recur_unit), v => {
+    $('edDueRow').style.display = idxToUnit(v)==='hour' ? 'none' : '';
+  });
+  $('edDue').value = t.due_at ? dateToInput(t.due_at) : '';
   $('editModal').classList.add('show');
 }
 function closeEdit(){ $('editModal').classList.remove('show'); editId=null; }
 async function saveEdit(){
-  const t=tasks.find(x=>x.id===editId); if(!t) return;
-  const r=parseRecurSel($('edRecur').value, $('edN'), $('edUnit'));
-  const patch={
-    title:$('edTitle').value.trim()||t.title,
-    notes:$('edNotes').value.trim()||null,
-    recur_unit:r.unit, recur_n:r.n,
-    due_date:$('edDue').value||null
+  const t = tasks.find(x=>x.id===editId); if(!t) return;
+  const unit = idxToUnit(+$('edSlider').value);
+  let due_at;
+  if(unit === 'hour') due_at = t.due_at || new Date().toISOString();
+  else                due_at = $('edDue').value ? inputDateToISO($('edDue').value) : null;
+  const patch = {
+    title: $('edTitle').value.trim() || t.title,
+    notes: $('edDesc').value.trim() || null,
+    recur_unit: unit, recur_n: 1, due_at
   };
   try{ await T.rpc('update_task',{p_id:editId, p_task:patch}); closeEdit(); await load(); }
   catch(e){ if(e.message!=='no-pass') T.toast('Could not save: '+e.message); }
 }
 
 /* ---------- events ---------- */
-$('addRecur').addEventListener('change', e=>{
-  $('addBox').classList.toggle('custom', e.target.value==='custom');
-});
-$('edRecur').addEventListener('change', e=>{
-  $('editSheet').classList.toggle('custom', e.target.value==='custom');
-});
+function addDueVis(v){
+  const hourly = idxToUnit(v)==='hour';
+  $('addDueWrap').style.display = hourly ? 'none' : '';
+  $('addDueLbl').textContent = idxToUnit(v)==='none' ? 'Due (optional)' : 'Start date';
+}
 $('addBtn').addEventListener('click', addTask);
 $('addTitle').addEventListener('keydown', e=>{ if(e.key==='Enter') addTask(); });
 $('list').addEventListener('click', e=>{
-  const li=e.target.closest('.task'); if(!li) return;
-  const t=tasks.find(x=>x.id===li.dataset.id); if(!t) return;
-  const act=e.target.dataset.act;
+  const li = e.target.closest('.task'); if(!li) return;
+  const t = tasks.find(x=>x.id===li.dataset.id); if(!t) return;
+  const cb = e.target.closest('.md-chk input[data-ci]');
+  if(cb){ e.stopPropagation(); toggleDescCheck(t, +cb.dataset.ci); return; }
+  const act = e.target.dataset.act;
   if(act==='check') toggle(t);
   else if(act==='edit') openEdit(t);
   else if(act==='del') del(t);
@@ -329,12 +394,11 @@ $('edSave').addEventListener('click', saveEdit);
 $('editModal').addEventListener('click', e=>{ if(e.target.id==='editModal') closeEdit(); });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeEdit(); });
 
-/* ---------- realtime + boot ---------- */
+/* ---------- boot ---------- */
+setSlider('addSlider','addTicks','addRlabel',0,addDueVis);
 load();
 if(T.sb){
-  T.sb.channel('tasks-rt')
-    .on('postgres_changes',{event:'*',schema:'public',table:'tasks'}, load)
-    .subscribe();
+  T.sb.channel('tasks-rt').on('postgres_changes',{event:'*',schema:'public',table:'tasks'}, load).subscribe();
 }
 </script>
 </body>
