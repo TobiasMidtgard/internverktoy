@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tasks · Thansen Helper</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0e1014; --panel:#171a21; --card:#1c1f27; --card-h:#222632;
+    --line:#2a2f3a; --text:#eef1f6; --muted:#9aa3b2; --accent:#3b82f6;
+    --over:#ef4444; --today:#f59e0b; --soon:#38bdf8; --ok:#22c55e;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{background:radial-gradient(1200px 600px at 50% -10%,#1a2030 0%,var(--bg) 60%);
+    color:var(--text);font:400 16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    min-height:100vh;}
+  header{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line);
+    position:sticky;top:0;background:rgba(14,16,20,.85);backdrop-filter:blur(8px);z-index:10;}
+  .hub{color:var(--muted);text-decoration:none;font-weight:600;opacity:.8;}
+  .hub:hover{opacity:1;}
+  .brand{font-weight:800;letter-spacing:.12em;}
+  main{max-width:720px;margin:0 auto;padding:18px 16px 80px;}
+
+  /* add row */
+  .add{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:18px;}
+  .add input[type=text],.add input[type=date],.add input[type=number],.add select{
+    background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;
+    padding:10px 12px;font:inherit;font-size:15px;}
+  .add .title-in{width:100%;margin-bottom:10px;}
+  .add .opts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  .add .opts label{color:var(--muted);font-size:13px;}
+  .add .num{width:64px;}
+  .add .unit{display:none;}
+  .add.custom .unit{display:inline-block;}
+  .btn{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:10px 16px;
+    font:600 15px system-ui;cursor:pointer;}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text);}
+  .add .btn{margin-left:auto;}
+
+  .banner{background:#3a2418;border:1px solid #7c4a1e;color:#f6c590;border-radius:12px;
+    padding:12px 14px;font-size:14px;margin-bottom:16px;display:none;}
+
+  /* list */
+  .sec-h{color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+    margin:18px 4px 8px;}
+  ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}
+  .task{display:flex;align-items:flex-start;gap:12px;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:12px 14px;}
+  .task.done .t-title{text-decoration:line-through;color:var(--muted);}
+  .check{appearance:none;width:22px;height:22px;border:2px solid var(--line);border-radius:7px;
+    cursor:pointer;flex:0 0 auto;margin-top:2px;position:relative;background:var(--panel);}
+  .check:hover{border-color:var(--accent);}
+  .check:checked{background:var(--ok);border-color:var(--ok);}
+  .check:checked::after{content:"✓";position:absolute;inset:0;color:#06210f;font-size:14px;
+    display:flex;align-items:center;justify-content:center;font-weight:800;}
+  .t-main{flex:1;min-width:0;}
+  .t-title{font-weight:600;word-break:break-word;}
+  .t-notes{color:var(--muted);font-size:13px;margin-top:2px;word-break:break-word;}
+  .t-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+  .chip{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);}
+  .chip.recur{border-color:#314a6b;color:#9ec5ff;}
+  .chip.over{border-color:var(--over);color:#ffb4b4;}
+  .chip.today{border-color:var(--today);color:#ffd591;}
+  .chip.soon{border-color:var(--soon);color:#aee5ff;}
+  .t-act{display:flex;gap:4px;flex:0 0 auto;}
+  .icobtn{background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:16px;
+    padding:4px 6px;border-radius:8px;}
+  .icobtn:hover{background:var(--card-h);color:var(--text);}
+  .empty{color:var(--muted);text-align:center;padding:36px 10px;}
+
+  /* edit modal */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;
+    justify-content:center;z-index:50;padding:16px;}
+  .modal.show{display:flex;}
+  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;
+    width:100%;max-width:440px;}
+  .sheet h3{margin:0 0 14px;}
+  .sheet .row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+  .sheet label{color:var(--muted);font-size:13px;}
+  .sheet input,.sheet select,.sheet textarea{background:var(--card);color:var(--text);
+    border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;font-size:15px;}
+  .sheet textarea{resize:vertical;min-height:54px;}
+  .sheet .inline{flex-direction:row;align-items:center;gap:10px;}
+  .sheet .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:6px;}
+  .unit2{display:none;}
+  .sheet.custom .unit2{display:inline-block;}
+  @media(max-width:520px){ .add .btn{margin-left:0;width:100%;} .add .opts{gap:10px;} }
+</style>
+</head>
+<body>
+<header>
+  <a class="hub" href="index.html">‹ Hub</a>
+  <span class="brand">TASKS</span>
+</header>
+
+<main>
+  <div class="banner" id="banner"></div>
+
+  <div class="add" id="addBox">
+    <input type="text" class="title-in" id="addTitle" placeholder="Add a task…" autocomplete="off">
+    <div class="opts">
+      <label>Repeat</label>
+      <select id="addRecur">
+        <option value="none">One-off</option>
+        <option value="day:1">Daily</option>
+        <option value="week:1">Weekly</option>
+        <option value="month:1">Monthly</option>
+        <option value="custom">Custom…</option>
+      </select>
+      <input type="number" class="num unit" id="addN" min="1" value="2" title="Every N">
+      <select class="unit" id="addUnit">
+        <option value="day">days</option>
+        <option value="week">weeks</option>
+        <option value="month">months</option>
+      </select>
+      <label class="unit2-wrap">Due <input type="date" id="addDue"></label>
+      <button class="btn" id="addBtn">Add</button>
+    </div>
+  </div>
+
+  <div id="list"></div>
+</main>
+
+<!-- edit modal -->
+<div class="modal" id="editModal">
+  <div class="sheet" id="editSheet">
+    <h3>Edit task</h3>
+    <div class="row"><label>Title</label><input type="text" id="edTitle"></div>
+    <div class="row"><label>Notes</label><textarea id="edNotes"></textarea></div>
+    <div class="row"><label>Repeat</label>
+      <div class="inline">
+        <select id="edRecur">
+          <option value="none">One-off</option>
+          <option value="day:1">Daily</option>
+          <option value="week:1">Weekly</option>
+          <option value="month:1">Monthly</option>
+          <option value="custom">Custom…</option>
+        </select>
+        <input type="number" class="unit2" id="edN" min="1" value="2" style="width:64px">
+        <select class="unit2" id="edUnit">
+          <option value="day">days</option>
+          <option value="week">weeks</option>
+          <option value="month">months</option>
+        </select>
+      </div>
+    </div>
+    <div class="row"><label>Due date</label><input type="date" id="edDue"></div>
+    <div class="actions">
+      <button class="btn ghost" id="edCancel">Cancel</button>
+      <button class="btn" id="edSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+const T = window.THelper;
+const $ = id => document.getElementById(id);
+let tasks = [];
+let editId = null;
+
+/* ---------- helpers ---------- */
+function recurLabel(u, n){
+  if(!u || u==='none') return 'One-off';
+  if(n==1) return ({day:'Daily',week:'Weekly',month:'Monthly'})[u] || 'Repeats';
+  return `Every ${n} ${u}${n>1?'s':''}`;
+}
+function todayISO(){
+  const d=new Date(); d.setHours(0,0,0,0);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function dueChip(due){
+  if(!due) return null;
+  const today=new Date(); today.setHours(0,0,0,0);
+  const d=new Date(due+'T00:00:00');
+  const diff=Math.round((d-today)/86400000);
+  if(diff<0)  return {txt:`Overdue ${-diff}d`, cls:'over'};
+  if(diff===0)return {txt:'Due today', cls:'today'};
+  if(diff===1)return {txt:'Due tomorrow', cls:'soon'};
+  if(diff<=7) return {txt:`Due in ${diff}d`, cls:'soon'};
+  return {txt:'Due '+d.toLocaleDateString(undefined,{month:'short',day:'numeric'}), cls:''};
+}
+// recurrence <select> value "unit:n" | "none" | "custom" → {unit,n}
+function parseRecurSel(sel, nEl, unitEl){
+  if(sel==='none') return {unit:'none', n:1};
+  if(sel==='custom') return {unit:unitEl.value, n:Math.max(1, parseInt(nEl.value)||1)};
+  const [u,n]=sel.split(':'); return {unit:u, n:parseInt(n)||1};
+}
+// {unit,n} → which <select> value + whether custom
+function recurToSel(u, n){
+  if(!u || u==='none') return {sel:'none', custom:false};
+  if(n==1 && (u==='day'||u==='week'||u==='month')) return {sel:`${u}:1`, custom:false};
+  return {sel:'custom', custom:true};
+}
+
+/* ---------- render ---------- */
+function render(){
+  const box=$('list');
+  if(!tasks.length){ box.innerHTML='<div class="empty">No tasks yet — add one above.</div>'; return; }
+  const open=tasks.filter(t=>!t.done).sort((a,b)=>{
+    if(!a.due_date) return 1; if(!b.due_date) return -1;
+    return a.due_date<b.due_date?-1:a.due_date>b.due_date?1:0;
+  });
+  const done=tasks.filter(t=>t.done);
+  let html='';
+  html+='<ul>'+open.map(row).join('')+'</ul>';
+  if(done.length){
+    html+=`<div class="sec-h">Done (${done.length})</div><ul>`+done.map(row).join('')+'</ul>';
+  }
+  box.innerHTML=html;
+}
+function row(t){
+  const e=T.esc;
+  const meta=[];
+  meta.push(`<span class="chip recur">${e(recurLabel(t.recur_unit,t.recur_n))}</span>`);
+  if(!t.done){ const c=dueChip(t.due_date); if(c) meta.push(`<span class="chip ${c.cls}">${e(c.txt)}</span>`); }
+  return `<li class="task ${t.done?'done':''}" data-id="${e(t.id)}">
+    <input type="checkbox" class="check" data-act="check" ${t.done?'checked':''}>
+    <div class="t-main">
+      <div class="t-title">${e(t.title)}</div>
+      ${t.notes?`<div class="t-notes">${e(t.notes)}</div>`:''}
+      <div class="t-meta">${meta.join('')}</div>
+    </div>
+    <div class="t-act">
+      <button class="icobtn" data-act="edit" title="Edit">✎</button>
+      <button class="icobtn" data-act="del" title="Delete">🗑</button>
+    </div>
+  </li>`;
+}
+
+/* ---------- data ---------- */
+async function load(){
+  if(!T.sb){ showBanner('Supabase library failed to load.'); return; }
+  const {data,error}=await T.sb.from('tasks').select('*');
+  if(error){
+    if(/relation|does not exist|schema cache/i.test(error.message||'')){
+      showBanner('Tasks backend isn’t set up yet. Run the Supabase migration, then reload.');
+    } else { showBanner('Load error: '+error.message); }
+    tasks=[]; render(); return;
+  }
+  hideBanner(); tasks=data||[]; render();
+}
+function showBanner(m){ const b=$('banner'); b.textContent=m; b.style.display='block'; }
+function hideBanner(){ $('banner').style.display='none'; }
+
+async function addTask(){
+  const title=$('addTitle').value.trim();
+  if(!title) return;
+  const r=parseRecurSel($('addRecur').value, $('addN'), $('addUnit'));
+  let due=$('addDue').value || null;
+  if(!due && r.unit!=='none') due=todayISO();   // recurring tasks need a starting due date
+  const task={title, notes:null, recur_unit:r.unit, recur_n:r.n, due_date:due, done:false};
+  try{
+    await T.rpc('add_task',{p_task:task});
+    $('addTitle').value=''; $('addDue').value='';
+    await load();
+  }catch(e){ if(e.message!=='no-pass') T.toast('Could not add: '+e.message); }
+}
+
+async function toggle(t){
+  try{
+    if(t.done){ // un-complete a one-off
+      await T.rpc('update_task',{p_id:t.id, p_task:{done:false}});
+    }else{
+      const res=await T.rpc('complete_task',{p_id:t.id});
+      const nt=Array.isArray(res)?res[0]:res;
+      if(nt && nt.recur_unit && nt.recur_unit!=='none' && nt.due_date){
+        const c=dueChip(nt.due_date);
+        T.toast('Rescheduled → '+new Date(nt.due_date+'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'}));
+      }
+    }
+    await load();
+  }catch(e){ if(e.message!=='no-pass') T.toast('Error: '+e.message); load(); }
+}
+
+async function del(t){
+  if(!confirm('Delete “'+t.title+'”?')) return;
+  try{ await T.rpc('delete_task',{p_id:t.id}); await load(); }
+  catch(e){ if(e.message!=='no-pass') T.toast('Could not delete: '+e.message); }
+}
+
+/* ---------- edit modal ---------- */
+function openEdit(t){
+  editId=t.id;
+  $('edTitle').value=t.title||'';
+  $('edNotes').value=t.notes||'';
+  $('edDue').value=t.due_date||'';
+  const rs=recurToSel(t.recur_unit,t.recur_n);
+  $('edRecur').value=rs.sel;
+  $('editSheet').classList.toggle('custom', rs.custom);
+  if(rs.custom){ $('edUnit').value=t.recur_unit; $('edN').value=t.recur_n; }
+  $('editModal').classList.add('show');
+}
+function closeEdit(){ $('editModal').classList.remove('show'); editId=null; }
+async function saveEdit(){
+  const t=tasks.find(x=>x.id===editId); if(!t) return;
+  const r=parseRecurSel($('edRecur').value, $('edN'), $('edUnit'));
+  const patch={
+    title:$('edTitle').value.trim()||t.title,
+    notes:$('edNotes').value.trim()||null,
+    recur_unit:r.unit, recur_n:r.n,
+    due_date:$('edDue').value||null
+  };
+  try{ await T.rpc('update_task',{p_id:editId, p_task:patch}); closeEdit(); await load(); }
+  catch(e){ if(e.message!=='no-pass') T.toast('Could not save: '+e.message); }
+}
+
+/* ---------- events ---------- */
+$('addRecur').addEventListener('change', e=>{
+  $('addBox').classList.toggle('custom', e.target.value==='custom');
+});
+$('edRecur').addEventListener('change', e=>{
+  $('editSheet').classList.toggle('custom', e.target.value==='custom');
+});
+$('addBtn').addEventListener('click', addTask);
+$('addTitle').addEventListener('keydown', e=>{ if(e.key==='Enter') addTask(); });
+$('list').addEventListener('click', e=>{
+  const li=e.target.closest('.task'); if(!li) return;
+  const t=tasks.find(x=>x.id===li.dataset.id); if(!t) return;
+  const act=e.target.dataset.act;
+  if(act==='check') toggle(t);
+  else if(act==='edit') openEdit(t);
+  else if(act==='del') del(t);
+});
+$('edCancel').addEventListener('click', closeEdit);
+$('edSave').addEventListener('click', saveEdit);
+$('editModal').addEventListener('click', e=>{ if(e.target.id==='editModal') closeEdit(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeEdit(); });
+
+/* ---------- realtime + boot ---------- */
+load();
+if(T.sb){
+  T.sb.channel('tasks-rt')
+    .on('postgres_changes',{event:'*',schema:'public',table:'tasks'}, load)
+    .subscribe();
+}
+</script>
+</body>
+</html>
