@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Velodex — Showroom Registry</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0e1116;
+    --panel:#161b22;
+    --panel-2:#1c232d;
+    --line:#2a323d;
+    --ink:#e9eef5;
+    --muted:#8b97a6;
+    --accent:#f4b942;
+    --accent-2:#3fb6a8;
+    --danger:#e85d75;
+    --radius:14px;
+    --shadow:0 18px 40px -18px rgba(0,0,0,.7);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(63,182,168,.10), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(244,185,66,.10), transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    overflow:hidden;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;}
+
+  /* ---------- Top bar ---------- */
+  header{
+    position:fixed;top:0;left:0;right:0;z-index:30;
+    display:flex;align-items:center;gap:14px;
+    padding:12px 16px;
+    background:rgba(14,17,22,.82);
+    backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);
+  }
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.5px;}
+  .logo .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent);transition:.3s;}
+  .logo span{color:var(--muted);font-weight:500;}
+  .spacer{flex:1;}
+
+  select{
+    appearance:none;
+    background:var(--panel-2);
+    color:var(--ink);
+    border:1px solid var(--line);
+    padding:10px 38px 10px 14px;
+    border-radius:10px;
+    font:inherit;font-size:14px;font-weight:500;
+    cursor:pointer;min-width:200px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b97a6' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 13px center;
+  }
+  .btn{
+    background:var(--panel-2);border:1px solid var(--line);color:var(--ink);
+    padding:10px 14px;border-radius:10px;font:inherit;font-size:13px;font-weight:600;
+    cursor:pointer;transition:.15s;white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn.primary{background:var(--accent);color:#1a1205;border-color:var(--accent);}
+  .btn.primary:hover{filter:brightness(1.08);}
+  .btn:disabled{opacity:.55;cursor:default;}
+
+  /* ---------- Canvas ---------- */
+  #stage{position:fixed;inset:0;top:0;overflow:hidden;touch-action:none;}
+  #canvas{
+    position:absolute;top:0;left:0;width:6000px;height:6000px;
+    transform-origin:0 0;
+    background-image:
+      linear-gradient(var(--line) 1px,transparent 1px),
+      linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:40px 40px;
+    opacity:1;
+  }
+  #canvas::before{content:"";position:absolute;inset:0;background-size:200px 200px;
+    background-image:
+      linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);}
+
+  .hint{
+    position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+    z-index:20;font-size:12px;color:var(--muted);
+    background:rgba(22,27,34,.8);padding:8px 14px;border-radius:30px;border:1px solid var(--line);
+    backdrop-filter:blur(8px);pointer-events:none;
+  }
+
+  /* ---------- Bike card ---------- */
+  .card{
+    position:absolute;width:300px;
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    overflow:hidden;cursor:grab;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  .card.dragging{cursor:grabbing;box-shadow:0 26px 60px -16px rgba(0,0,0,.85);z-index:50!important;border-color:var(--accent);}
+  .card-head{
+    display:flex;align-items:center;gap:10px;
+    padding:14px 16px;border-bottom:1px solid var(--line);
+    background:rgba(0,0,0,.18);
+  }
+  .grip{display:flex;flex-direction:column;gap:3px;}
+  .grip i{width:16px;height:2px;background:var(--muted);border-radius:2px;display:block;}
+  .card-title{font-weight:700;font-size:15px;flex:1;line-height:1.2;}
+  .swatch{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.25);flex-shrink:0;}
+  .card-body{padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
+  .price{font-size:24px;font-weight:700;color:var(--accent);font-family:"IBM Plex Mono",monospace;}
+  .meta{display:flex;flex-wrap:wrap;gap:7px;}
+  .tag{font-size:11px;font-weight:600;color:var(--muted);background:var(--panel);border:1px solid var(--line);
+    padding:4px 9px;border-radius:20px;}
+  .tag b{color:var(--ink);font-weight:600;}
+  .desc{font-size:12.5px;line-height:1.5;color:var(--muted);}
+  .badges{display:flex;flex-wrap:wrap;gap:6px;}
+  .badge{font-size:10px;font-weight:700;letter-spacing:.4px;padding:3px 8px;border-radius:20px;text-transform:uppercase;}
+  .badge.synced{background:rgba(63,182,168,.16);color:var(--accent-2);border:1px solid var(--accent-2);}
+  .badge.instock{background:rgba(99,210,151,.14);color:#63d297;border:1px solid #2f7d54;}
+  .badge.oos{background:rgba(232,93,117,.14);color:var(--danger);border:1px solid var(--danger);}
+  .badge.flag{background:rgba(139,151,166,.14);color:var(--muted);border:1px solid var(--line);}
+  /* ---------- Spec tags ---------- */
+  .spec-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:-4px;}
+  .spec-tag{font-size:10px;font-weight:600;color:var(--muted);background:var(--panel);
+    border:1px solid var(--line);padding:3px 8px;border-radius:12px;white-space:nowrap;}
+  .spec-tag b{color:var(--ink);}
+  /* ---------- Spare parts button ---------- */
+  .parts-btn{display:flex;align-items:center;gap:6px;width:100%;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    color:var(--muted);padding:10px 12px;font:inherit;font-size:12px;font-weight:600;
+    cursor:pointer;transition:.15s;text-align:left;min-height:44px;}
+  .parts-btn:hover{border-color:var(--accent-2);color:var(--accent-2);}
+  .parts-btn .parts-icon{font-size:16px;line-height:1;}
+  .parts-btn .parts-label{flex:1;}
+  .parts-btn .parts-arrow{font-size:10px;opacity:.6;}
+  .card-img{width:100%;height:160px;object-fit:contain;background:#fff;border-bottom:1px solid var(--line);display:block;padding:8px;-webkit-user-drag:none;user-select:none;}
+  /* hidden/discontinued: gone in public view, dimmed in edit mode */
+  /* off-display / hidden / discontinued bikes live in the Bikes menu, not on the canvas */
+  .card.is-hidden{display:none;}
+
+  /* ---------- Additional items list ---------- */
+  .items-title{font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;}
+  .items{display:flex;flex-direction:column;gap:5px;margin-top:-4px;}
+  .items .item{display:flex;justify-content:space-between;gap:10px;align-items:baseline;
+    font-size:12.5px;border-top:1px dashed var(--line);padding-top:5px;}
+  .items .item:first-child{border-top:none;padding-top:0;}
+  .items .iname{color:var(--ink);}
+  .items .iprice{font-family:"IBM Plex Mono",monospace;color:var(--accent-2);font-weight:600;white-space:nowrap;}
+
+  .barcode-box{
+    background:#fff;border-radius:10px;padding:10px 8px 6px;
+    display:flex;flex-direction:column;align-items:center;cursor:zoom-in;
+    transition:transform .12s;
+  }
+  .barcode-box:active{transform:scale(.98);}
+  .barcode-box svg{width:100%;height:auto;display:block;}
+  .barcode-label{font-size:9px;color:#666;margin-top:2px;letter-spacing:1px;font-family:"IBM Plex Mono",monospace;}
+  .tap-note{font-size:10px;color:var(--accent-2);text-align:center;font-weight:600;letter-spacing:.5px;}
+
+  /* ---------- Fullscreen barcode ---------- */
+  #overlay{
+    position:fixed;inset:0;z-index:125;display:none;
+    background:rgba(8,10,13,.94);backdrop-filter:blur(6px);
+    flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:24px;
+  }
+  #overlay.show{display:flex;animation:fade .2s ease;}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .fs-card{
+    background:#fff;border-radius:18px;padding:36px 32px 24px;
+    width:min(680px,92vw);box-shadow:0 30px 80px rgba(0,0,0,.6);
+    display:flex;flex-direction:column;align-items:center;gap:14px;
+  }
+  .fs-card svg{width:100%;height:auto;}
+  .fs-frame{font-family:"IBM Plex Mono",monospace;font-size:18px;font-weight:600;color:#111;letter-spacing:3px;}
+  .fs-name{color:#fff;font-weight:600;font-size:18px;}
+  .fs-close{
+    background:#fff;color:#111;border:none;border-radius:30px;padding:12px 28px;
+    font:inherit;font-weight:700;cursor:pointer;font-size:14px;
+  }
+
+  /* ---------- Controls ---------- */
+  .controls{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end;}
+  .btn.active{background:var(--accent-2);border-color:var(--accent-2);color:#06231f;}
+  .btn.active:hover{filter:brightness(1.06);color:#06231f;}
+
+  /* hide editing affordances while locked (view-only) */
+  body.locked .edit-btn,
+  body.locked .remove-btn{display:none;}
+
+  /* ---------- Edit button on card ---------- */
+  .edit-btn{background:transparent;border:1px solid var(--line);color:var(--muted);
+    width:30px;height:30px;border-radius:8px;font-size:14px;cursor:pointer;flex-shrink:0;line-height:1;
+    display:flex;align-items:center;justify-content:center;transition:.15s;}
+  .edit-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .remove-btn{background:transparent;border:1px solid var(--line);color:var(--muted);
+    width:30px;height:30px;border-radius:8px;font-size:13px;cursor:pointer;flex-shrink:0;line-height:1;
+    display:flex;align-items:center;justify-content:center;transition:.15s;}
+  .remove-btn:hover{border-color:var(--danger);color:var(--danger);}
+  .card.is-selected{outline:2px solid var(--accent);outline-offset:2px;}
+
+  /* ---------- Editor + passcode modals ---------- */
+  #editor,#passModal{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;padding:18px;
+    background:rgba(8,10,13,.6);backdrop-filter:blur(6px);}
+  #passModal{z-index:130;}
+  #editor.show,#passModal.show{display:flex;animation:fade .18s ease;}
+  .editor-card{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line);
+    border-radius:16px;box-shadow:var(--shadow);width:min(460px,94vw);max-height:90vh;overflow:auto;
+    padding:22px;display:flex;flex-direction:column;gap:13px;}
+  .editor-card h2{font-size:18px;font-weight:700;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field>label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.3px;}
+  .field input,.field textarea{background:var(--bg);border:1px solid var(--line);border-radius:10px;
+    color:var(--ink);padding:11px 12px;font:inherit;font-size:16px;width:100%;}
+  .field textarea{resize:vertical;min-height:72px;line-height:1.45;}
+  .field input:focus,.field textarea:focus{outline:none;border-color:var(--accent);}
+  .frow{display:flex;gap:12px;}
+  .frow .field{flex:1;min-width:0;}
+  .color-field{flex:0 0 auto;}
+  .color-field input[type=color]{width:54px;height:46px;padding:4px;cursor:pointer;}
+  .editor-actions{display:flex;align-items:center;gap:10px;margin-top:2px;}
+  .editor-actions .spc{flex:1;}
+  .btn.danger{border-color:var(--danger);color:var(--danger);}
+  .btn.danger:hover{background:var(--danger);color:#fff;border-color:var(--danger);}
+  .err{color:var(--danger);font-size:12px;font-weight:600;min-height:1px;}
+
+  /* ---------- Additional-items editor ---------- */
+  .items-editor{display:flex;flex-direction:column;gap:8px;}
+  .item-row{display:flex;gap:8px;align-items:center;}
+  .item-row .iname-in{flex:1;min-width:0;}
+  .item-row .iprice-in{width:96px;flex:0 0 auto;}
+  .item-row .rm{background:transparent;border:1px solid var(--line);color:var(--muted);width:38px;height:46px;
+    border-radius:8px;cursor:pointer;flex:0 0 auto;font-size:15px;line-height:1;}
+  .item-row .rm:hover{border-color:var(--danger);color:var(--danger);}
+  .add-item{align-self:flex-start;background:transparent;border:1px dashed var(--line);color:var(--muted);
+    padding:8px 12px;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;transition:.15s;}
+  .add-item:hover{border-color:var(--accent-2);color:var(--accent-2);}
+
+  /* ---------- Toast ---------- */
+  #toast{position:fixed;bottom:64px;left:50%;transform:translateX(-50%) translateY(20px);
+    z-index:140;background:var(--danger);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;
+    font-weight:600;opacity:0;pointer-events:none;transition:.25s;box-shadow:var(--shadow);max-width:90vw;text-align:center;}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  #toast.ok{background:var(--accent-2);color:#06231f;}
+  .toast-undo{margin-left:12px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);
+    color:inherit;font:inherit;font-size:12px;font-weight:700;padding:4px 11px;border-radius:8px;cursor:pointer;
+    vertical-align:middle;}
+  .toast-undo:hover{background:rgba(255,255,255,.3);}
+
+  /* ---------- Spare-parts panel ---------- */
+  #partsPanel{
+    position:fixed;inset:0;z-index:110;display:none;
+    background:rgba(8,10,13,.6);backdrop-filter:blur(4px);
+    align-items:flex-end;justify-content:flex-end;
+  }
+  #partsPanel.show{display:flex;animation:fade .2s ease;}
+  .parts-sheet{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--line);border-radius:16px 16px 0 0;
+    width:100%;max-width:420px;max-height:80vh;
+    display:flex;flex-direction:column;
+    box-shadow:var(--shadow);overflow:hidden;
+  }
+  .parts-header{
+    padding:16px 16px 0;display:flex;align-items:center;gap:10px;flex-shrink:0;
+  }
+  .parts-title{font-weight:700;font-size:16px;flex:1;}
+  .parts-close{background:transparent;border:1px solid var(--line);color:var(--muted);
+    width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:16px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;}
+  .parts-close:hover{border-color:var(--danger);color:var(--danger);}
+  .parts-search{margin:12px 16px 0;flex-shrink:0;}
+  .parts-search input{background:var(--bg);border:1px solid var(--line);border-radius:10px;
+    color:var(--ink);padding:11px 14px;font:inherit;font-size:16px;width:100%;}
+  .parts-search input:focus{outline:none;border-color:var(--accent);}
+  .parts-list{flex:1;overflow-y:auto;padding:8px 0 4px;}
+  .parts-item{display:grid;grid-template-columns:1fr auto;gap:4px 12px;
+    padding:10px 16px;border-bottom:1px solid var(--line);cursor:default;}
+  .parts-item:last-child{border-bottom:none;}
+  .parts-iname{font-size:13px;color:var(--ink);font-weight:500;grid-column:1;}
+  .parts-icat{font-size:10px;color:var(--muted);grid-column:1;}
+  .parts-inum{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);grid-column:2;grid-row:1;text-align:right;}
+  .parts-iprice{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--accent-2);font-weight:600;grid-column:2;grid-row:2;text-align:right;}
+  .parts-empty{padding:24px 16px;text-align:center;color:var(--muted);font-size:13px;}
+  .parts-footer{padding:12px 16px;flex-shrink:0;border-top:1px solid var(--line);}
+  .parts-footer a{display:block;text-align:center;color:var(--accent-2);font-size:13px;font-weight:600;
+    padding:12px;border:1px solid var(--accent-2);border-radius:10px;text-decoration:none;min-height:44px;
+    display:flex;align-items:center;justify-content:center;}
+  .parts-footer a:hover{background:rgba(63,182,168,.12);}
+  .parts-noresult{padding:12px 16px;text-align:center;color:var(--muted);font-size:13px;}
+  @media (max-width:640px){
+    #partsPanel{align-items:flex-end;justify-content:stretch;}
+    .parts-sheet{max-width:100%;border-radius:16px 16px 0 0;max-height:85vh;}
+  }
+  @media (min-width:641px){
+    #partsPanel{align-items:flex-end;justify-content:flex-end;}
+    .parts-sheet{border-radius:16px 0 0 16px;max-height:100vh;}
+  }
+
+  /* ---------- Library panel (all bikes / add / jump) ---------- */
+  #libraryPanel{
+    position:fixed;inset:0;z-index:110;display:none;
+    background:rgba(8,10,13,.6);backdrop-filter:blur(4px);
+    align-items:flex-end;justify-content:flex-end;
+  }
+  #libraryPanel.show{display:flex;animation:fade .2s ease;}
+  .lib-sheet{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--line);border-radius:16px 16px 0 0;
+    width:100%;max-width:420px;max-height:82vh;
+    display:flex;flex-direction:column;box-shadow:var(--shadow);overflow:hidden;
+  }
+  .lib-header{padding:16px 16px 0;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  .lib-title{font-weight:700;font-size:16px;flex:1;}
+  .lib-close{background:transparent;border:1px solid var(--line);color:var(--muted);
+    width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:16px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;}
+  .lib-close:hover{border-color:var(--danger);color:var(--danger);}
+  .lib-create{margin:12px 16px 0;flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--accent);color:#1a1205;border:none;border-radius:10px;padding:12px;
+    font:inherit;font-size:14px;font-weight:700;cursor:pointer;min-height:48px;}
+  .lib-create:hover{filter:brightness(1.08);}
+  .lib-search{margin:12px 16px 0;flex-shrink:0;}
+  .lib-search input{background:var(--bg);border:1px solid var(--line);border-radius:10px;
+    color:var(--ink);padding:11px 14px;font:inherit;font-size:16px;width:100%;}
+  .lib-search input:focus{outline:none;border-color:var(--accent);}
+  .lib-list{flex:1;overflow-y:auto;padding:8px 0 4px;margin-top:8px;}
+  .lib-item{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line);}
+  .lib-item:last-child{border-bottom:none;}
+  .lib-item[data-action="jump"]{cursor:pointer;}
+  .lib-item[data-action="jump"]:hover{background:rgba(255,255,255,.03);}
+  .lib-main{flex:1;min-width:0;}
+  .lib-name{font-size:13px;color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .lib-syn{color:var(--accent-2);font-weight:700;}
+  .lib-sub{font-size:11px;color:var(--muted);font-family:"IBM Plex Mono",monospace;margin-top:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .lib-right{flex-shrink:0;display:flex;align-items:center;gap:8px;}
+  .lib-chip{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+    padding:3px 8px;border-radius:20px;border:1px solid #2f7d54;background:rgba(99,210,151,.14);color:#63d297;}
+  .lib-add{background:var(--panel);border:1px solid var(--accent-2);color:var(--accent-2);
+    border-radius:8px;padding:8px 13px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;
+    min-height:40px;white-space:nowrap;}
+  .lib-add:hover{background:rgba(63,182,168,.12);}
+  .lib-empty{padding:24px 16px;text-align:center;color:var(--muted);font-size:13px;}
+  @media (max-width:640px){
+    #libraryPanel{align-items:flex-end;justify-content:stretch;}
+    .lib-sheet{max-width:100%;border-radius:16px 16px 0 0;max-height:85vh;}
+  }
+  @media (min-width:641px){
+    #libraryPanel{align-items:flex-end;justify-content:flex-end;}
+    .lib-sheet{border-radius:16px 0 0 16px;max-height:100vh;}
+  }
+  /* editor display-status toggle */
+  .status-toggle{display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid var(--line);}
+  .status-toggle button{
+    flex:1;padding:11px 10px;font:inherit;font-size:13px;font-weight:600;
+    background:var(--bg);color:var(--muted);border:none;cursor:pointer;transition:.15s;min-height:44px;
+  }
+  .status-toggle button.active{background:var(--accent-2);color:#06231f;}
+  .status-toggle button:first-child{border-right:1px solid var(--line);}
+
+  /* ---------- Bike detail modal (double-click) ---------- */
+  #detailModal{position:fixed;inset:0;z-index:115;display:none;align-items:center;justify-content:center;padding:18px;
+    background:rgba(8,10,13,.7);backdrop-filter:blur(6px);}
+  #detailModal.show{display:flex;animation:fade .18s ease;}
+  .detail-card{position:relative;background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line);
+    border-radius:16px;box-shadow:var(--shadow);width:min(440px,94vw);max-height:90vh;overflow:auto;}
+  .detail-close{position:absolute;top:10px;right:10px;z-index:2;background:rgba(0,0,0,.45);border:1px solid var(--line);
+    color:var(--ink);width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:16px;
+    display:flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;}
+  .detail-close:hover{border-color:var(--danger);color:var(--danger);}
+  .detail-img{width:100%;height:260px;object-fit:contain;background:#fff;display:block;border-radius:16px 16px 0 0;padding:10px;-webkit-user-drag:none;}
+  .detail-pad{padding:18px 20px 20px;display:flex;flex-direction:column;gap:13px;}
+  .detail-title{font-size:20px;font-weight:700;line-height:1.2;padding-right:34px;}
+  .detail-price{font-size:26px;font-weight:700;color:var(--accent);font-family:"IBM Plex Mono",monospace;}
+  .detail-specs{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:13px;margin:0;}
+  .detail-specs dt{color:var(--muted);}
+  .detail-specs dd{color:var(--ink);text-align:right;margin:0;}
+  .detail-desc{font-size:13px;line-height:1.55;color:var(--muted);}
+  .detail-frame{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted);letter-spacing:.5px;}
+  .detail-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:2px;}
+  .detail-actions .btn{flex:1 1 130px;justify-content:center;text-align:center;min-height:44px;}
+
+  @media (max-width:640px){
+    .logo span{display:none;}
+    header{flex-wrap:wrap;gap:8px;padding:10px 12px;}
+    .logo{width:100%;}
+    .controls{width:100%;margin-left:0;gap:8px;justify-content:flex-start;}
+    #snapSize{flex:0 0 auto;min-width:0;font-size:14px;padding:11px 30px 11px 12px;}
+    #bikesBtn,#snapToggle,#resetView,#lockBtn{flex:1 1 auto;}
+    .btn{padding:11px 12px;font-size:13px;}
+    .card{width:86vw;max-width:340px;}
+    .hint{font-size:11px;bottom:12px;padding:7px 12px;width:auto;max-width:92vw;text-align:center;line-height:1.4;}
+    .editor-card{padding:18px 16px;}
+    .fs-card{padding:24px 18px 18px;}
+    .fs-frame{font-size:14px;letter-spacing:2px;}
+    .fs-name{font-size:15px;text-align:center;}
+  }
+</style>
+</head>
+<body class="locked">
+
+<header>
+  <div class="logo"><a href="index.html" title="Back to Thansen Helper" style="text-decoration:none;color:inherit;opacity:.7;margin-right:10px;font-weight:600;">‹ Hub</a><span class="dot" id="liveDot" title="Connecting…"></span>VELODEX<span>· showroom registry</span></div>
+  <div class="controls">
+    <button class="btn" id="bikesBtn">Bikes</button>
+    <button class="btn" id="lockBtn">🔒 View only</button>
+    <button class="btn" id="snapToggle" aria-pressed="false">Snap: Off</button>
+    <select id="snapSize" title="Snap grid size">
+      <option value="20">Grid 20</option>
+      <option value="40" selected>Grid 40</option>
+      <option value="80">Grid 80</option>
+      <option value="160">Grid 160</option>
+    </select>
+    <button class="btn" id="resetView">Reset view</button>
+  </div>
+</header>
+
+<div id="stage">
+  <div id="canvas"></div>
+</div>
+
+<div class="hint">Drag to pan · double-tap a card for details · tap a barcode to enlarge · 🔒 unlock to edit</div>
+
+<div id="overlay">
+  <div class="fs-name" id="fsName"></div>
+  <div class="fs-card">
+    <svg id="fsBarcode"></svg>
+    <div class="fs-frame" id="fsFrame"></div>
+  </div>
+  <button class="fs-close" id="fsClose">Close</button>
+</div>
+
+<div id="editor">
+  <div class="editor-card">
+    <h2 id="editorTitle">Edit bike</h2>
+    <div class="field"><label>Name</label><input id="f-name" placeholder="e.g. Falcon RS Carbon"></div>
+    <div class="frow">
+      <div class="field"><label>Wheel size</label><input id="f-size" placeholder='e.g. 29&quot;'></div>
+      <div class="field"><label>Price (kr)</label><input id="f-price" type="number" min="0" step="1" placeholder="0"></div>
+    </div>
+    <div class="frow">
+      <div class="field color-field"><label>Colour</label><input id="f-color" type="color" value="#f4b942"></div>
+      <div class="field"><label>Colour name</label><input id="f-colorName" placeholder="e.g. Amber"></div>
+    </div>
+    <div class="field"><label>Frame number</label><input id="f-frame" placeholder="FRX..."></div>
+    <div class="field"><label>Description</label><textarea id="f-desc" placeholder="Short description shown on the card"></textarea></div>
+    <div class="field">
+      <label>Additional items</label>
+      <div class="items-editor" id="f-items"></div>
+      <button type="button" class="add-item" id="f-addItem">+ Add item</button>
+    </div>
+    <div class="field">
+      <label>Utstillingsstatus</label>
+      <div class="status-toggle" id="f-displayToggle">
+        <button type="button" id="f-statusOn"  onclick="setDisplayStatus('on_display')">På utstilling</button>
+        <button type="button" id="f-statusOff" onclick="setDisplayStatus('non_display')">Ikke på utstilling</button>
+      </div>
+    </div>
+    <label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);cursor:pointer;min-height:44px;">
+      <input type="checkbox" id="f-hidden" style="width:auto;"> Skjul (outlet / utgått)
+    </label>
+    <div class="field" id="f-synced-note" style="display:none;font-size:12px;color:var(--muted);">
+      Synced from Thansen — name, price &amp; availability update automatically. Frame number is yours to edit.
+    </div>
+    <div class="err" id="f-err"></div>
+    <div class="editor-actions">
+      <button class="btn danger" id="f-delete">Delete</button>
+      <span class="spc"></span>
+      <button class="btn" id="f-cancel">Cancel</button>
+      <button class="btn primary" id="f-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="passModal">
+  <div class="editor-card" style="max-width:380px;">
+    <h2>Unlock editing</h2>
+    <div class="field"><label>Passcode</label><input id="p-input" type="password" placeholder="Enter edit passcode" autocomplete="off"></div>
+    <div class="err" id="p-err"></div>
+    <div class="editor-actions">
+      <span class="spc"></span>
+      <button class="btn" id="p-cancel">Cancel</button>
+      <button class="btn primary" id="p-ok">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<div id="libraryPanel">
+  <div class="lib-sheet">
+    <div class="lib-header">
+      <div class="lib-title" id="libTitle">Bikes</div>
+      <button class="lib-close" id="libClose" title="Close">✕</button>
+    </div>
+    <button class="lib-create" id="libCreate" type="button">＋ Create new custom bike</button>
+    <div class="lib-search"><input type="search" id="libSearch" placeholder="Search bikes…" autocomplete="off"></div>
+    <div class="lib-list" id="libList"></div>
+  </div>
+</div>
+
+<div id="partsPanel">
+  <div class="parts-sheet">
+    <div class="parts-header">
+      <div class="parts-title" id="partsPanelTitle">Reservedeler</div>
+      <button class="parts-close" id="partsClose" title="Lukk">✕</button>
+    </div>
+    <div class="parts-search">
+      <input type="search" id="partsSearch" placeholder="Søk reservedeler…" autocomplete="off">
+    </div>
+    <div class="parts-list" id="partsList"></div>
+    <div class="parts-footer"><a id="partsLink" href="#" target="_blank" rel="noopener">Vis alle reservedeler hos Thansen →</a></div>
+  </div>
+</div>
+
+<div id="detailModal">
+  <div class="detail-card">
+    <button class="detail-close" id="detailClose" title="Close">✕</button>
+    <div id="detailBody"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ================= Supabase config ================= */
+const SB_URL = 'https://tfjvgvrqngevsiuueixf.supabase.co';
+const SB_KEY = 'sb_publishable_O-gjCbc7E1pX-I0o9DawbQ_xbnV6uJY';
+const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+const CACHE_KEY = 'velodex.cache.v3';   // fast first-paint only; server is the source of truth
+const PASS_KEY  = 'velodex.pass';       // per-tab edit session
+
+let bikes = [];
+let EDIT_PASS = sessionStorage.getItem(PASS_KEY) || null;   // null = locked / view-only
+const isEditing = () => !!EDIT_PASS;
+
+const canvas = document.getElementById('canvas');
+const stage  = document.getElementById('stage');
+
+/* ---------------- helpers ---------------- */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function nok(n){return (Number(n)||0).toLocaleString('nb-NO')+' kr';}
+
+/* DB row -> client object, and client -> DB payload */
+function fromRow(r){
+  return {
+    uid:r.uid, name:r.name||'', wheel_size:r.wheel_size||'', color:r.color||'#f4b942',
+    colorName:r.color_name||'—', price:r.price||0, frame:r.frame||'',
+    desc:r.descr||'', items:Array.isArray(r.items)?r.items:[],
+    x:Number(r.x)||0, y:Number(r.y)||0,
+    source:r.source||null, source_url:r.source_url||'', image_url:r.image_url||'',
+    availability:r.availability||null, outlet:!!r.outlet, hidden:!!r.hidden,
+    discontinued:!!r.discontinued,
+    specs:   (r.specs   && typeof r.specs   === 'object') ? r.specs   : {},
+    spareParts: Array.isArray(r.spare_parts) ? r.spare_parts : [],
+    displayStatus: r.display_status || 'on_display',
+  };
+}
+function dbPayload(d){
+  const p={
+    name:d.name, wheel_size:d.wheel_size, color:d.color, color_name:d.colorName,
+    price:d.price, frame:d.frame, descr:d.desc, items:d.items,
+    display_status:d.displayStatus,
+  };
+  if(d.x!=null) p.x=d.x;
+  if(d.y!=null) p.y=d.y;
+  return p;
+}
+
+let toastTimer=null;
+function toast(msg,ok,action){
+  const t=document.getElementById('toast');
+  t.classList.toggle('ok',!!ok);
+  if(action){
+    t.textContent='';
+    const span=document.createElement('span');span.textContent=msg;t.appendChild(span);
+    const btn=document.createElement('button');btn.className='toast-undo';btn.textContent=action.label;
+    btn.onclick=()=>{t.classList.remove('show');if(toastTimer)clearTimeout(toastTimer);action.fn();};
+    t.appendChild(btn);
+  } else {
+    t.textContent=msg;
+  }
+  t.classList.add('show');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),action?5000:2800);
+}
+function isPasscodeError(err){return !!err && (err.code==='28000' || /passcode/i.test(err.message||''));}
+function handleWriteError(err,where){
+  if(isPasscodeError(err)){
+    EDIT_PASS=null;sessionStorage.removeItem(PASS_KEY);updateLockUI();
+    toast('Editing locked — passcode is no longer valid.');
+  } else {
+    toast((where||'Save')+' failed: '+((err&&err.message)||'error'));
+  }
+}
+
+/* ---------------- Render cards ---------------- */
+function itemsHtml(items){
+  if(!items||!items.length) return '';
+  const rows=items.map(it=>
+    `<div class="item"><span class="iname">${esc(it.name)}</span><span class="iprice">${nok(it.price)}</span></div>`
+  ).join('');
+  return `<div class="items-title">Additional items</div><div class="items">${rows}</div>`;
+}
+function specsHtml(specs){
+  if(!specs||!Object.keys(specs).length) return '';
+  const tags=[];
+  if(specs.gears)     tags.push(`<span class="spec-tag">⚙ <b>${esc(specs.gears)}-gir</b></span>`);
+  if(specs.brake_front){
+    const short=specs.brake_front.replace('Mekanisk ','Mek. ').replace('Hydraulisk ','Hyd. ').replace('skivebremse','skive').replace('skivebrems','skive');
+    tags.push(`<span class="spec-tag">🛑 <b>${esc(short)}</b></span>`);
+  }
+  if(specs.tyre)      tags.push(`<span class="spec-tag">◎ <b>${esc(specs.tyre)}</b></span>`);
+  if(specs.weight_kg) tags.push(`<span class="spec-tag">⚖ <b>${esc(specs.weight_kg)} kg</b></span>`);
+  if(specs.motor)     tags.push(`<span class="spec-tag">⚡ <b>${esc(specs.motor.split(' ').slice(0,2).join(' '))}</b></span>`);
+  if(specs.battery)   tags.push(`<span class="spec-tag">🔋 <b>${esc(specs.battery.split(' ').slice(0,2).join(' '))}</b></span>`);
+  if(!tags.length) return '';
+  return `<div class="spec-row">${tags.join('')}</div>`;
+}
+
+function partsButtonHtml(b){
+  const count = (b.spareParts && b.spareParts.length) || 0;
+  if(!b.source_url) return '';
+  const label = count>0 ? `${count} reservedeler funnet` : 'Se reservedeler på Thansen';
+  return `<button class="parts-btn" data-parts><span class="parts-icon">🔧</span><span class="parts-label">${label}</span><span class="parts-arrow">▶</span></button>`;
+}
+function makeCard(b){
+  const el = document.createElement('div');
+  const isNonDisplay = b.displayStatus === 'non_display';
+  el.className='card'+((b.hidden||b.discontinued||isNonDisplay)?' is-hidden':'');
+  el.style.left=b.x+'px';
+  el.style.top =b.y+'px';
+  el.dataset.uid=b.uid;
+  const avail = b.availability==='InStock' ? '<span class="badge instock">In stock</span>'
+              : b.availability==='OutOfStock' ? '<span class="badge oos">Out of stock</span>' : '';
+  const flags = (b.source==='thansen'?'<span class="badge synced">⟳ Thansen</span>':'')
+              + (b.outlet?'<span class="badge flag">Outlet</span>':'')
+              + (b.discontinued?'<span class="badge flag">Discontinued</span>':'');
+  el.innerHTML=`
+    ${b.image_url?`<img class="card-img" src="${esc(b.image_url)}" alt="" loading="lazy" draggable="false" onerror="this.remove()">`:''}
+    <div class="card-head">
+      <div class="grip"><i></i><i></i><i></i></div>
+      <div class="card-title">${esc(b.name)}</div>
+      <div class="swatch" style="background:${esc(b.color)}"></div>
+      <button class="edit-btn" data-edit title="Edit bike">✎</button>
+      <button class="remove-btn" data-remove title="Remove from display">✕</button>
+    </div>
+    <div class="card-body">
+      <div class="price">${nok(b.price)}</div>
+      <div class="badges">${flags}${avail}</div>
+      ${specsHtml(b.specs)}
+      <div class="meta">
+        <span class="tag">Wheel <b>${esc(b.wheel_size||'—')}</b></span>
+        <span class="tag">Colour <b>${esc(b.colorName)}</b></span>
+      </div>
+      <div class="desc">${esc(b.desc)}</div>
+      ${itemsHtml(b.items)}
+      ${partsButtonHtml(b)}
+      <div class="barcode-box" data-bc>
+        <svg class="bc-svg"></svg>
+        <div class="barcode-label">FRAME · ${esc(b.frame)}</div>
+      </div>
+      <div class="tap-note">↑ TAP BARCODE FOR FULLSCREEN ↑</div>
+    </div>`;
+  canvas.appendChild(el);
+
+  if(b.frame){
+    JsBarcode(el.querySelector('.bc-svg'), b.frame, {
+      format:"CODE128", lineColor:"#111", width:2, height:46, displayValue:false, margin:0
+    });
+  }
+
+  el.querySelector('[data-bc]').addEventListener('click',(e)=>{
+    if(el.dataset.moved==='1'){return;}
+    e.stopPropagation();
+    openFullscreen(bikes.find(x=>x.uid===b.uid)||b);
+  });
+
+  el.querySelector('[data-edit]').addEventListener('click',(e)=>{
+    e.stopPropagation();
+    openEditor(bikes.find(x=>x.uid===b.uid)||b);
+  });
+
+  el.querySelector('[data-remove]').addEventListener('click',(e)=>{
+    e.stopPropagation();
+    softRemove(b.uid);
+  });
+
+  const partsBtn = el.querySelector('[data-parts]');
+  if(partsBtn) partsBtn.addEventListener('click', e => {
+    if(el.dataset.moved==='1') return;
+    e.stopPropagation();
+    openPartsPanel(bikes.find(x=>x.uid===b.uid)||b);
+  });
+
+  if(b.uid===selectedUid) el.classList.add('is-selected');
+  return el;
+}
+
+/* ---------------- list reconciliation ---------------- */
+function cardEl(u){return [...canvas.children].find(c=>c.dataset.uid===u);}
+function rebuildCard(b){const old=cardEl(b.uid);if(old)old.remove();makeCard(b);}
+function clearCards(){[...canvas.querySelectorAll('.card')].forEach(c=>c.remove());}
+function cacheSave(){try{localStorage.setItem(CACHE_KEY,JSON.stringify(bikes));}catch(e){}}
+function renderAll(){clearCards();bikes.forEach(makeCard);refreshLibrary();}
+function applyList(list){bikes=list;renderAll();cacheSave();}
+
+function bootFromCache(){
+  try{
+    const raw=localStorage.getItem(CACHE_KEY);
+    if(raw){const arr=JSON.parse(raw);if(Array.isArray(arr)&&arr.length){bikes=arr;renderAll();}}
+  }catch(e){}
+}
+async function loadFromServer(){
+  const {data,error}=await sb.from('bikes').select('*').order('name');
+  if(error){toast('Could not reach server — showing last cached copy.');return;}
+  applyList(data.map(fromRow));
+}
+
+/* ---------------- Realtime ---------------- */
+const pendingSaves=new Set();  // uids this client just wrote — suppress our own echo
+
+function localUpsert(b){        // idempotent: never duplicates a card or list entry
+  const i=bikes.findIndex(x=>x.uid===b.uid);
+  if(i<0)bikes.push(b);else bikes[i]=b;
+  if(cardEl(b.uid))rebuildCard(b);else makeCard(b);
+  refreshLibrary();cacheSave();
+}
+
+function applyRowUpsert(row){
+  const b=fromRow(row);
+  const i=bikes.findIndex(x=>x.uid===b.uid);
+  if(i<0)bikes.push(b);else bikes[i]=b;   // keep the model current no matter what
+  cacheSave();
+  // don't redraw over our own in-flight write, an active drag, or an open editor
+  if(pendingSaves.has(b.uid))return;
+  if(draggingCard&&draggingCard.dataset.uid===b.uid)return;
+  if(editingUid===b.uid)return;
+  if(cardEl(b.uid))rebuildCard(b);else makeCard(b);
+  refreshLibrary();
+}
+function applyRowDelete(row){
+  const u=row.uid;if(!u)return;
+  const i=bikes.findIndex(x=>x.uid===u);
+  if(i>=0){const el=cardEl(u);if(el)el.remove();bikes.splice(i,1);refreshLibrary();cacheSave();}
+  if(selectedUid===u)clearSelection();
+  if(editingUid===u)closeEditor();
+}
+function startRealtime(){
+  sb.channel('bikes-rt')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'bikes'},p=>applyRowUpsert(p.new))
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'bikes'},p=>applyRowUpsert(p.new))
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'bikes'},p=>applyRowDelete(p.old))
+    .subscribe((status)=>{
+      const d=document.getElementById('liveDot');
+      if(status==='SUBSCRIBED'){
+        if(d){d.style.background='var(--accent-2)';d.style.boxShadow='0 0 14px var(--accent-2)';d.title='Live sync on';}
+        // catch up on anything missed before/while (re)connecting — unless mid-interaction
+        if(!draggingCard && !editingUid) loadFromServer();
+      } else if(d && (status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED')){
+        d.style.background='var(--accent)';d.style.boxShadow='0 0 14px var(--accent)';d.title='Reconnecting…';
+      }
+    });
+}
+
+/* ---------------- write helpers (passcode-protected RPCs) ---------------- */
+async function rpcAdd(payload){
+  const {data,error}=await sb.rpc('add_bike',{p_passcode:EDIT_PASS,p_data:payload});
+  if(error)throw error;return fromRow(data);
+}
+async function rpcUpdate(uid,payload){
+  pendingSaves.add(uid);
+  try{
+    const {data,error}=await sb.rpc('update_bike',{p_passcode:EDIT_PASS,p_uid:uid,p_data:payload});
+    if(error)throw error;return data?fromRow(data):null;
+  } finally {
+    // keep suppressing briefly — the realtime echo can arrive after the HTTP response
+    setTimeout(()=>pendingSaves.delete(uid),1500);
+  }
+}
+async function rpcDelete(uid){
+  const {error}=await sb.rpc('delete_bike',{p_passcode:EDIT_PASS,p_uid:uid});
+  if(error)throw error;
+}
+
+/* ---------------- Display actions (remove / add / permanent delete) ---------------- */
+async function softRemove(uid){
+  const b=bikes.find(x=>x.uid===uid); if(!b||b.displayStatus==='non_display') return;
+  const prev=b.displayStatus;
+  b.displayStatus='non_display';
+  if(cardEl(uid))rebuildCard(b);
+  if(selectedUid===uid)clearSelection();
+  cacheSave();refreshLibrary();
+  try{
+    await rpcUpdate(uid,{display_status:'non_display'});
+    toast('Removed from display.',true,{label:'Undo',fn:()=>addToDisplay(uid)});
+  }catch(err){
+    b.displayStatus=prev;if(cardEl(uid))rebuildCard(b);cacheSave();refreshLibrary();
+    handleWriteError(err,'Remove');
+  }
+}
+async function addToDisplay(uid){
+  const b=bikes.find(x=>x.uid===uid); if(!b) return;
+  const prev=b.displayStatus;
+  b.displayStatus='on_display';
+  if(cardEl(uid))rebuildCard(b);else makeCard(b);
+  cacheSave();refreshLibrary();closeLibrary();
+  focusCard(b,true);
+  try{
+    await rpcUpdate(uid,{display_status:'on_display'});
+  }catch(err){
+    b.displayStatus=prev;if(cardEl(uid))rebuildCard(b);cacheSave();refreshLibrary();
+    handleWriteError(err,'Add');
+  }
+}
+async function doDelete(uid){
+  try{
+    await rpcDelete(uid);
+    const i=bikes.findIndex(x=>x.uid===uid);
+    if(i>=0){const el=cardEl(uid);if(el)el.remove();bikes.splice(i,1);}
+    if(selectedUid===uid)clearSelection();
+    if(editingUid===uid)closeEditor();
+    refreshLibrary();cacheSave();
+    toast('Bike deleted.',true);
+  }catch(err){
+    if(isPasscodeError(err)){handleWriteError(err);if(editingUid===uid)closeEditor();}
+    else toast('Delete failed: '+((err&&err.message)||'error'));
+  }
+}
+
+/* ---------------- Library panel (all bikes / add / jump) ---------------- */
+const libraryPanel=document.getElementById('libraryPanel');
+const libList=document.getElementById('libList');
+const libSearch=document.getElementById('libSearch');
+const libCreate=document.getElementById('libCreate');
+const bikesBtn=document.getElementById('bikesBtn');
+let _libQuery='';
+
+function libVisible(){
+  const editing=isEditing();
+  let list=bikes.slice();
+  if(!editing) list=list.filter(b=>!(b.hidden||b.discontinued||b.displayStatus==='non_display'));
+  const q=_libQuery.toLowerCase().trim();
+  if(q) list=list.filter(b=>(b.name+' '+(b.wheel_size||'')+' '+(b.colorName||'')).toLowerCase().includes(q));
+  return list.sort((a,b)=>a.name.localeCompare(b.name));
+}
+function refreshLibrary(){
+  const editing=isEditing();
+  libCreate.style.display = editing ? '' : 'none';
+  const list=libVisible();
+  if(!list.length){
+    libList.innerHTML=`<div class="lib-empty">${_libQuery?'No matches.':'No bikes yet.'}</div>`;
+    return;
+  }
+  libList.innerHTML=list.map(b=>{
+    const off=b.displayStatus==='non_display';
+    const hid=b.hidden||b.discontinued;
+    const offCanvas=editing && (off||hid);
+    const syn=b.source==='thansen'?' <span class="lib-syn">⟳</span>':'';
+    const status=off?' · off display':(hid?' · hidden':'');
+    const sub=`${b.wheel_size?esc(b.wheel_size)+' · ':''}${nok(b.price)}${editing?status:''}`;
+    const right = !editing ? ''
+      : offCanvas ? `<button class="lib-add" data-lib-add="${esc(b.uid)}">+ Add</button>`
+      : `<span class="lib-chip">On display</span>`;
+    const action = offCanvas ? 'add' : 'jump';
+    return `<div class="lib-item" data-action="${action}" data-lib-uid="${esc(b.uid)}">
+      <div class="lib-main"><div class="lib-name">${esc(b.name)}${syn}</div><div class="lib-sub">${sub}</div></div>
+      <div class="lib-right">${right}</div></div>`;
+  }).join('');
+  [...libList.querySelectorAll('.lib-item[data-action="jump"]')].forEach(el=>{
+    el.addEventListener('click',()=>{
+      const b=bikes.find(x=>x.uid===el.dataset.libUid);
+      if(b){closeLibrary();focusCard(b,true);}
+    });
+  });
+  [...libList.querySelectorAll('[data-lib-add]')].forEach(btn=>{
+    btn.addEventListener('click',e=>{e.stopPropagation();addToDisplay(btn.dataset.libAdd);});
+  });
+}
+function openLibrary(){
+  _libQuery='';libSearch.value='';
+  document.getElementById('libTitle').textContent=isEditing()?'Add bike':'Bikes';
+  refreshLibrary();
+  libraryPanel.classList.add('show');
+  setTimeout(()=>libSearch.focus(),120);
+}
+function closeLibrary(){libraryPanel.classList.remove('show');}
+bikesBtn.onclick=openLibrary;
+document.getElementById('libClose').onclick=closeLibrary;
+libCreate.onclick=()=>{closeLibrary();openEditor(null);};
+libSearch.addEventListener('input',e=>{_libQuery=e.target.value;refreshLibrary();});
+libSearch.addEventListener('keydown',e=>{if(e.key==='Escape')closeLibrary();});
+let lbDX=0,lbDY=0,lbDown=false;
+libraryPanel.addEventListener('pointerdown',e=>{lbDX=e.clientX;lbDY=e.clientY;lbDown=(e.target===libraryPanel);});
+libraryPanel.addEventListener('pointerup',e=>{
+  if(Math.abs(e.clientX-lbDX)<10&&Math.abs(e.clientY-lbDY)<10&&lbDown&&e.target===libraryPanel)closeLibrary();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&libraryPanel.classList.contains('show'))closeLibrary();});
+
+/* ---------------- Zoom + center a card ---------------- */
+function snapVal(v){return snapOn?Math.round(v/snapSize)*snapSize:v;}
+function focusCard(b, big){
+  const card=cardEl(b.uid);
+  if(!card)return;
+  const cw=card.offsetWidth, ch=card.offsetHeight;
+  if(big){
+    const margin=0.88;
+    const fitW=(stage.clientWidth*margin)/cw;
+    const fitH=(stage.clientHeight*margin)/ch;
+    scale=Math.min(2.5,Math.max(0.5,Math.min(fitW,fitH)));
+  }
+  tx=stage.clientWidth/2  - (b.x+cw/2)*scale;
+  ty=stage.clientHeight/2 - (b.y+ch/2)*scale;
+  applyTransform(true);
+  card.style.boxShadow="0 0 0 2px var(--accent),"+getComputedStyle(card).boxShadow;
+  setTimeout(()=>card.style.boxShadow="",1100);
+}
+
+/* ---------------- Pan + Zoom + Drag ---------------- */
+let tx=0, ty=0, scale=1;
+function applyTransform(animate){
+  canvas.style.transition=animate?"transform .35s ease":"none";
+  canvas.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
+}
+applyTransform();
+
+let panning=false, draggingCard=null, startX, startY, cardStartX, cardStartY, moved;
+let lastTapTime=0, lastTapId=null;
+
+function pointer(e){const t=e.touches?e.touches[0]:e;return{x:t.clientX,y:t.clientY};}
+
+stage.addEventListener('pointerdown',onDown);
+function onDown(e){
+  const p=pointer(e);
+  const card=e.target.closest('.card');
+  const onControl=e.target.closest('[data-bc]')||e.target.closest('[data-edit]')
+    ||e.target.closest('[data-remove]')||e.target.closest('[data-parts]');
+  if(card && !onControl){
+    // double-tap / double-click opens the bike detail modal (works locked or unlocked)
+    const now=Date.now();
+    if(card.dataset.uid===lastTapId && now-lastTapTime<320){
+      const b=bikes.find(x=>x.uid===card.dataset.uid);
+      if(b)openDetail(b);
+      lastTapTime=0;lastTapId=null;
+      return; // skip starting a drag/pan on the second tap
+    }
+    lastTapTime=now;lastTapId=card.dataset.uid;
+
+    if(isEditing()){
+      draggingCard=card;
+      card.classList.add('dragging');
+      card.dataset.moved='0';moved=false;
+      cardStartX=parseFloat(card.style.left);
+      cardStartY=parseFloat(card.style.top);
+      startX=p.x;startY=p.y;
+      canvas.appendChild(card); // bring to front
+    } else {
+      panning=true;startX=p.x;startY=p.y; // locked: dragging a card pans the canvas
+    }
+  } else if(card && onControl){
+    return; // let barcode / edit / remove / parts button handle the tap
+  } else {
+    if(isEditing())clearSelection();   // tapping empty canvas deselects
+    panning=true;startX=p.x;startY=p.y;
+  }
+  window.addEventListener('pointermove',onMove);
+  window.addEventListener('pointerup',onUp);
+}
+function onMove(e){
+  if(pinching)return; // a second finger is down — ignore single-finger pan/drag
+  const p=pointer(e);
+  if(draggingCard){
+    const dx=(p.x-startX)/scale, dy=(p.y-startY)/scale;
+    if(Math.abs(p.x-startX)>4||Math.abs(p.y-startY)>4){moved=true;draggingCard.dataset.moved='1';}
+    draggingCard.style.left=snapVal(cardStartX+dx)+'px';
+    draggingCard.style.top =snapVal(cardStartY+dy)+'px';
+  } else if(panning){
+    tx+=p.x-startX; ty+=p.y-startY;
+    startX=p.x;startY=p.y;
+    applyTransform();
+  }
+}
+function onUp(){
+  if(draggingCard){
+    draggingCard.classList.remove('dragging');
+    const u=draggingCard.dataset.uid;
+    const b=bikes.find(x=>x.uid===u);
+    if(b && moved){
+      b.x=parseFloat(draggingCard.style.left);
+      b.y=parseFloat(draggingCard.style.top);
+      cacheSave();
+      rpcUpdate(u,{x:b.x,y:b.y}).catch(err=>{handleWriteError(err,'Move');loadFromServer();});
+    } else if(b && !moved){
+      selectCard(u);   // a click without a drag selects the card
+    }
+    const dc=draggingCard;
+    setTimeout(()=>{if(dc)dc.dataset.moved='0';},50);
+  }
+  draggingCard=null;panning=false;
+  window.removeEventListener('pointermove',onMove);
+  window.removeEventListener('pointerup',onUp);
+}
+
+/* ---------------- Card selection + keyboard delete ---------------- */
+let selectedUid=null;
+function selectCard(uid){
+  if(!isEditing())return;
+  if(selectedUid&&selectedUid!==uid){const o=cardEl(selectedUid);if(o)o.classList.remove('is-selected');}
+  selectedUid=uid;
+  const el=cardEl(uid);if(el)el.classList.add('is-selected');
+  resetKbdDelete();
+}
+function clearSelection(){
+  if(selectedUid){const el=cardEl(selectedUid);if(el)el.classList.remove('is-selected');}
+  selectedUid=null;resetKbdDelete();
+}
+let kbdDelArm=false,kbdDelTimer=null;
+function resetKbdDelete(){kbdDelArm=false;if(kbdDelTimer){clearTimeout(kbdDelTimer);kbdDelTimer=null;}}
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Delete'&&e.key!=='Backspace')return;
+  if(!isEditing()||!selectedUid)return;
+  const ae=document.activeElement;
+  if(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'||ae.isContentEditable))return;
+  if(editor.classList.contains('show')||libraryPanel.classList.contains('show'))return;
+  e.preventDefault();
+  const b=bikes.find(x=>x.uid===selectedUid);if(!b)return;
+  if(!kbdDelArm){
+    kbdDelArm=true;
+    toast('Press Delete again to permanently remove “'+b.name+'”.');
+    kbdDelTimer=setTimeout(resetKbdDelete,2600);
+    return;
+  }
+  const u=selectedUid;resetKbdDelete();
+  doDelete(u);
+});
+
+/* pinch + wheel zoom */
+stage.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const factor=e.deltaY<0?1.1:0.9;
+  zoomAt(e.clientX,e.clientY,factor);
+},{passive:false});
+
+let pinchDist=0, pinching=false;
+stage.addEventListener('touchstart',e=>{
+  if(e.touches.length>=2){
+    pinching=true;
+    pinchDist=dist(e.touches);
+    if(draggingCard){draggingCard.classList.remove('dragging');}
+    draggingCard=null;panning=false;
+  }
+},{passive:false});
+stage.addEventListener('touchmove',e=>{
+  if(e.touches.length>=2){
+    e.preventDefault();
+    const d=dist(e.touches);
+    const mid={x:(e.touches[0].clientX+e.touches[1].clientX)/2,y:(e.touches[0].clientY+e.touches[1].clientY)/2};
+    zoomAt(mid.x,mid.y,d/pinchDist);
+    pinchDist=d;
+  }
+},{passive:false});
+stage.addEventListener('touchend',e=>{
+  if(e.touches.length<2){
+    pinching=false;
+    if(e.touches.length===1){
+      startX=e.touches[0].clientX;
+      startY=e.touches[0].clientY;
+    } else {
+      panning=false;
+    }
+  }
+});
+function dist(t){return Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);}
+function zoomAt(cx,cy,factor){
+  const ns=Math.min(2.5,Math.max(0.35,scale*factor));
+  tx=cx-(cx-tx)*(ns/scale);
+  ty=cy-(cy-ty)*(ns/scale);
+  scale=ns;applyTransform();
+}
+
+document.getElementById('resetView').onclick=()=>{tx=0;ty=0;scale=1;applyTransform(true);};
+
+/* ---------------- Fullscreen barcode ---------------- */
+const overlay=document.getElementById('overlay');
+function openFullscreen(b){
+  document.getElementById('fsName').textContent=b.name+(b.wheel_size?(" · "+b.wheel_size):"");
+  document.getElementById('fsFrame').textContent=b.frame;
+  JsBarcode("#fsBarcode", b.frame, {format:"CODE128",lineColor:"#111",width:3,height:120,displayValue:false,margin:0});
+  overlay.classList.add('show');
+}
+document.getElementById('fsClose').onclick=()=>overlay.classList.remove('show');
+let ovDX=0,ovDY=0,ovDownOnBackdrop=false;
+overlay.addEventListener('pointerdown',e=>{ovDX=e.clientX;ovDY=e.clientY;ovDownOnBackdrop=(e.target===overlay);});
+overlay.addEventListener('pointerup',e=>{
+  const movedFar=Math.abs(e.clientX-ovDX)>10||Math.abs(e.clientY-ovDY)>10;
+  if(!movedFar && ovDownOnBackdrop && e.target===overlay) overlay.classList.remove('show');
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape' && overlay.classList.contains('show')){
+    overlay.classList.remove('show');
+    e.stopImmediatePropagation(); // closing the fullscreen barcode must NOT also close an underlying detail modal
+  }
+});
+
+/* ---------------- Bike detail modal (double-click) ---------------- */
+const detailModal=document.getElementById('detailModal');
+const SPEC_LABELS={model:'Model',type:'Type',gears:'Gears',gear_brand:'Gear set',wheel_size:'Wheel',
+  brake_front:'Front brake',brake_rear:'Rear brake',tyre:'Tyre',weight_kg:'Weight (kg)',
+  warranty:'Frame',motor:'Motor',battery:'Battery',range_km:'Range',color_name:'Colour'};
+function detailSpecsHtml(specs){
+  if(!specs) return '';
+  const rows=Object.entries(SPEC_LABELS).filter(([k])=>specs[k])
+    .map(([k,label])=>`<dt>${esc(label)}</dt><dd>${esc(specs[k])}</dd>`).join('');
+  return rows?`<dl class="detail-specs">${rows}</dl>`:'';
+}
+function openDetail(b){
+  const avail = b.availability==='InStock' ? '<span class="badge instock">In stock</span>'
+              : b.availability==='OutOfStock' ? '<span class="badge oos">Out of stock</span>' : '';
+  const flags = (b.source==='thansen'?'<span class="badge synced">⟳ Thansen</span>':'')
+              + (b.outlet?'<span class="badge flag">Outlet</span>':'')
+              + (b.discontinued?'<span class="badge flag">Discontinued</span>':'');
+  document.getElementById('detailBody').innerHTML=`
+    ${b.image_url?`<img class="detail-img" src="${esc(b.image_url)}" alt="" draggable="false" onerror="this.remove()">`:''}
+    <div class="detail-pad">
+      <div class="detail-title">${esc(b.name)}</div>
+      <div class="detail-price">${nok(b.price)}</div>
+      <div class="badges">${flags}${avail}</div>
+      ${detailSpecsHtml(b.specs)}
+      ${b.desc?`<div class="detail-desc">${esc(b.desc)}</div>`:''}
+      ${itemsHtml(b.items)}
+      ${b.frame?`<div class="barcode-box" data-d-bc><svg class="d-bc-svg"></svg><div class="barcode-label">FRAME · ${esc(b.frame)}</div></div>`:''}
+      <div class="detail-actions">
+        ${b.source_url?`<a class="btn" href="${esc(b.source_url)}" target="_blank" rel="noopener">↗ Open on Thansen</a>`:''}
+        ${b.source_url?`<button class="btn" data-d-parts>🔧 Spare parts</button>`:''}
+        ${isEditing()?`<button class="btn" data-d-edit>✎ Edit</button>`:''}
+      </div>
+    </div>`;
+  const cur=()=>bikes.find(x=>x.uid===b.uid)||b;
+  if(b.frame){
+    JsBarcode(detailModal.querySelector('.d-bc-svg'), b.frame, {format:"CODE128",lineColor:"#111",width:2,height:60,displayValue:false,margin:0});
+    const bcBox=detailModal.querySelector('[data-d-bc]');
+    if(bcBox) bcBox.onclick=()=>openFullscreen(cur()); // fullscreen opens ABOVE the modal; closing it returns here
+  }
+  const pp=detailModal.querySelector('[data-d-parts]');   if(pp) pp.onclick=()=>{closeDetail();openPartsPanel(cur());};
+  const ed=detailModal.querySelector('[data-d-edit]');    if(ed) ed.onclick=()=>{closeDetail();openEditor(cur());};
+  detailModal.classList.add('show');
+}
+function closeDetail(){detailModal.classList.remove('show');}
+document.getElementById('detailClose').onclick=closeDetail;
+let dmDX=0,dmDY=0,dmDown=false;
+detailModal.addEventListener('pointerdown',e=>{dmDX=e.clientX;dmDY=e.clientY;dmDown=(e.target===detailModal);});
+detailModal.addEventListener('pointerup',e=>{
+  if(Math.abs(e.clientX-dmDX)<10&&Math.abs(e.clientY-dmDY)<10&&dmDown&&e.target===detailModal)closeDetail();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&detailModal.classList.contains('show'))closeDetail();});
+
+/* ---------------- Spare-parts panel ---------------- */
+const partsPanel   = document.getElementById('partsPanel');
+const partsList    = document.getElementById('partsList');
+const partsSearch  = document.getElementById('partsSearch');
+const partsLink    = document.getElementById('partsLink');
+
+let _partsAll = [];
+function renderPartsList(query){
+  const q = (query||'').toLowerCase().trim();
+  const items = q
+    ? _partsAll.filter(p => (p.title+p.item_number+p.category).toLowerCase().includes(q))
+    : _partsAll;
+  if(!items.length){
+    partsList.innerHTML = `<div class="parts-${q?'noresult':'empty'}">${q ? 'Ingen treff for «'+esc(q)+'»' : 'Ingen reservedeler funnet i Algolia'}</div>`;
+    return;
+  }
+  partsList.innerHTML = items.map(p=>`
+    <div class="parts-item">
+      <div class="parts-iname">${esc(p.title)}</div>
+      <div class="parts-inum">#${esc(p.item_number)}</div>
+      <div class="parts-icat">${esc(p.category)}</div>
+      <div class="parts-iprice">${nok(p.price)}</div>
+    </div>`).join('');
+}
+function openPartsPanel(b){
+  _partsAll = b.spareParts || [];
+  document.getElementById('partsPanelTitle').textContent = b.name + ' — reservedeler';
+  partsLink.href = b.source_url || '#';
+  partsSearch.value = '';
+  renderPartsList('');
+  partsPanel.classList.add('show');
+  setTimeout(()=>partsSearch.focus(),120);
+}
+function closePartsPanel(){ partsPanel.classList.remove('show'); }
+document.getElementById('partsClose').onclick = closePartsPanel;
+partsSearch.addEventListener('input', e => renderPartsList(e.target.value));
+partsSearch.addEventListener('keydown', e => { if(e.key==='Escape') closePartsPanel(); });
+
+let ppDX=0,ppDY=0,ppDown=false;
+partsPanel.addEventListener('pointerdown',e=>{ppDX=e.clientX;ppDY=e.clientY;ppDown=(e.target===partsPanel);});
+partsPanel.addEventListener('pointerup',e=>{
+  if(Math.abs(e.clientX-ppDX)<10&&Math.abs(e.clientY-ppDY)<10&&ppDown&&e.target===partsPanel) closePartsPanel();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape' && partsPanel.classList.contains('show')) closePartsPanel();});
+
+/* ---------------- Snapping ---------------- */
+let snapOn=false, snapSize=40;
+const snapToggle=document.getElementById('snapToggle');
+const snapSizeSel=document.getElementById('snapSize');
+function updateGridCue(){const s=(snapOn?snapSize:40);canvas.style.backgroundSize=s+'px '+s+'px';}
+function snapAllCards(){
+  bikes.forEach(b=>{
+    b.x=Math.round(b.x/snapSize)*snapSize;
+    b.y=Math.round(b.y/snapSize)*snapSize;
+    const el=cardEl(b.uid); if(el){el.style.left=b.x+'px';el.style.top=b.y+'px';}
+  });
+  cacheSave();
+  if(isEditing()){
+    Promise.all(bikes.map(b=>rpcUpdate(b.uid,{x:b.x,y:b.y}).then(()=>true).catch(()=>false)))
+      .then(res=>{if(res.some(ok=>!ok))toast('Some positions did not save.');});
+  }
+}
+snapToggle.onclick=()=>{
+  snapOn=!snapOn;
+  snapToggle.textContent='Snap: '+(snapOn?'On':'Off');
+  snapToggle.classList.toggle('active',snapOn);
+  snapToggle.setAttribute('aria-pressed',snapOn);
+  updateGridCue();
+  if(snapOn)snapAllCards();
+};
+snapSizeSel.onchange=()=>{
+  snapSize=parseInt(snapSizeSel.value,10)||40;
+  updateGridCue();
+  if(snapOn)snapAllCards();
+};
+
+/* ---------------- Lock / passcode ---------------- */
+const lockBtn=document.getElementById('lockBtn');
+function updateLockUI(){
+  const editing=isEditing();
+  document.body.classList.toggle('locked',!editing);
+  lockBtn.textContent=editing?'🔓 Editing':'🔒 View only';
+  lockBtn.classList.toggle('active',editing);
+  bikesBtn.textContent=editing?'+ Add bike':'Bikes';
+  bikesBtn.classList.toggle('primary',editing);
+  if(!editing)clearSelection();
+  refreshLibrary();
+}
+const passModal=document.getElementById('passModal');
+const pInput=document.getElementById('p-input');
+const pErr=document.getElementById('p-err');
+function openPass(){pErr.textContent='';pInput.value='';passModal.classList.add('show');setTimeout(()=>pInput.focus(),60);}
+function closePass(){passModal.classList.remove('show');}
+lockBtn.onclick=()=>{
+  if(isEditing()){
+    EDIT_PASS=null;sessionStorage.removeItem(PASS_KEY);updateLockUI();toast('Locked — view only.',true);
+  } else {
+    openPass();
+  }
+};
+async function tryUnlock(){
+  const code=pInput.value;
+  if(!code){pErr.textContent='Enter the passcode.';return;}
+  pErr.textContent='Checking…';
+  const {data,error}=await sb.rpc('verify_passcode',{p_passcode:code});
+  if(error){pErr.textContent='Network error — try again.';return;}
+  if(data===true){
+    EDIT_PASS=code;sessionStorage.setItem(PASS_KEY,code);updateLockUI();closePass();toast('Editing unlocked.',true);
+  } else {
+    pErr.textContent='Wrong passcode.';
+  }
+}
+document.getElementById('p-ok').onclick=tryUnlock;
+document.getElementById('p-cancel').onclick=closePass;
+pInput.addEventListener('keydown',e=>{if(e.key==='Enter')tryUnlock();if(e.key==='Escape')closePass();});
+let pDX=0,pDY=0,pDown=false;
+passModal.addEventListener('pointerdown',e=>{pDX=e.clientX;pDY=e.clientY;pDown=(e.target===passModal);});
+passModal.addEventListener('pointerup',e=>{
+  const far=Math.abs(e.clientX-pDX)>10||Math.abs(e.clientY-pDY)>10;
+  if(!far&&pDown&&e.target===passModal)closePass();
+});
+async function validateStoredPass(){
+  if(!EDIT_PASS)return;
+  const {data,error}=await sb.rpc('verify_passcode',{p_passcode:EDIT_PASS});
+  if(!error && data!==true){EDIT_PASS=null;sessionStorage.removeItem(PASS_KEY);updateLockUI();}
+}
+
+/* ---------------- Editor: add / edit / remove ---------------- */
+const editor=document.getElementById('editor');
+const F={
+  name:document.getElementById('f-name'),
+  size:document.getElementById('f-size'),
+  price:document.getElementById('f-price'),
+  color:document.getElementById('f-color'),
+  colorName:document.getElementById('f-colorName'),
+  frame:document.getElementById('f-frame'),
+  desc:document.getElementById('f-desc'),
+  err:document.getElementById('f-err')
+};
+const itemsBox=document.getElementById('f-items');
+function addItemRow(name,price){
+  const row=document.createElement('div');
+  row.className='item-row';
+  row.innerHTML=`<input class="iname-in" placeholder="Item name"><input class="iprice-in" type="number" min="0" step="1" placeholder="kr"><button type="button" class="rm" title="Remove">✕</button>`;
+  row.querySelector('.iname-in').value=name||'';
+  row.querySelector('.iprice-in').value=(price!=null&&price!=='')?price:'';
+  row.querySelector('.rm').onclick=()=>row.remove();
+  itemsBox.appendChild(row);
+}
+function readItems(){
+  return [...itemsBox.querySelectorAll('.item-row')].map(r=>{
+    const name=r.querySelector('.iname-in').value.trim();
+    const price=Math.max(0,parseInt(r.querySelector('.iprice-in').value,10)||0);
+    return name?{name,price}:null;
+  }).filter(Boolean);
+}
+document.getElementById('f-addItem').onclick=()=>addItemRow('','');
+
+let editingUid=null, delArm=false, delTimer=null;
+const delBtn=document.getElementById('f-delete');
+function resetDelete(){delArm=false;delBtn.textContent='Delete';if(delTimer){clearTimeout(delTimer);delTimer=null;}}
+
+function openEditor(b){
+  editingUid=b?b.uid:null;
+  document.getElementById('editorTitle').textContent=b?'Edit bike':'Add new bike';
+  F.name.value=b?b.name:'';
+  F.size.value=b?b.wheel_size:'';
+  F.price.value=b?b.price:'';
+  F.color.value=b?b.color:'#f4b942';
+  F.colorName.value=b?b.colorName:'';
+  F.frame.value=b?b.frame:'';
+  F.desc.value=b?b.desc:'';
+  setDisplayStatus(b ? (b.displayStatus||'on_display') : 'on_display');
+  const synced = !!(b && b.source==='thansen');
+  document.getElementById('f-hidden').checked = !!(b && b.hidden);
+  document.getElementById('f-synced-note').style.display = synced ? '' : 'none';
+  // Thansen-owned fields are read-only for synced bikes; frame (serial) is always editable
+  [F.name, F.price].forEach(el => { el.readOnly = synced; el.style.opacity = synced?0.6:1; });
+  F.frame.readOnly = false; F.frame.style.opacity = 1;
+  // Delete is available for any existing bike (incl. synced — note a still-listed
+  // Thansen bike will reappear on the next import; use Hide to suppress permanently).
+  delBtn.style.display = b ? '' : 'none';
+  itemsBox.innerHTML='';
+  if(b&&Array.isArray(b.items))b.items.forEach(it=>addItemRow(it.name,it.price));
+  F.err.textContent='';
+  resetDelete();
+  editor.classList.add('show');
+}
+function closeEditor(){editor.classList.remove('show');editingUid=null;resetDelete();}
+
+let _editorDisplayStatus = 'on_display';
+function setDisplayStatus(val){
+  _editorDisplayStatus = val;
+  document.getElementById('f-statusOn').classList.toggle('active', val==='on_display');
+  document.getElementById('f-statusOff').classList.toggle('active', val==='non_display');
+}
+
+document.getElementById('f-cancel').onclick=closeEditor;
+let edDX=0,edDY=0,edDownOnBackdrop=false;
+editor.addEventListener('pointerdown',e=>{edDX=e.clientX;edDY=e.clientY;edDownOnBackdrop=(e.target===editor);});
+editor.addEventListener('pointerup',e=>{
+  const movedFar=Math.abs(e.clientX-edDX)>10||Math.abs(e.clientY-edDY)>10;
+  if(!movedFar && edDownOnBackdrop && e.target===editor) closeEditor();
+});
+
+const saveBtn=document.getElementById('f-save');
+saveBtn.onclick=async ()=>{
+  if(!isEditing()){F.err.textContent='Editing is locked.';return;}
+  const name=F.name.value.trim();
+  const frame=F.frame.value.trim();
+  if(!name){F.err.textContent='Please enter a name.';return;}
+  if(!frame){F.err.textContent='Frame number is required — it generates the barcode.';return;}
+  const data={
+    name,
+    wheel_size:F.size.value.trim()||'',
+    price:Math.max(0,parseInt(F.price.value,10)||0),
+    color:F.color.value,
+    colorName:F.colorName.value.trim()||'—',
+    frame,
+    desc:F.desc.value.trim()||'No description provided.',
+    items:readItems()
+  };
+  saveBtn.disabled=true;saveBtn.textContent='Saving…';F.err.textContent='';
+  try{
+    if(editingUid){
+      const payload = dbPayload(data);
+      payload.hidden = document.getElementById('f-hidden').checked;
+      payload.display_status = _editorDisplayStatus;
+      const updated = await rpcUpdate(editingUid, payload);
+      if(updated)localUpsert(updated);
+      closeEditor();
+    } else {
+      const cx=(stage.clientWidth/2 - tx)/scale - 150;
+      const cy=(stage.clientHeight/2 - ty)/scale - 130;
+      const created=await rpcAdd(dbPayload({...data,x:snapVal(cx),y:snapVal(cy)}));
+      localUpsert(created);   // idempotent — safe even if the realtime echo beat us here
+      closeEditor();
+      focusCard(created,true);
+    }
+  }catch(err){
+    if(isPasscodeError(err)){handleWriteError(err);closeEditor();}
+    else F.err.textContent='Save failed: '+((err&&err.message)||'error');
+  }finally{
+    saveBtn.disabled=false;saveBtn.textContent='Save';
+  }
+};
+
+delBtn.onclick=async ()=>{
+  if(!editingUid)return;
+  if(!isEditing()){F.err.textContent='Editing is locked.';return;}
+  if(!delArm){
+    delArm=true;delBtn.textContent='Tap again to delete';
+    delTimer=setTimeout(resetDelete,2600);
+    return;
+  }
+  const u=editingUid;
+  delBtn.disabled=true;
+  await doDelete(u);   // shared: closes editor + toasts on success/error
+  delBtn.disabled=false;
+  resetDelete();
+};
+
+/* ---------------- Boot ---------------- */
+updateLockUI();
+bootFromCache();
+loadFromServer();
+validateStoredPass();
+startRealtime();
+
+</script>
+</body>
+</html>
