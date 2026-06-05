@@ -3,14 +3,19 @@
 import { readFileSync } from 'node:fs';
 import pg from 'pg';
 
-const url = process.env.DATABASE_URL;
-if (!url) { console.error('Mangler DATABASE_URL — sett den i db/.env'); process.exit(1); }
-
 const file = process.argv[2];
 if (!file) { console.error('Bruk: node --env-file=db/.env db/run.mjs <fil.sql>'); process.exit(1); }
 
+// Discrete fields avoid URI-encoding issues with special chars in the password.
+const cfg = process.env.PGHOST
+  ? { host: process.env.PGHOST, port: +(process.env.PGPORT || 5432), user: process.env.PGUSER,
+      password: process.env.PGPASSWORD, database: process.env.PGDATABASE || 'postgres',
+      ssl: { rejectUnauthorized: false } }
+  : { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } };
+if (!cfg.host && !cfg.connectionString) { console.error('Mangler PGHOST/DATABASE_URL — sett i db/.env'); process.exit(1); }
+
 const sql = readFileSync(file, 'utf8');
-const client = new pg.Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
+const client = new pg.Client(cfg);
 
 try {
   await client.connect();
