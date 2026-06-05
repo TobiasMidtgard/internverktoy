@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta name="theme-color" content="#00529c">
+<title>Kunnskapsbase · Thansen Verktøykasse</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --bg:#0f1318; --panel:#161b22; --card:#1b212a; --card-h:#222a35; --line:#2a323d;
+    --text:#f1f4f8; --muted:#97a3b2; --primary:#2684e6; --primary-700:#00529c; --cta:#1aa64d; --yellow:#ffd400; }
+  *{box-sizing:border-box;} html,body{margin:0;}
+  body{background:radial-gradient(1100px 560px at 50% -8%,#13243a 0%,var(--bg) 58%);color:var(--text);
+    font:400 16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh;}
+  .topbar{height:4px;background:linear-gradient(90deg,var(--primary-700),var(--primary) 60%,var(--yellow));position:sticky;top:0;z-index:11;}
+  header{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);
+    position:sticky;top:4px;background:rgba(15,19,24,.9);backdrop-filter:blur(8px);z-index:10;}
+  .hub{color:var(--muted);text-decoration:none;font-weight:600;}.hub:hover{color:var(--text);}
+  .brand{font-weight:800;letter-spacing:.12em;}
+  .sp{margin-left:auto;}
+  button,input,select,textarea{font:inherit;}
+  .btn{background:var(--primary);color:#fff;border:0;border-radius:10px;padding:9px 14px;font-weight:700;font-size:14px;cursor:pointer;}
+  .btn.cta{background:var(--cta);} .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text);}
+  .chipbtn{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:6px 11px;font-size:13px;font-weight:600;cursor:pointer;}
+  .chipbtn:hover{border-color:var(--primary);color:var(--text);}
+  main{max-width:860px;margin:0 auto;padding:22px 16px 70px;}
+  .search{display:flex;gap:10px;flex-wrap:wrap;}
+  .search input[type=search]{flex:1;min-width:200px;background:var(--panel);color:var(--text);border:1px solid var(--line);
+    border-radius:12px;padding:13px 16px;font-size:16px;}
+  .search input:focus,select:focus,textarea:focus,input:focus{outline:none;border-color:var(--primary);}
+  select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:0 12px;font-size:14px;}
+  .cats{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 6px;}
+  .cats .on{background:var(--primary);border-color:var(--primary);color:#fff;}
+  .results{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+  .res{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer;transition:.12s;}
+  .res:hover{background:var(--card-h);border-color:#3a4656;}
+  .res h3{margin:0 0 4px;font-size:16px;}
+  .res .cat{font-size:11px;color:#9ecbff;border:1px solid #1f3a5c;border-radius:999px;padding:1px 8px;}
+  .res .snip{color:var(--muted);font-size:13px;margin-top:6px;}
+  .res .snip mark{background:rgba(255,212,0,.22);color:var(--yellow);border-radius:3px;padding:0 2px;}
+  .empty{color:var(--muted);text-align:center;padding:40px 10px;}
+  /* article + markdown */
+  .modal{position:fixed;inset:0;background:rgba(6,9,13,.66);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:50;padding:14px;}
+  .modal.show{display:flex;}
+  .sheet{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--primary);border-radius:18px;
+    width:100%;max-width:680px;max-height:92vh;overflow:auto;}
+  .sheet .hd{display:flex;align-items:flex-start;gap:10px;padding:18px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);}
+  .sheet .hd h2{margin:0;font-size:20px;flex:1;}
+  .sheet .bd{padding:18px 20px;}
+  .sheet .ft{display:flex;gap:10px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--line);flex-wrap:wrap;}
+  .x{background:transparent;border:0;color:var(--muted);font-size:20px;cursor:pointer;}
+  .meta{color:var(--muted);font-size:12px;}
+  .md h2,.md h3,.md h4{margin:16px 0 6px;line-height:1.25;} .md h2{font-size:18px;} .md h3{font-size:16px;} .md h4{font-size:14px;color:var(--muted);}
+  .md p{margin:8px 0;} .md ul{margin:8px 0;padding-left:20px;} .md li{margin:3px 0;}
+  .md a{color:var(--primary);} .md code{background:#0c1422;padding:0 4px;border-radius:4px;font-size:13px;}
+  .md strong{color:#fff;}
+  .sources{margin-top:18px;border-top:1px solid var(--line);padding-top:12px;}
+  .sources h4{margin:0 0 8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+  .sources a{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:7px 11px;margin:0 8px 8px 0;color:var(--primary);text-decoration:none;font-size:13px;font-weight:600;}
+  .sources a:hover{border-color:var(--primary);}
+  .row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+  .row label{color:var(--muted);font-size:13px;}
+  .row input,.row select,.row textarea{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px;width:100%;}
+  .row textarea{resize:vertical;}
+  .note{background:#3a2a14;border:1px solid #7c5a1e;color:#f6d18f;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:12px;}
+  .sug{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;}
+  .sug .who{color:var(--muted);font-size:11px;margin-top:6px;}
+  .badge{background:var(--cta);color:#fff;border-radius:999px;font-size:11px;font-weight:700;padding:1px 7px;}
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<header>
+  <a class="hub" href="index.html">‹ Hjem</a>
+  <span class="brand">KUNNSKAPSBASE</span>
+  <span class="sp"></span>
+  <button id="sugBtn" class="chipbtn" style="display:none" onclick="openSuggestions()">Forslag <span id="sugCount" class="badge">0</span></button>
+  <button id="lockBtn" class="chipbtn" onclick="toggleAuth()">Logg inn</button>
+</header>
+
+<main>
+  <div class="search">
+    <input type="search" id="q" placeholder="Søk i kunnskapsbasen — f.eks. «vindusvisker passform», «dekkmønster vinter», «takboks montering»…" autocomplete="off">
+    <button class="btn" onclick="doSearch()">Søk</button>
+    <button id="newBtn" class="btn cta" style="display:none" onclick="newEntry()">+ Ny</button>
+  </div>
+  <div class="cats" id="cats"></div>
+  <div class="results" id="results"></div>
+</main>
+
+<!-- Article -->
+<div class="modal" id="articleModal">
+  <div class="sheet">
+    <div class="hd"><h2 id="aTitle"></h2><button class="x" onclick="closeModal('articleModal')">✕</button></div>
+    <div class="bd">
+      <div class="meta" id="aMeta"></div>
+      <div class="md" id="aBody" style="margin-top:12px"></div>
+      <div class="sources" id="aSources"></div>
+    </div>
+    <div class="ft" id="aActions"></div>
+  </div>
+</div>
+
+<!-- Editor (manager) -->
+<div class="modal" id="editModal">
+  <div class="sheet">
+    <div class="hd"><h2 id="eTitle">Ny artikkel</h2><button class="x" onclick="closeModal('editModal')">✕</button></div>
+    <div class="bd">
+      <div class="note" id="eNote" style="display:none"></div>
+      <div class="row"><label>Tittel</label><input type="text" id="fTitle"></div>
+      <div class="row"><label>Kategori</label><select id="fCat"></select></div>
+      <div class="row"><label>Tagger (komma)</label><input type="text" id="fTags" placeholder="dekk, vinter, pigg"></div>
+      <div class="row"><label>Innhold (markdown: # overskrift, **fet**, - punkt, [tekst](lenke))</label><textarea id="fBody" rows="10"></textarea></div>
+      <div class="row"><label>Kilder — én per linje: «Tittel | https://…»</label><textarea id="fSources" rows="3" placeholder="Produsentens monteringsguide | https://…"></textarea></div>
+    </div>
+    <div class="ft"><button class="btn ghost" onclick="closeModal('editModal')">Avbryt</button><button class="btn" onclick="saveArticle()">Lagre</button></div>
+  </div>
+</div>
+
+<!-- Suggest (others) -->
+<div class="modal" id="sugModal">
+  <div class="sheet" style="max-width:520px">
+    <div class="hd"><h2 id="sgTitle">Foreslå endring</h2><button class="x" onclick="closeModal('sugModal')">✕</button></div>
+    <div class="bd">
+      <p class="meta" id="sgFor"></p>
+      <div class="row"><label>Ditt forslag (hva bør legges til / endres?)</label><textarea id="sgBody" rows="6" placeholder="Beskriv forslaget — gjerne med lenker til kilder."></textarea></div>
+    </div>
+    <div class="ft"><button class="btn ghost" onclick="closeModal('sugModal')">Avbryt</button><button class="btn cta" onclick="submitSuggest()">Send forslag</button></div>
+  </div>
+</div>
+
+<!-- Suggestions list (manager) -->
+<div class="modal" id="sugListModal">
+  <div class="sheet" style="max-width:560px">
+    <div class="hd"><h2>Innsendte forslag</h2><button class="x" onclick="closeModal('sugListModal')">✕</button></div>
+    <div class="bd" id="sugList"></div>
+  </div>
+</div>
+
+<script src="shared.js?v=8"></script>
+<script>
+const T=window.THelper, $=id=>document.getElementById(id), esc=s=>T.esc(s);
+const CATS=['Bildeler','Dekk','Sykkel','Bilvask','Barneseter','Takbokser','Takstativ','Vindusviskere','Verktøy','MC','Generelt'];
+let me=null, canManage=false, cat='', articles={}, editId=null, suggestForId=null, suggestForTitle=null, sugMap={};
+
+/* ---------- markdown ---------- */
+function md(src){
+  if(!src) return '<p class="meta">Ingen innhold ennå.</p>';
+  const out=[]; let inList=false;
+  const inline=s=>{ s=esc(s);
+    s=s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+    s=s.replace(/(^|[^"=>(])(https?:\/\/[^\s<]+)/g,'$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+    s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/\*([^*]+)\*/g,'<em>$1</em>').replace(/`([^`]+)`/g,'<code>$1</code>');
+    return s; };
+  const close=()=>{ if(inList){ out.push('</ul>'); inList=false; } };
+  for(const raw of src.split('\n')){ const line=raw.replace(/\s+$/,''); let m;
+    if(m=line.match(/^(#{1,4})\s+(.*)$/)){ close(); const l=Math.min(4,m[1].length); out.push(`<h${l+1}>${inline(m[2])}</h${l+1}>`); }
+    else if(m=line.match(/^\s*[-*]\s+(.*)$/)){ if(!inList){ out.push('<ul>'); inList=true; } out.push(`<li>${inline(m[1])}</li>`); }
+    else if(line.trim()===''){ close(); }
+    else { close(); out.push(`<p>${inline(line)}</p>`); }
+  } close(); return out.join('');
+}
+function highlight(snip){ return esc(snip||'').replaceAll('«HLS»','<mark>').replaceAll('«HLE»','</mark>'); }
+
+/* ---------- auth ---------- */
+function refreshAuth(){
+  me=T.getUser(); canManage=T.canManage();
+  $('lockBtn').textContent = me ? (me.tag+' · logg ut') : 'Logg inn';
+  $('newBtn').style.display = me ? 'inline-block' : 'none';
+  $('newBtn').textContent = canManage ? '+ Ny artikkel' : '+ Foreslå artikkel';
+  $('sugBtn').style.display = canManage ? 'inline-flex' : 'none';
+  if(canManage) loadSuggestionCount();
+}
+async function toggleAuth(){
+  if(T.getUser()){ T.clearSession(); refreshAuth(); T.toast('Logget ut'); }
+  else { const u=await T.ensureUser(); if(u){ refreshAuth(); T.toast('Logget inn som '+(u.name||u.tag)); } }
+}
+
+/* ---------- categories ---------- */
+function renderCats(){
+  $('cats').innerHTML = `<button class="chipbtn ${cat===''?'on':''}" onclick="setCat('')">Alle</button>`+
+    CATS.map(c=>`<button class="chipbtn ${cat===c?'on':''}" onclick="setCat('${c}')">${c}</button>`).join('');
+}
+function setCat(c){ cat=c; renderCats(); doSearch(); }
+
+/* ---------- search ---------- */
+let tmr;
+function debounce(){ clearTimeout(tmr); tmr=setTimeout(doSearch,250); }
+async function doSearch(){
+  const q=$('q').value;
+  const { data, error } = await T.sb.rpc('wiki_search',{ p_q:q, p_category:cat||null });
+  if(error){ $('results').innerHTML=`<div class="empty">${/function|does not exist|schema/i.test(error.message)?'Kjør wiki.sql i Supabase først.':esc(error.message)}</div>`; return; }
+  const rows=data||[];
+  if(!rows.length){ $('results').innerHTML='<div class="empty">Ingen treff. Prøv et annet søkeord'+(canManage?' eller lag en ny artikkel.':', eller foreslå en ny artikkel.')+'</div>'; return; }
+  $('results').innerHTML = rows.map(r=>`<div class="res" onclick="openArticle('${r.id}')">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h3>${esc(r.title)}</h3><span class="cat">${esc(r.category)}</span></div>
+    <div class="snip">${highlight(r.snippet)}</div></div>`).join('');
+}
+
+/* ---------- article ---------- */
+async function openArticle(id){
+  let a=articles[id];
+  if(!a){ const {data,error}=await T.sb.from('wiki_articles').select('*').eq('id',id).single(); if(error){ T.toast('Feil: '+error.message); return; } a=data; articles[id]=a; }
+  $('aTitle').textContent=a.title;
+  $('aMeta').innerHTML=`<span class="cat">${esc(a.category)}</span> · Sist endret ${new Date(a.updated_at).toLocaleDateString('nb-NO',{day:'numeric',month:'short',year:'numeric'})}${a.updated_by?' av '+esc(a.updated_by):''}`;
+  $('aBody').innerHTML=md(a.body);
+  const src=Array.isArray(a.sources)?a.sources:[];
+  $('aSources').innerHTML = src.length ? `<h4>Gode kilder</h4>`+src.map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener">🔗 ${esc(s.label||s.url)}</a>`).join('') : '';
+  $('aActions').innerHTML = canManage
+    ? `<button class="btn ghost" onclick="delArticle('${a.id}')" style="color:#ff9b9b">Slett</button><button class="btn" onclick="openEditor('${a.id}')">Rediger</button>`
+    : `<button class="btn cta" onclick="openSuggest('${a.id}')">Foreslå endring</button>`;
+  show('articleModal');
+}
+
+/* ---------- editor (manager) ---------- */
+function newEntry(){ if(canManage) openEditor(null); else openSuggest(null); }
+function fillCatSelect(sel,val){ sel.innerHTML=CATS.map(c=>`<option ${c===val?'selected':''}>${c}</option>`).join(''); }
+function parseSources(text){ return text.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{ const i=l.indexOf('|'); return i>=0?{label:l.slice(0,i).trim(),url:l.slice(i+1).trim()}:{label:'',url:l}; }).filter(s=>s.url); }
+function sourcesToText(arr){ return (arr||[]).map(s=>s.label?`${s.label} | ${s.url}`:s.url).join('\n'); }
+async function openEditor(id, prefillBody){
+  editId=id; $('eNote').style.display='none';
+  fillCatSelect($('fCat'), cat||'Generelt');
+  if(id){ const a=articles[id]||(await T.sb.from('wiki_articles').select('*').eq('id',id).single()).data; articles[id]=a;
+    $('eTitle').textContent='Rediger artikkel'; $('fTitle').value=a.title; $('fCat').value=a.category; $('fTags').value=(a.tags||[]).join(', '); $('fBody').value=a.body||''; $('fSources').value=sourcesToText(a.sources); }
+  else { $('eTitle').textContent='Ny artikkel'; $('fTitle').value=''; $('fTags').value=''; $('fBody').value=prefillBody||''; $('fSources').value=''; }
+  closeModal('articleModal'); show('editModal');
+}
+async function saveArticle(){
+  const payload={ title:$('fTitle').value.trim(), category:$('fCat').value, tags:$('fTags').value.split(',').map(s=>s.trim()).filter(Boolean), body:$('fBody').value, sources:parseSources($('fSources').value) };
+  if(!payload.title){ T.toast('Tittel mangler'); return; }
+  try{ if(editId) await T.rpcAuth('update_article',{p_id:editId,p_article:payload}); else await T.rpcAuth('add_article',{p_article:payload});
+    closeModal('editModal'); articles={}; T.toast('Lagret'); doSearch(); }
+  catch(e){ if(e.message!=='no-auth') T.toast('Feil: '+e.message); }
+}
+async function delArticle(id){
+  if(!confirm('Slette artikkelen permanent?')) return;
+  try{ await T.rpcAuth('delete_article',{p_id:id}); closeModal('articleModal'); articles={}; T.toast('Slettet'); doSearch(); }
+  catch(e){ if(e.message!=='no-auth') T.toast('Feil: '+e.message); }
+}
+
+/* ---------- suggest (others) ---------- */
+function openSuggest(articleId){
+  suggestForId=articleId||null;
+  const a=articleId?articles[articleId]:null; suggestForTitle=a?a.title:null;
+  $('sgTitle').textContent = articleId ? 'Foreslå endring' : 'Foreslå ny artikkel';
+  $('sgFor').textContent = articleId ? ('Gjelder: '+(a?a.title:'')) : 'Ny artikkel — beskriv hva den bør inneholde.';
+  $('sgBody').value=''; closeModal('articleModal'); show('sugModal'); setTimeout(()=>$('sgBody').focus(),30);
+}
+async function submitSuggest(){
+  const body=$('sgBody').value.trim(); if(!body){ T.toast('Skriv et forslag'); return; }
+  try{ await T.rpcAuth('add_suggestion',{p_article_id:suggestForId,p_article_title:suggestForTitle,p_body:body});
+    closeModal('sugModal'); T.toast('Takk! Forslaget er sendt til vurdering.'); if(canManage) loadSuggestionCount(); }
+  catch(e){ if(e.message!=='no-auth') T.toast('Feil: '+e.message); }
+}
+
+/* ---------- suggestions review (manager) ---------- */
+async function loadSuggestionCount(){
+  const {data}=await T.sb.from('wiki_suggestions').select('id').eq('status','open');
+  $('sugCount').textContent=(data||[]).length;
+}
+async function openSuggestions(){
+  const {data,error}=await T.sb.from('wiki_suggestions').select('*').eq('status','open').order('created_at',{ascending:false});
+  if(error){ T.toast('Feil: '+error.message); return; }
+  const rows=data||[]; sugMap={}; rows.forEach(s=>sugMap[s.id]=s);
+  $('sugList').innerHTML = rows.length ? rows.map(s=>`<div class="sug">
+      <div><b>${s.article_title?esc(s.article_title):'Ny artikkel'}</b></div>
+      <div style="white-space:pre-wrap;margin-top:4px;font-size:14px">${esc(s.body)}</div>
+      <div class="who">${esc(s.author||'')} · ${new Date(s.created_at).toLocaleDateString('nb-NO',{day:'numeric',month:'short'})}</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn" onclick="applySuggestion('${s.id}')">Åpne i editor</button>
+        <button class="btn ghost" onclick="dismissSuggestion('${s.id}')">Avvis</button>
+      </div></div>`).join('') : '<div class="empty">Ingen åpne forslag.</div>';
+  show('sugListModal');
+}
+async function applySuggestion(id){
+  const s=sugMap[id]; if(!s) return;
+  try{ await T.rpcAuth('resolve_suggestion',{p_id:id,p_status:'applied'}); }catch(e){ if(e.message==='no-auth') return; }
+  closeModal('sugListModal'); loadSuggestionCount();
+  if(s.article_id) openEditor(s.article_id, undefined); else openEditor(null, s.body);
+  setTimeout(()=>{ $('eNote').style.display='block'; $('eNote').textContent='Basert på forslag fra '+(s.author||'')+': '+s.body; },60);
+}
+async function dismissSuggestion(id){
+  try{ await T.rpcAuth('resolve_suggestion',{p_id:id,p_status:'dismissed'}); openSuggestions(); loadSuggestionCount(); }
+  catch(e){ if(e.message!=='no-auth') T.toast('Feil: '+e.message); }
+}
+
+/* ---------- helpers ---------- */
+function show(id){ $(id).classList.add('show'); }
+function closeModal(id){ $(id).classList.remove('show'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show')); });
+$('q').addEventListener('input',debounce);
+$('q').addEventListener('keydown',e=>{ if(e.key==='Enter') doSearch(); });
+
+/* ---------- boot ---------- */
+renderCats(); refreshAuth(); doSearch();
+if(T.sb){ T.sb.channel('wiki-rt')
+  .on('postgres_changes',{event:'*',schema:'public',table:'wiki_articles'},()=>{ articles={}; doSearch(); })
+  .on('postgres_changes',{event:'*',schema:'public',table:'wiki_suggestions'},()=>{ if(canManage) loadSuggestionCount(); })
+  .subscribe(); }
+</script>
+</body>
+</html>
