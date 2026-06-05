@@ -523,8 +523,9 @@ function renderWeeklyPlannerView(){
     col.addEventListener('drop',e=>{ col.classList.remove('border-thansen-500'); const d=e.dataTransfer.getData('text/plain'); if(d.startsWith('task:')) rescheduleTaskToWeekday(d.slice(5), idx); });
     const dt=state.tasks.filter(t=>{
       if(t.status==='done') return false;
-      if(t.frequency==='daily') return true;                 // daglige vises hver dag
-      if(!t.due) return false;
+      const assigned = t.assignees && t.assignees.length>0;
+      if(t.frequency==='daily' && !assigned) return true;    // daglig uten ansvarlig: vises hver dag
+      if(!t.due) return false;                                // ellers kun på sin egen dag
       const x=new Date(t.due); const di=x.getDay()===0?6:x.getDay()-1; return di===idx;
     });
     col.innerHTML=`<div class="flex items-center justify-between mb-3 shrink-0 pb-2 border-b border-slate-100 dark:border-slate-900"><div class="flex flex-col"><span class="text-xs font-bold ${today?'text-thansen-500 dark:text-thansen-yellow':'text-slate-700 dark:text-slate-300'}">${dn}</span><span class="text-[9px] text-slate-400 font-semibold">${today?'I dag':'Vaktplan'}</span></div><span class="text-xs font-bold bg-slate-100 dark:bg-slate-900 text-slate-500 px-2 py-0.5 rounded-lg">${dt.length}</span></div>
