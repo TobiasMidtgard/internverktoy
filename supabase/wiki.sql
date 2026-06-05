@@ -14,11 +14,19 @@ create table if not exists public.wiki_articles (
   updated_by  text,
   updated_at  timestamptz not null default now(),
   created_at  timestamptz not null default now(),
-  tsv tsvector generated always as (
-    to_tsvector('norwegian',
-      coalesce(title,'') || ' ' || coalesce(body,'') || ' ' || array_to_string(coalesce(tags,'{}'),' '))
-  ) stored
+  tsv tsvector
 );
+-- tsv vedlikeholdes av trigger (unngår 42P17 «generation expression is not immutable»)
+create or replace function public.wiki_tsv_update() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  new.tsv := to_tsvector('norwegian',
+    coalesce(new.title,'') || ' ' || coalesce(new.body,'') || ' ' || array_to_string(coalesce(new.tags,'{}'),' '));
+  return new;
+end $$;
+drop trigger if exists wiki_tsv_trg on public.wiki_articles;
+create trigger wiki_tsv_trg before insert or update on public.wiki_articles
+  for each row execute function public.wiki_tsv_update();
 create index if not exists wiki_tsv_idx        on public.wiki_articles using gin(tsv);
 create index if not exists wiki_title_trgm_idx on public.wiki_articles using gin(title extensions.gin_trgm_ops);
 
