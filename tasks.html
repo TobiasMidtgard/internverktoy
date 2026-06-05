@@ -100,6 +100,9 @@
           <p class="text-[11px] sm:text-xs text-slate-400">Planlegg oppgaver, administrer ukesvakter og overvåk tidsfrister.</p>
         </div>
         <div class="flex items-center flex-wrap gap-3">
+          <select id="filter-assignee" onchange="setAssigneeFilter(this.value)" title="Filtrer på medarbeider" class="bg-slate-100 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-thansen-500">
+            <option value="">Alle medarbeidere</option>
+          </select>
           <div class="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200/60 dark:border-slate-800">
             <button onclick="setViewTab('board')" id="tab-btn-board" class="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm"><i class="fa-solid fa-columns text-thansen-500"></i><span>Tavle</span></button>
             <button onclick="setViewTab('weekly')" id="tab-btn-weekly" class="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 text-slate-500 dark:text-slate-400"><i class="fa-solid fa-calendar-days"></i><span>Ukesplan</span></button>
@@ -227,7 +230,7 @@
 <script src="shared.js?v=8"></script>
 <script>
 const T = window.THelper;
-let isAdmin = false, isDev = false, me = null;
+let isAdmin = false, isDev = false, me = null, filterTag = '';
 let state = { activeViewTab:'board', coworkers:[], tasks:[], alerts:[], notes:[] };
 const F2U = { once:'none', daily:'day', weekly:'week', monthly:'month' };
 const U2F = { none:'once', day:'daily', week:'weekly', month:'monthly', hour:'daily' };
@@ -237,6 +240,25 @@ function stableOrder(a,b){
   if(a.due && b.due){ const d=new Date(a.due)-new Date(b.due); if(d) return d; }
   else if(a.due) return -1; else if(b.due) return 1;
   return (a.createdAt||'').localeCompare(b.createdAt||'') || a.id.localeCompare(b.id);
+}
+// filter on a coworker, and float the logged-in user's tasks to the top
+function passFilter(t){ return !filterTag || (t.assignees && t.assignees.includes(filterTag)); }
+function taskSort(a,b){
+  if(me){
+    const am=(a.assignees||[]).includes(me.tag)?0:1, bm=(b.assignees||[]).includes(me.tag)?0:1;
+    if(am!==bm) return am-bm;
+  }
+  return stableOrder(a,b);
+}
+function setAssigneeFilter(v){ filterTag=v; renderScheduler(); }
+function renderFilterOptions(){
+  const sel=document.getElementById('filter-assignee'); if(!sel) return;
+  let html='<option value="">Alle medarbeidere</option>';
+  if(me) html+=`<option value="${esc(me.tag)}">⭐ Mine oppgaver (${esc(me.tag)})</option>`;
+  html+=state.coworkers.map(c=>`<option value="${esc(c.tag)}">${esc(c.name)} (${esc(c.tag)})</option>`).join('');
+  sel.innerHTML=html;
+  if(![...sel.options].some(o=>o.value===filterTag)) filterTag='';
+  sel.value=filterTag;
 }
 
 /* ---------- boot ---------- */
@@ -277,7 +299,7 @@ async function loadAll(){
     frequency:U2F[r.recur_unit]||'once', due:r.due_at, priority:r.priority||'medium', status:r.status||'todo',
     createdAt:r.created_at||''
   })).sort(stableOrder);
-  recalculateAlerts(); renderCoworkerList(); renderScheduler(); renderStats(); renderAlertsList();
+  recalculateAlerts(); renderFilterOptions(); renderCoworkerList(); renderScheduler(); renderStats(); renderAlertsList();
 }
 
 /* ---------- admin / theme ---------- */
@@ -290,7 +312,7 @@ function refreshAdminUI(){
   document.getElementById('admin-state').textContent = me ? `${me.tag} · ${roleLabel(me.role)}` : 'Ikke innlogget';
   document.getElementById('add-task-global-btn').classList.toggle('hidden', !isAdmin);
   document.getElementById('add-coworker-btn').classList.toggle('hidden', !isAdmin);
-  renderScheduler(); renderCoworkerList();
+  renderFilterOptions(); renderScheduler(); renderCoworkerList();
 }
 async function toggleAdmin(){
   if(T.getUser()){ T.clearSession(); refreshAdminUI(); showToast('Logget ut','#64748b'); }
@@ -420,7 +442,7 @@ function renderKanbanView(){
     el.addEventListener('dragover',e=>{ e.preventDefault(); el.classList.add('border-thansen-500'); });
     el.addEventListener('dragleave',()=>el.classList.remove('border-thansen-500'));
     el.addEventListener('drop',e=>{ el.classList.remove('border-thansen-500'); const d=e.dataTransfer.getData('text/plain'); if(d.startsWith('task:')) moveTaskStatus(d.slice(5), col.id); });
-    const colTasks=state.tasks.filter(t=>t.status===col.id);
+    const colTasks=state.tasks.filter(t=>t.status===col.id && passFilter(t)).sort(taskSort);
     el.innerHTML=`<div class="flex items-center justify-between mb-4 shrink-0"><div class="flex items-center space-x-2"><span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300">${col.title}</span><span class="text-xs text-slate-400 font-medium">${colTasks.length}</span></div></div><div class="flex-1 overflow-y-auto space-y-3 pb-4" id="kanban-col-${col.id}"></div>`;
     c.appendChild(el);
     const cl=document.getElementById(`kanban-col-${col.id}`);
@@ -522,12 +544,12 @@ function renderWeeklyPlannerView(){
     col.addEventListener('dragleave',()=>col.classList.remove('border-thansen-500'));
     col.addEventListener('drop',e=>{ col.classList.remove('border-thansen-500'); const d=e.dataTransfer.getData('text/plain'); if(d.startsWith('task:')) rescheduleTaskToWeekday(d.slice(5), idx); });
     const dt=state.tasks.filter(t=>{
-      if(t.status==='done') return false;
+      if(t.status==='done' || !passFilter(t)) return false;
       const assigned = t.assignees && t.assignees.length>0;
       if(t.frequency==='daily' && !assigned) return true;    // daglig uten ansvarlig: vises hver dag
       if(!t.due) return false;                                // ellers kun på sin egen dag
       const x=new Date(t.due); const di=x.getDay()===0?6:x.getDay()-1; return di===idx;
-    });
+    }).sort(taskSort);
     col.innerHTML=`<div class="flex items-center justify-between mb-3 shrink-0 pb-2 border-b border-slate-100 dark:border-slate-900"><div class="flex flex-col"><span class="text-xs font-bold ${today?'text-thansen-500 dark:text-thansen-yellow':'text-slate-700 dark:text-slate-300'}">${dn}</span><span class="text-[9px] text-slate-400 font-semibold">${today?'I dag':'Vaktplan'}</span></div><span class="text-xs font-bold bg-slate-100 dark:bg-slate-900 text-slate-500 px-2 py-0.5 rounded-lg">${dt.length}</span></div>
       <div class="flex-1 overflow-y-auto space-y-3 pb-2" id="weekly-day-${idx}"></div>
       <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-900 space-y-2" id="weekly-notes-${idx}"></div>
