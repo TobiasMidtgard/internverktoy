@@ -65,8 +65,7 @@ language sql security definer set search_path = public, extensions as $$
     select websearch_to_tsquery('norwegian', coalesce(nullif(trim(p_q),''),'')) as ts,
            coalesce(nullif(trim(p_q),''),'') as raw)
   select a.id, a.title, a.category,
-    ts_headline('norwegian', coalesce(a.body,''), q.ts,
-      'MaxFragments=2,MinWords=6,MaxWords=22,StartSel=«HLS»,StopSel=«HLE»') as snippet,
+    left(regexp_replace(coalesce(a.body,''), E'\\s+', ' ', 'g'), 220) as snippet,
     (ts_rank(a.tsv, q.ts) + coalesce(similarity(a.title, q.raw),0))::real as rank
   from public.wiki_articles a, q
   where (p_category is null or p_category = '' or a.category = p_category)

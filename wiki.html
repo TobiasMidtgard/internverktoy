@@ -163,7 +163,7 @@ function md(src){
     else { close(); out.push(`<p>${inline(line)}</p>`); }
   } close(); return out.join('');
 }
-function highlight(snip){ return esc(snip||'').replaceAll('«HLS»','<mark>').replaceAll('«HLE»','</mark>'); }
+function highlight(snip){ return esc(snip||''); }
 
 /* ---------- auth ---------- */
 function refreshAuth(){
