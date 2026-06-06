@@ -115,7 +115,7 @@
       </div>
       <div id="workspace-viewport" class="flex-1 overflow-x-auto overflow-y-auto p-4 sm:p-6 relative snap-x-container scroll-smooth">
         <div id="view-kanban" class="h-full flex space-x-4 sm:space-x-6 min-w-full lg:min-w-[1000px]"></div>
-        <div id="view-weekly" class="h-full space-x-4 min-w-[1200px] hidden grid grid-cols-7 gap-4"></div>
+        <div id="view-weekly" class="h-full space-x-4 min-w-[1000px] hidden grid grid-cols-6 gap-4"></div>
       </div>
     </main>
 
@@ -547,7 +547,7 @@ function handleAssigneeDragEnd(){ const z=document.getElementById('assignee-tras
 /* ---------- weekly ---------- */
 function renderWeeklyPlannerView(){
   const w=document.getElementById('view-weekly'); w.innerHTML='';
-  const days=['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag','Søndag'];
+  const days=['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'];  // søndag stengt
   const cur=(new Date().getDay()===0)?6:new Date().getDay()-1;
   days.forEach((dn,idx)=>{
     const col=document.createElement('div'); const today=idx===cur;
@@ -557,8 +557,7 @@ function renderWeeklyPlannerView(){
     col.addEventListener('drop',e=>{ col.classList.remove('border-thansen-500'); const d=e.dataTransfer.getData('text/plain'); if(d.startsWith('task:')) rescheduleTaskToWeekday(d.slice(5), idx); });
     const dt=state.tasks.filter(t=>{
       if(t.status==='done' || !passFilter(t)) return false;
-      const assigned = t.assignees && t.assignees.length>0;
-      if(t.frequency==='daily' && !assigned) return true;    // daglig uten ansvarlig: vises hver dag
+      if(t.frequency==='daily') return true;                 // daglig: vises på alle (åpne) dager
       if(!t.due) return false;                                // ellers kun på sin egen dag
       const x=new Date(t.due); const di=x.getDay()===0?6:x.getDay()-1; return di===idx;
     }).sort(taskSort);
