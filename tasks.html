@@ -129,7 +129,7 @@
       </div>
       <div id="workspace-viewport" class="flex-1 overflow-x-auto overflow-y-auto p-4 sm:p-6 relative snap-x-container scroll-smooth">
         <div id="view-kanban" class="h-full flex space-x-4 sm:space-x-5 min-w-full lg:min-w-0"></div>
-        <div id="view-weekly" class="h-full space-x-4 min-w-[1000px] hidden grid grid-cols-6 gap-4"></div>
+        <div id="view-weekly" class="hidden"></div>
         <div id="view-timeline" class="hidden max-w-2xl mx-auto"></div>
       </div>
     </main>
@@ -202,6 +202,7 @@
         <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Frist (dato & tid)</label><input type="datetime-local" id="task-due-date" step="1" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"></div>
         <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status</label><select id="task-status" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"><option value="todo">Gjøremål</option><option value="progress">Pågår</option><option value="done">Fullført</option></select></div>
       </div>
+      <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Varighet (minutter)</label><input type="number" id="task-duration" min="5" step="5" value="30" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"></div>
       <div class="pt-4 border-t border-slate-100 dark:border-slate-900 flex items-center justify-end space-x-3">
         <button type="button" onclick="closeTaskModal()" class="px-5 py-2.5 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 font-medium rounded-xl">Avbryt</button>
         <button type="submit" id="task-form-submit-btn" class="px-5 py-2.5 text-xs bg-thansen-500 hover:bg-thansen-600 text-white font-bold rounded-xl shadow-md">Lagre Oppgave</button>
@@ -230,7 +231,7 @@
           <option value="manager">Butikksjef</option>
           <option value="dev">IT / Dev</option>
         </select></div>
-      <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fargetema</label><div class="grid grid-cols-6 gap-2" id="color-grid"></div><input type="hidden" id="coworker-color" value="#004595"></div>
+      <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fargetema</label><div class="flex items-center gap-3"><input type="color" id="coworker-color" value="#004595" class="w-14 h-10 rounded-lg bg-transparent border border-slate-200 dark:border-slate-800 cursor-pointer p-0.5"><span class="text-xs text-slate-400">Velg farge i hjulet</span></div></div>
       <div class="pt-2 flex items-center justify-end space-x-2"><button type="button" onclick="closeCoworkerModal()" class="px-4 py-2 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 font-medium rounded-xl">Avbryt</button><button type="submit" class="px-4 py-2 text-xs bg-thansen-500 hover:bg-thansen-600 text-white font-bold rounded-xl shadow-md">Registrer</button></div>
     </form>
   </div>
@@ -245,7 +246,7 @@
 <script src="shared.js?v=8"></script>
 <script>
 const T = window.THelper;
-let isAdmin = false, isDev = false, me = null, filterTag = '';
+let isAdmin = false, isDev = false, me = null, filterTag = '', weekOffset = 0;
 let state = { activeViewTab:'board', coworkers:[], tasks:[], alerts:[], notes:[] };
 const F2U = { once:'none', daily:'day', weekly:'week', monthly:'month' };
 const U2F = { none:'once', day:'daily', week:'weekly', month:'monthly', hour:'daily' };
@@ -285,7 +286,6 @@ function moveStatusBy(id, dir){
 
 /* ---------- boot ---------- */
 window.onload = function () {
-  buildColorGrid();
   refreshAdminUI();
   (async () => { try { if (T.sb) await T.sb.rpc('rollover_recurring'); } catch(e){} loadAll(); })();
   setInterval(async () => {
@@ -319,7 +319,7 @@ async function loadAll(){
   state.tasks = (tk.data||[]).map(r=>({
     id:r.id, title:r.title||'', desc:r.notes||'', assignees:r.assignees||[],
     frequency:U2F[r.recur_unit]||'once', due:r.due_at, priority:r.priority||'medium', status:r.status||'todo',
-    createdAt:r.created_at||''
+    duration:r.duration_min||30, createdAt:r.created_at||''
   })).sort(stableOrder);
   recalculateAlerts(); renderFilterOptions(); renderCoworkerList(); renderScheduler(); renderStats(); renderAlertsList();
 }
@@ -376,10 +376,6 @@ function renderAssigneeGridForm(){
     item.innerHTML=`<input type="checkbox" value="${esc(c.tag)}" name="task-assignees-check" class="rounded text-thansen-500 focus:ring-thansen-500"><span class="w-4 h-4 rounded text-[8px] font-bold text-white flex items-center justify-center" style="background-color:${c.color}">${esc(c.tag)}</span><span class="text-xs text-slate-700 dark:text-slate-300 font-medium truncate">${esc(c.name)}</span>`;
     grid.appendChild(item);
   });
-}
-function buildColorGrid(){
-  const g=document.getElementById('color-grid'); g.innerHTML='';
-  PALETTE.forEach(col=>{ const b=document.createElement('button'); b.type='button'; b.className='h-8 rounded-lg focus:ring-2 focus:ring-slate-900 dark:focus:ring-white'; b.style.backgroundColor=col; b.onclick=()=>{ document.getElementById('coworker-color').value=col; }; g.appendChild(b); });
 }
 let editingCoworkerTag = null;
 function openCoworkerModal(tag){
@@ -449,7 +445,7 @@ function setViewTab(tab){
   const tabs={board:'tab-btn-board',weekly:'tab-btn-weekly',timeline:'tab-btn-timeline'};
   for(const k in tabs){ const el=document.getElementById(tabs[k]); if(el) el.className = (k===tab?on:off); }
   document.getElementById('view-kanban').classList.toggle('hidden', tab!=='board');
-  const vw=document.getElementById('view-weekly'); vw.classList.toggle('hidden', tab!=='weekly'); vw.classList.toggle('grid', tab==='weekly');
+  document.getElementById('view-weekly').classList.toggle('hidden', tab!=='weekly');
   document.getElementById('view-timeline').classList.toggle('hidden', tab!=='timeline');
   document.getElementById('mobile-snap-notif').style.display = (tab==='timeline') ? 'none' : '';
   document.getElementById('current-board-title').innerText =
@@ -563,11 +559,14 @@ function createTaskCard(task, weekly=false){
 
   const dot = task.priority==='high'?'bg-red-500':task.priority==='medium'?'bg-amber-500':'bg-emerald-500';
   if(weekly){
-    card.className=`p-3 rounded-xl border bg-white dark:bg-slate-950 shadow-sm hover:shadow-md transition-all cursor-pointer ${overdue?'border-red-300 dark:border-red-900':'border-slate-200 dark:border-slate-800/80 hover:border-thansen-500/50'}`;
-    const time = task.due ? new Date(task.due).toLocaleTimeString('no-NO',{hour:'2-digit',minute:'2-digit'}) : '--:--';
-    const d1 = task.desc ? task.desc.split('\n')[0] : '';
-    let w=''; (task.assignees||[]).forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<div class="w-4 h-4 rounded text-[7px] font-bold text-white flex items-center justify-center border border-white dark:border-slate-900" style="background-color:${c.color}" title="${tag}">${esc(tag)}</div>`; });
-    card.innerHTML=`<div class="flex flex-col space-y-1"><div class="flex items-center justify-between"><span class="text-[9px] font-black text-slate-400 flex items-center space-x-1"><span class="w-1.5 h-1.5 rounded-full ${dot}"></span><span>kl. ${time}</span></span>${overdue?'<span class="text-[8px] text-red-500 font-extrabold">OVERTID</span>':''}</div><h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate pr-4">${esc(task.title)}</h4><p class="text-[10px] text-slate-400 truncate">${esc(d1)}</p><div class="flex flex-wrap gap-1.5 mt-2">${w}</div></div>`;
+    card.className=`p-2 rounded-lg border bg-white dark:bg-slate-950 shadow-sm hover:shadow-md transition-all cursor-pointer ${overdue?'border-red-300 dark:border-red-900':'border-slate-200 dark:border-slate-800/80 hover:border-thansen-500/50'}`;
+    const time = task.due ? new Date(task.due).toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'}) : '';
+    let w=''; (task.assignees||[]).forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-4 h-4 rounded text-[7px] font-bold text-white inline-flex items-center justify-center" style="background-color:${c.color}" title="${esc(tag)}">${esc(tag)}</span>`; });
+    const dur = task.duration ? `<span class="text-[9px] text-slate-400">${fmtDur(task.duration)}</span>` : '';
+    const desc = task.desc ? `<div class="mt-1 space-y-0.5 text-[11px]">${parseDescriptionToHTML(task.id, task.desc)}</div>` : '';
+    card.innerHTML=`<div class="flex items-center justify-between gap-1"><span class="text-[9px] font-bold text-slate-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${time?'kl. '+time:''}</span>${overdue?'<span class="text-[8px] text-red-500 font-extrabold">OVERTID</span>':dur}</div>
+      <div class="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight mt-0.5">${esc(task.title)}</div>${desc}
+      <div class="flex flex-wrap gap-1 mt-1">${w}</div>`;
     return card;
   }
 
@@ -611,38 +610,79 @@ function handleAssigneeDragEnd(){ const z=document.getElementById('assignee-tras
   z.addEventListener('drop',e=>{ e.preventDefault(); z.classList.remove('scale-105'); if(activeDragAssignee) removeAssigneeFromTask(activeDragAssignee.taskId, activeDragAssignee.tag); });
 })();
 
-/* ---------- weekly ---------- */
+/* ---------- weekly (timebasert) ---------- */
+function mondayOf(offset){ const d=new Date(); d.setHours(0,0,0,0); const wd=(d.getDay()===0)?6:d.getDay()-1; d.setDate(d.getDate()-wd+offset*7); return d; }
+function isoWeek(date){ const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate())); const n=(d.getUTCDay()+6)%7; d.setUTCDate(d.getUTCDate()-n+3); const t=new Date(Date.UTC(d.getUTCFullYear(),0,4)); return 1+Math.round(((d-t)/86400000-3+((t.getUTCDay()+6)%7))/7); }
+function fmtDur(m){ return m>=60 ? (m%60===0?(m/60)+' t':(m/60).toFixed(1).replace('.',',')+' t') : m+' min'; }
+function changeWeek(d){ weekOffset+=d; renderWeeklyPlannerView(); }
+function gotoThisWeek(){ weekOffset=0; renderWeeklyPlannerView(); }
+const NAVBTN="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-800";
 function renderWeeklyPlannerView(){
-  const w=document.getElementById('view-weekly'); w.innerHTML='';
-  const days=['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'];  // søndag stengt
-  const cur=(new Date().getDay()===0)?6:new Date().getDay()-1;
-  days.forEach((dn,idx)=>{
-    const col=document.createElement('div'); const today=idx===cur;
-    col.className=`flex flex-col h-full bg-slate-100/20 dark:bg-slate-950/20 rounded-2xl p-4 border transition-all snap-column ${today?'border-thansen-500/40 bg-thansen-500/5':'border-slate-200/60 dark:border-slate-800/60'}`;
-    col.addEventListener('dragover',e=>{ e.preventDefault(); col.classList.add('border-thansen-500'); });
-    col.addEventListener('dragleave',()=>col.classList.remove('border-thansen-500'));
-    col.addEventListener('drop',e=>{ col.classList.remove('border-thansen-500'); const d=e.dataTransfer.getData('text/plain'); if(d.startsWith('task:')) rescheduleTaskToWeekday(d.slice(5), idx); });
-    const dt=state.tasks.filter(t=>{
-      if(t.status==='done' || !passFilter(t)) return false;
-      if(t.frequency==='daily') return true;                 // daglig: vises på alle (åpne) dager
-      if(!t.due) return false;                                // ellers kun på sin egen dag
-      const x=new Date(t.due); const di=x.getDay()===0?6:x.getDay()-1; return di===idx;
-    }).sort(taskSort);
-    col.innerHTML=`<div class="flex items-center justify-between mb-3 shrink-0 pb-2 border-b border-slate-100 dark:border-slate-900"><div class="flex flex-col"><span class="text-xs font-bold ${today?'text-thansen-500 dark:text-thansen-yellow':'text-slate-700 dark:text-slate-300'}">${dn}</span><span class="text-[9px] text-slate-400 font-semibold">${today?'I dag':'Vaktplan'}</span></div><span class="text-xs font-bold bg-slate-100 dark:bg-slate-900 text-slate-500 px-2 py-0.5 rounded-lg">${dt.length}</span></div>
-      <div class="flex-1 overflow-y-auto space-y-3 pb-2" id="weekly-day-${idx}"></div>
-      <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-900 space-y-2" id="weekly-notes-${idx}"></div>
-      <button onclick="addPlannerNote(${idx})" class="mt-2 w-full text-[10px] font-bold text-thansen-500 dark:text-thansen-yellow border border-dashed border-slate-300 dark:border-slate-700 rounded-lg py-1.5 hover:bg-thansen-500/5"><i class="fa-solid fa-note-sticky mr-1"></i>Legg igjen notat</button>`;
-    w.appendChild(col);
-    const cl=document.getElementById(`weekly-day-${idx}`);
-    if(!dt.length) cl.innerHTML=`<div class="h-16 border-2 border-dashed border-slate-200/50 dark:border-slate-800/50 rounded-xl flex items-center justify-center text-slate-400 text-[10px]"><span>Ingen oppgaver</span></div>`;
-    else dt.forEach(t=>cl.appendChild(createTaskCard(t,true)));
-    const nl=document.getElementById(`weekly-notes-${idx}`);
-    state.notes.filter(n=>n.weekday===idx).forEach(n=>{
-      const canDel = me && (n.author===me.tag || isAdmin);
-      const el=document.createElement('div'); el.className='rounded-lg p-2 text-[11px] leading-snug relative';
-      el.style.background=(n.color||'#ffd400')+'1f'; el.style.borderLeft=`3px solid ${n.color||'#ffd400'}`;
-      el.innerHTML=`<div class="text-slate-700 dark:text-slate-200 pr-4 whitespace-pre-wrap">${esc(n.body)}</div><div class="text-[9px] text-slate-400 mt-1">${esc(n.author||'')}</div>${canDel?`<button onclick="deletePlannerNote('${n.id}')" class="absolute top-1 right-1 text-slate-400 hover:text-thansen-red text-[10px]">✕</button>`:''}`;
-      nl.appendChild(el);
+  const root=document.getElementById('view-weekly'); root.innerHTML='';
+  const D=['Man','Tir','Ons','Tor','Fre','Lør'];
+  const monday=mondayOf(weekOffset);
+  const dates=D.map((_,i)=>{ const d=new Date(monday); d.setDate(d.getDate()+i); return d; });
+  const today=new Date(); today.setHours(0,0,0,0);
+  const HOURS=[]; for(let h=7;h<=21;h++) HOURS.push(h);
+  const openRange=(i,h)=> i===5 ? (h>=8&&h<20) : (h>=7&&h<22);
+
+  const nav=document.createElement('div');
+  nav.className='flex items-center justify-between mb-3 max-w-3xl mx-auto';
+  nav.innerHTML=`<button class="${NAVBTN}" onclick="changeWeek(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+    <div class="text-center"><div class="text-sm font-bold">Uke ${isoWeek(monday)}${weekOffset===0?' · denne uken':''}</div>
+      <div class="text-[11px] text-slate-400">${dates[0].toLocaleDateString('nb-NO',{day:'numeric',month:'short'})} – ${dates[5].toLocaleDateString('nb-NO',{day:'numeric',month:'short'})}</div></div>
+    <div class="flex gap-2">${weekOffset!==0?`<button class="${NAVBTN}" onclick="gotoThisWeek()">I dag</button>`:''}<button class="${NAVBTN}" onclick="changeWeek(1)"><i class="fa-solid fa-chevron-right"></i></button></div>`;
+  root.appendChild(nav);
+
+  // plasser oppgaver i celler (dag,time) — med projeksjon av gjentakelser
+  const cell={};
+  state.tasks.forEach(t=>{
+    if(t.status==='done' || !passFilter(t)) return;
+    const due=t.due?new Date(t.due):null;
+    const hour=Math.min(21,Math.max(7, due?due.getHours():9));
+    const placeDays=[];
+    if(t.frequency==='daily'){ for(let i=0;i<6;i++) placeDays.push(i); }
+    else if(t.frequency==='weekly'){ if(due){ const wd=(due.getDay()===0)?6:due.getDay()-1; if(wd<6) placeDays.push(wd); } }
+    else if(t.frequency==='monthly'){ if(due) dates.forEach((d,i)=>{ if(d.getDate()===due.getDate()) placeDays.push(i); }); }
+    else { if(due) dates.forEach((d,i)=>{ if(d.toDateString()===due.toDateString()) placeDays.push(i); }); }
+    placeDays.forEach(i=>{ const k=i+'_'+hour; (cell[k]=cell[k]||[]).push(t); });
+  });
+
+  const grid=document.createElement('div');
+  grid.className='grid gap-px bg-slate-200/50 dark:bg-slate-800/50 rounded-xl overflow-hidden min-w-[760px]';
+  grid.style.gridTemplateColumns='48px repeat(6, minmax(118px,1fr))';
+  grid.appendChild(Object.assign(document.createElement('div'),{className:'bg-slate-50 dark:bg-slate-950'}));
+  dates.forEach((d,i)=>{
+    const isToday=d.getTime()===today.getTime();
+    const hd=document.createElement('div');
+    hd.className='bg-slate-50 dark:bg-slate-950 p-2 '+(isToday?'border-b-2 border-thansen-500':'');
+    hd.innerHTML=`<div class="flex items-center justify-between"><span class="text-xs font-bold ${isToday?'text-thansen-500 dark:text-thansen-yellow':'text-slate-700 dark:text-slate-300'}">${D[i]} ${d.getDate()}.</span>${me?`<button class="text-[10px] text-thansen-500" title="Legg igjen notat" onclick="addPlannerNote(${i})"><i class="fa-solid fa-note-sticky"></i></button>`:''}</div><div class="th-notes mt-1 space-y-1" data-day="${i}"></div>`;
+    grid.appendChild(hd);
+  });
+  HOURS.forEach(h=>{
+    const g=document.createElement('div'); g.className='bg-slate-50 dark:bg-slate-950 text-[10px] text-slate-400 font-bold text-right pr-1 pt-1'; g.textContent=String(h).padStart(2,'0'); grid.appendChild(g);
+    dates.forEach((d,i)=>{
+      const open=openRange(i,h);
+      const c=document.createElement('div');
+      c.className='min-h-[44px] p-1 space-y-1 '+(open?'bg-white dark:bg-slate-900/40':'bg-slate-100 dark:bg-slate-950/60');
+      if(open && isAdmin){
+        c.addEventListener('dragover',e=>{ e.preventDefault(); c.classList.add('ring-2','ring-thansen-500','ring-inset'); });
+        c.addEventListener('dragleave',()=>c.classList.remove('ring-2','ring-thansen-500','ring-inset'));
+        c.addEventListener('drop',e=>{ e.preventDefault(); c.classList.remove('ring-2','ring-thansen-500','ring-inset'); const dt=e.dataTransfer.getData('text/plain'); if(dt.startsWith('task:')) rescheduleTaskToSlot(dt.slice(5), d, h); });
+      }
+      (cell[i+'_'+h]||[]).sort(taskSort).forEach(t=>c.appendChild(createTaskCard(t,true)));
+      grid.appendChild(c);
+    });
+  });
+  root.appendChild(grid);
+
+  dates.forEach((d,i)=>{
+    const box=grid.querySelector(`.th-notes[data-day="${i}"]`); if(!box) return;
+    state.notes.filter(n=>n.weekday===i).forEach(n=>{
+      const canDel=me&&(n.author===me.tag||isAdmin);
+      const el=document.createElement('div'); el.className='rounded p-1 text-[10px] relative'; el.style.background=(n.color||'#ffd400')+'22'; el.style.borderLeft=`2px solid ${n.color||'#ffd400'}`;
+      el.innerHTML=`<div class="text-slate-700 dark:text-slate-200 pr-3 whitespace-pre-wrap">${esc(n.body)}</div>${canDel?`<button onclick="deletePlannerNote('${n.id}')" class="absolute top-0 right-0.5 text-slate-400 text-[10px]">✕</button>`:''}`;
+      box.appendChild(el);
     });
   });
 }
@@ -667,7 +707,7 @@ function openTaskDetailModal(taskId){
   if(t.priority==='high'){ pb.innerText='Kritisk'; pb.classList.add('bg-red-100','text-red-700'); }
   else if(t.priority==='medium'){ pb.innerText='Middels'; pb.classList.add('bg-amber-100','text-amber-700'); }
   else { pb.innerText='Lav'; pb.classList.add('bg-emerald-100','text-emerald-700'); }
-  document.getElementById('detail-task-frequency').innerText={once:'Én gang',daily:'Daglig',weekly:'Ukentlig',monthly:'Månedlig'}[t.frequency]||t.frequency;
+  document.getElementById('detail-task-frequency').innerText=(({once:'Én gang',daily:'Daglig',weekly:'Ukentlig',monthly:'Månedlig'}[t.frequency])||t.frequency)+' · '+fmtDur(t.duration||30);
   document.getElementById('detail-task-parsed-desc').innerHTML=parseDescriptionToHTML(t.id,t.desc,false);
   const ac=document.getElementById('detail-task-assignees'); ac.innerHTML='';
   if((t.assignees||[]).length) t.assignees.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{name:tag,color:'#64748b'}; const b=document.createElement('div'); b.className="px-3 py-1.5 rounded-lg text-white text-xs font-bold flex items-center space-x-1.5 shadow-sm"; b.style.backgroundColor=c.color; b.innerHTML=`<span>${esc(tag)}</span><span class="text-[10px] opacity-80">(${esc(c.name.split(' ')[0])})</span>`; ac.appendChild(b); });
@@ -703,13 +743,12 @@ async function removeAssigneeFromTask(taskId, tag){
   try{ await T.rpcAuth('set_assignees',{p_id:taskId,p_assignees:t.assignees.filter(a=>a!==tag)}); await loadAll(); showToast(`Fjernet ${tag}`,'#e30613'); }
   catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
 }
-async function rescheduleTaskToWeekday(taskId, dayIndex){
-  if(!isAdmin){ showToast('Kun Butikksjef kan flytte vakter.','#e30613'); return; }
+async function rescheduleTaskToSlot(taskId, dateObj, hour){
+  if(!isAdmin){ showToast('Kun Butikksjef kan flytte.','#e30613'); return; }
   const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
-  const today=new Date(); const cur=today.getDay()===0?6:today.getDay()-1;
-  const target=new Date(); target.setDate(today.getDate()+(dayIndex-cur));
-  const o=t.due?new Date(t.due):new Date(); target.setHours(o.getHours(),o.getMinutes(),0,0);
-  try{ await T.rpcAuth('update_task',{p_id:taskId,p_task:{due_at:target.toISOString()}}); await loadAll(); const days=['Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag','Søndag']; showToast('Flyttet til '+days[dayIndex],'#10b981'); }
+  const target=new Date(dateObj); target.setHours(hour,0,0,0);
+  try{ await T.rpcAuth('update_task',{p_id:taskId,p_task:{due_at:target.toISOString()}}); await loadAll();
+    showToast('Flyttet til '+target.toLocaleDateString('nb-NO',{weekday:'short',day:'numeric'})+' kl. '+String(hour).padStart(2,'0')+':00','#10b981'); }
   catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
 }
 
@@ -722,6 +761,7 @@ function openTaskModal(){
   document.getElementById('form-task-id').value=''; document.getElementById('task-form').reset();
   renderAssigneeGridForm(); toggleFrequencyNotice();
   const d=new Date(); d.setHours(d.getHours()+24); document.getElementById('task-due-date').value=toLocalInput(d.toISOString());
+  document.getElementById('task-duration').value=30;
   document.getElementById('task-modal').classList.remove('hidden');
 }
 function closeTaskModal(){ document.getElementById('task-modal').classList.add('hidden'); document.getElementById('task-form').reset(); }
@@ -736,6 +776,7 @@ function editTask(taskId){
   document.getElementById('task-due-date').value=t.due?toLocalInput(t.due):'';
   document.getElementById('task-priority').value=t.priority;
   document.getElementById('task-status').value=t.status;
+  document.getElementById('task-duration').value=t.duration||30;
   document.getElementsByName('task-assignees-check').forEach(b=>{ b.checked=(t.assignees||[]).includes(b.value); });
   toggleFrequencyNotice();
   document.getElementById('task-modal-title').innerHTML=`<i class="fa-solid fa-pen text-thansen-500"></i> <span>Rediger Oppgave</span>`;
@@ -750,7 +791,8 @@ async function handleTaskSubmit(e){
   const due=document.getElementById('task-due-date').value;
   const payload={ title:document.getElementById('task-title').value.trim(), notes:document.getElementById('task-desc').value.trim()||null,
     assignees:sel, recur_unit:F2U[document.getElementById('task-frequency').value], recur_n:1,
-    due_at:due?new Date(due).toISOString():null, status:document.getElementById('task-status').value, priority:document.getElementById('task-priority').value };
+    due_at:due?new Date(due).toISOString():null, status:document.getElementById('task-status').value, priority:document.getElementById('task-priority').value,
+    duration_min: parseInt(document.getElementById('task-duration').value)||30 };
   try{
     if(id) await T.rpcAuth('update_task',{p_id:id,p_task:payload}); else await T.rpcAuth('add_task',{p_task:payload});
     closeTaskModal(); await loadAll(); showToast(id?'Oppgave oppdatert!':'Ny oppgave opprettet!','#004595');
