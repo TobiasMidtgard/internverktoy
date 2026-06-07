@@ -38,6 +38,8 @@
   .tl-now{display:flex;align-items:center;gap:8px;margin:2px 0 2px 56px;color:#ffd400;font-size:10px;font-weight:800;letter-spacing:.08em;}
   .tl-now::after{content:"";height:2px;background:#ffd400;flex:1;opacity:.4;border-radius:2px;}
   .empty{color:#94a3b8;text-align:center;padding:36px 10px;}
+  .wk-resize{position:absolute;left:0;right:0;bottom:0;height:9px;cursor:ns-resize;background:linear-gradient(transparent,rgba(38,132,230,.25));touch-action:none;}
+  .wk-resize:hover{background:linear-gradient(transparent,rgba(38,132,230,.55));}
 </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
@@ -287,9 +289,9 @@ function moveStatusBy(id, dir){
 /* ---------- boot ---------- */
 window.onload = function () {
   refreshAdminUI();
-  (async () => { try { if (T.sb) await T.sb.rpc('rollover_recurring'); } catch(e){} loadAll(); })();
+  (async () => { try { if (T.sb){ await T.sb.rpc('rollover_recurring'); await T.sb.rpc('rollover_incomplete'); } } catch(e){} loadAll(); })();
   setInterval(async () => {
-    try { const { data } = await T.sb.rpc('rollover_recurring'); if (data) await loadAll(); } catch(e){}
+    try { const a=await T.sb.rpc('rollover_recurring'); const b=await T.sb.rpc('rollover_incomplete'); if((a.data||b.data)) await loadAll(); } catch(e){}
     recalculateAlerts(); renderAlertsList(); renderStats();
   }, 60000);
   if (T.sb) {
@@ -485,7 +487,7 @@ function timelineRow(t, now){
   const e=T.esc;
   const time=t.due?new Date(t.due).toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'}):'—';
   const dot=t.priority==='high'?'bg-red-500':t.priority==='medium'?'bg-amber-500':'bg-emerald-500';
-  const overdue=t.due && t.frequency!=='daily' && new Date(t.due)<now && !t.done;
+  const overdue=t.frequency==='once' && t.due && new Date(t.due)<now && !t.done;
   const asg=(t.assignees||[]).map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="w-5 h-5 rounded text-[8px] font-bold text-white inline-flex items-center justify-center" style="background-color:${c.color}" title="${e(tag)}">${e(tag)}</span>`;}).join('');
   const fr={once:'Engang',daily:'Daglig',weekly:'Ukentlig',monthly:'Månedlig'}[t.frequency]||'';
   return `<div class="tl-row${t.done?' tl-done':''}" onclick="openTaskDetailModal('${e(t.id)}')">
@@ -545,7 +547,7 @@ async function toggleTaskCheckline(taskId, idx){
 /* ---------- task cards ---------- */
 function createTaskCard(task, weekly=false){
   const card=document.createElement('div');
-  const overdue = task.due && new Date(task.due)<new Date() && task.status!=='done';
+  const overdue = task.frequency==='once' && task.due && new Date(task.due)<new Date() && task.status!=='done';
   card.id=`card-${task.id}`;
   card.addEventListener('click',e=>{
     if(e.target.tagName==='INPUT'||e.target.tagName==='A'||e.target.closest('button')) return;
@@ -617,6 +619,7 @@ function fmtDur(m){ return m>=60 ? (m%60===0?(m/60)+' t':(m/60).toFixed(1).repla
 function changeWeek(d){ weekOffset+=d; renderWeeklyPlannerView(); }
 function gotoThisWeek(){ weekOffset=0; renderWeeklyPlannerView(); }
 const NAVBTN="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-800";
+const ROWH=46;  // px per time-rad i ukesplanen
 function renderWeeklyPlannerView(){
   const root=document.getElementById('view-weekly'); root.innerHTML='';
   const D=['Man','Tir','Ons','Tor','Fre','Lør'];
@@ -634,45 +637,53 @@ function renderWeeklyPlannerView(){
     <div class="flex gap-2">${weekOffset!==0?`<button class="${NAVBTN}" onclick="gotoThisWeek()">I dag</button>`:''}<button class="${NAVBTN}" onclick="changeWeek(1)"><i class="fa-solid fa-chevron-right"></i></button></div>`;
   root.appendChild(nav);
 
-  // plasser oppgaver i celler (dag,time) — med projeksjon av gjentakelser
-  const cell={};
+  // projiser gjentakelser → grupper per (dag, start-time)
+  const groups={};
   state.tasks.forEach(t=>{
     if(t.status==='done' || !passFilter(t)) return;
     const due=t.due?new Date(t.due):null;
-    const hour=Math.min(21,Math.max(7, due?due.getHours():9));
+    const startH=Math.min(21,Math.max(7, due?due.getHours():9));
+    const startIdx=startH-7;
+    const span=Math.max(1, Math.min(HOURS.length-startIdx, Math.ceil((t.duration||30)/60)));
     const placeDays=[];
     if(t.frequency==='daily'){ for(let i=0;i<6;i++) placeDays.push(i); }
     else if(t.frequency==='weekly'){ if(due){ const wd=(due.getDay()===0)?6:due.getDay()-1; if(wd<6) placeDays.push(wd); } }
     else if(t.frequency==='monthly'){ if(due) dates.forEach((d,i)=>{ if(d.getDate()===due.getDate()) placeDays.push(i); }); }
     else { if(due) dates.forEach((d,i)=>{ if(d.toDateString()===due.toDateString()) placeDays.push(i); }); }
-    placeDays.forEach(i=>{ const k=i+'_'+hour; (cell[k]=cell[k]||[]).push(t); });
+    placeDays.forEach(i=>{ const k=i+'_'+startIdx; (groups[k]=groups[k]||[]).push({t,span}); });
   });
 
   const grid=document.createElement('div');
   grid.className='grid gap-px bg-slate-200/50 dark:bg-slate-800/50 rounded-xl overflow-hidden min-w-[760px]';
-  grid.style.gridTemplateColumns='48px repeat(6, minmax(118px,1fr))';
-  grid.appendChild(Object.assign(document.createElement('div'),{className:'bg-slate-50 dark:bg-slate-950'}));
+  grid.style.gridTemplateColumns='48px repeat(6, minmax(120px,1fr))';
+  grid.style.gridTemplateRows='auto repeat('+HOURS.length+', '+ROWH+'px)';
+  const gset=(el,col,rowStart,rowSpan)=>{ el.style.gridColumn=String(col); el.style.gridRow= rowSpan?`${rowStart} / span ${rowSpan}`:String(rowStart); grid.appendChild(el); };
+  gset(Object.assign(document.createElement('div'),{className:'bg-slate-50 dark:bg-slate-950'}),1,1);
   dates.forEach((d,i)=>{
     const isToday=d.getTime()===today.getTime();
-    const hd=document.createElement('div');
-    hd.className='bg-slate-50 dark:bg-slate-950 p-2 '+(isToday?'border-b-2 border-thansen-500':'');
+    const hd=document.createElement('div'); hd.className='bg-slate-50 dark:bg-slate-950 p-2 '+(isToday?'border-b-2 border-thansen-500':'');
     hd.innerHTML=`<div class="flex items-center justify-between"><span class="text-xs font-bold ${isToday?'text-thansen-500 dark:text-thansen-yellow':'text-slate-700 dark:text-slate-300'}">${D[i]} ${d.getDate()}.</span>${me?`<button class="text-[10px] text-thansen-500" title="Legg igjen notat" onclick="addPlannerNote(${i})"><i class="fa-solid fa-note-sticky"></i></button>`:''}</div><div class="th-notes mt-1 space-y-1" data-day="${i}"></div>`;
-    grid.appendChild(hd);
+    gset(hd,i+2,1);
   });
-  HOURS.forEach(h=>{
-    const g=document.createElement('div'); g.className='bg-slate-50 dark:bg-slate-950 text-[10px] text-slate-400 font-bold text-right pr-1 pt-1'; g.textContent=String(h).padStart(2,'0'); grid.appendChild(g);
+  HOURS.forEach((h,hi)=>{
+    const g=document.createElement('div'); g.className='bg-slate-50 dark:bg-slate-950 text-[10px] text-slate-400 font-bold text-right pr-1 pt-1'; g.textContent=String(h).padStart(2,'0'); gset(g,1,hi+2);
     dates.forEach((d,i)=>{
       const open=openRange(i,h);
-      const c=document.createElement('div');
-      c.className='min-h-[44px] p-1 space-y-1 '+(open?'bg-white dark:bg-slate-900/40':'bg-slate-100 dark:bg-slate-950/60');
+      const c=document.createElement('div'); c.className=(open?'bg-white dark:bg-slate-900/40':'bg-slate-100 dark:bg-slate-950/60');
       if(open && isAdmin){
-        c.addEventListener('dragover',e=>{ e.preventDefault(); c.classList.add('ring-2','ring-thansen-500','ring-inset'); });
+        c.addEventListener('dragover',ev=>{ ev.preventDefault(); c.classList.add('ring-2','ring-thansen-500','ring-inset'); });
         c.addEventListener('dragleave',()=>c.classList.remove('ring-2','ring-thansen-500','ring-inset'));
-        c.addEventListener('drop',e=>{ e.preventDefault(); c.classList.remove('ring-2','ring-thansen-500','ring-inset'); const dt=e.dataTransfer.getData('text/plain'); if(dt.startsWith('task:')) rescheduleTaskToSlot(dt.slice(5), d, h); });
+        c.addEventListener('drop',ev=>{ ev.preventDefault(); c.classList.remove('ring-2','ring-thansen-500','ring-inset'); const dt=ev.dataTransfer.getData('text/plain'); if(dt.startsWith('task:')) rescheduleTaskToSlot(dt.slice(5), d, h); });
       }
-      (cell[i+'_'+h]||[]).sort(taskSort).forEach(t=>c.appendChild(createTaskCard(t,true)));
-      grid.appendChild(c);
+      gset(c,i+2,hi+2);
     });
+  });
+  Object.entries(groups).forEach(([key,arr])=>{
+    const i=+key.split('_')[0], si=+key.split('_')[1];
+    const maxSpan=Math.max(...arr.map(x=>x.span));
+    const wrap=document.createElement('div'); wrap.className='flex gap-1 p-0.5'; wrap.style.zIndex='2';
+    gset(wrap, i+2, si+2, maxSpan);
+    arr.sort((a,b)=>taskSort(a.t,b.t)).forEach(({t,span})=>{ const blk=createWeeklyBlock(t,span); blk.style.flex='1'; blk.style.minWidth='0'; blk.style.height=(span*ROWH-5)+'px'; blk.style.alignSelf='flex-start'; wrap.appendChild(blk); });
   });
   root.appendChild(grid);
 
@@ -684,6 +695,43 @@ function renderWeeklyPlannerView(){
       el.innerHTML=`<div class="text-slate-700 dark:text-slate-200 pr-3 whitespace-pre-wrap">${esc(n.body)}</div>${canDel?`<button onclick="deletePlannerNote('${n.id}')" class="absolute top-0 right-0.5 text-slate-400 text-[10px]">✕</button>`:''}`;
       box.appendChild(el);
     });
+  });
+}
+function createWeeklyBlock(t, span){
+  const e=T.esc;
+  const due=t.due?new Date(t.due):null;
+  const startH=due?Math.min(21,Math.max(7,due.getHours())):9;
+  const endH=Math.min(22, startH+span);
+  const col=t.priority==='high'?'#ef4444':t.priority==='medium'?'#f59e0b':'#10b981';
+  const blk=document.createElement('div');
+  blk.className='relative overflow-hidden rounded-lg border bg-white dark:bg-slate-950 shadow-sm cursor-pointer';
+  blk.style.borderLeft='3px solid '+col; blk.style.borderColor=(t.priority==='high'?'#ef4444':'');
+  let w=''; (t.assignees||[]).forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-4 h-4 rounded text-[7px] font-bold text-white inline-flex items-center justify-center" style="background-color:${c.color}" title="${e(tag)}">${e(tag)}</span>`; });
+  const md=t.desc?`<div class="mt-0.5 space-y-0.5 text-[10px] leading-tight">${parseDescriptionToHTML(t.id,t.desc)}</div>`:'';
+  blk.innerHTML=`<div class="p-1.5">
+    <div class="flex items-center gap-1 text-[9px] font-bold text-slate-400"><span class="w-1.5 h-1.5 rounded-full" style="background-color:${col}"></span>${String(startH).padStart(2,'0')}–${String(endH).padStart(2,'0')}</div>
+    <div class="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">${e(t.title)}</div>${md}
+    <div class="flex flex-wrap gap-1 mt-1">${w}</div>
+  </div>${isAdmin?'<div class="wk-resize" title="Dra for å endre varighet"></div>':''}`;
+  blk.addEventListener('click',ev=>{ if(ev.target.tagName==='INPUT'||ev.target.classList.contains('wk-resize')) return; openTaskDetailModal(t.id); });
+  blk.setAttribute('draggable','true');
+  blk.addEventListener('dragstart',ev=>{ ev.dataTransfer.setData('text/plain',`task:${t.id}`); blk.classList.add('opacity-40'); });
+  blk.addEventListener('dragend',()=>blk.classList.remove('opacity-40'));
+  if(isAdmin){ const handle=blk.querySelector('.wk-resize'); if(handle) attachResize(handle, blk, t, startH); }
+  return blk;
+}
+function attachResize(handle, blk, t, startH){
+  handle.addEventListener('pointerdown', ev=>{
+    ev.preventDefault(); ev.stopPropagation();
+    const startY=ev.clientY, baseH=blk.offsetHeight, maxSpan=22-startH;
+    let span=Math.max(1,Math.round(baseH/ROWH));
+    const onMove=mv=>{ span=Math.max(1, Math.min(maxSpan, Math.round((baseH+(mv.clientY-startY))/ROWH))); blk.style.height=(span*ROWH-5)+'px'; };
+    const onUp=async()=>{
+      document.removeEventListener('pointermove',onMove); document.removeEventListener('pointerup',onUp);
+      const dur=span*60;
+      if(dur!==(t.duration||30)){ try{ await T.rpcAuth('update_task',{p_id:t.id,p_task:{duration_min:dur}}); await loadAll(); showToast('Varighet: '+fmtDur(dur),'#004595'); }catch(err){ if(err.message!=='no-auth') showToast('Feil: '+err.message,'#e30613'); loadAll(); } }
+    };
+    document.addEventListener('pointermove',onMove); document.addEventListener('pointerup',onUp);
   });
 }
 async function addPlannerNote(weekday){
