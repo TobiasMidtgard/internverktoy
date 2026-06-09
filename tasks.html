@@ -162,7 +162,7 @@
       <div><h2 id="detail-task-title" class="text-lg font-bold leading-tight"></h2><div class="flex items-center space-x-1.5 text-slate-400 text-xs mt-1"><i class="fa-regular fa-clock"></i><span id="detail-task-due"></span></div></div>
       <hr class="border-slate-100 dark:border-slate-800" />
       <div><h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Beskrivelse & Sjekkliste</h4><div id="detail-task-parsed-desc" class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-xs space-y-2"></div></div>
-      <div><h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Ansvarlige medarbeidere</h4><div id="detail-task-assignees" class="flex flex-wrap gap-2.5"></div></div>
+      <div><h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Ansvarlige i dag</h4><div id="detail-task-assignees" class="flex flex-wrap gap-2.5"></div><p id="detail-assignee-hint" class="text-[10px] text-slate-400 mt-2"></p></div>
       <div class="bg-slate-50 dark:bg-slate-900/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
         <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Endre Status</label>
         <select id="detail-task-status-select" onchange="handleDetailStatusChange()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-thansen-500">
@@ -194,7 +194,6 @@
         <div class="flex items-center justify-between mb-2"><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Beskrivelse og sjekkliste</label><span class="text-[9px] text-slate-400">@navn, lenker, !viktig, ?avklare, - [ ]</span></div>
         <textarea id="task-desc" rows="4" placeholder="Rydd verkstedet. @MORT !viktig&#10;- [ ] Rengjør verktøytavlen&#10;?avklare Nok sykkelfett på lager?" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none font-mono text-xs"></textarea>
       </div>
-      <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Tildel medarbeidere</label><div id="modal-assignees-grid" class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto p-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl"></div></div>
       <div class="grid grid-cols-2 gap-4">
         <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Gjentakelse</label><select id="task-frequency" onchange="toggleFrequencyNotice()" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"><option value="once">Én gang</option><option value="daily">Daglig</option><option value="weekly">Ukentlig</option><option value="monthly">Månedlig</option></select></div>
         <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Prioritet</label><select id="task-priority" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"><option value="low">🟢 Lav</option><option value="medium">🟡 Middels</option><option value="high">🔴 Kritisk</option></select></div>
@@ -259,13 +258,33 @@ function stableOrder(a,b){
   else if(a.due) return -1; else if(b.due) return 1;
   return (a.createdAt||'').localeCompare(b.createdAt||'') || a.id.localeCompare(b.id);
 }
-// filter on a coworker, and float the logged-in user's tasks to the top
-function passFilter(t){ return !filterTag || (t.assignees && t.assignees.includes(filterTag)); }
-function taskSort(a,b){
-  if(me){
-    const am=(a.assignees||[]).includes(me.tag)?0:1, bm=(b.assignees||[]).includes(me.tag)?0:1;
-    if(am!==bm) return am-bm;
-  }
+// ---------- per-day (per-occurrence) assignment ----------
+// Assignees live in task.dayAssignees: { 'YYYY-MM-DD': ['ALEX','MORT'], ... }.
+function ymd(d){ const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+function assigneesFor(t, dateObj){ return (t.dayAssignees && t.dayAssignees[ymd(dateObj)]) || []; }
+function isAssignedOn(t, dateObj, tag){ return assigneesFor(t, dateObj).includes(tag); }
+// which date drives a task on the board: recurring → today, one-off → its due date
+function boardDateFor(t){ return (t.frequency!=='once' || !t.due) ? new Date() : new Date(t.due); }
+async function setDayAssignees(taskId, dateObj, tags, okMsg, okColor){
+  try{ await T.rpcAuth('set_day_assignees',{p_id:taskId,p_day:ymd(dateObj),p_tags:tags}); await loadAll(); if(okMsg) showToast(okMsg, okColor||'#004595'); }
+  catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
+}
+function addAssigneeOn(taskId, dateObj, tag){
+  if(!isAdmin){ showToast('Kun Butikksjef kan tildele.','#e30613'); return; }
+  const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
+  const cur=assigneesFor(t, dateObj);
+  if(cur.includes(tag)){ showToast(`${tag} er allerede satt opp denne dagen.`,'#f59e0b'); return; }
+  setDayAssignees(taskId, dateObj, [...cur, tag], `Satte opp ${tag}`, '#004595');
+}
+function removeAssigneeOn(taskId, dateObj, tag){
+  if(!isAdmin){ showToast('Kun Butikksjef kan endre ansvar.','#e30613'); return; }
+  const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
+  setDayAssignees(taskId, dateObj, assigneesFor(t, dateObj).filter(a=>a!==tag), `Fjernet ${tag}`, '#e30613');
+}
+// filter on a coworker (only that day's occurrence), float the logged-in user's tasks to the top
+function passFilterOn(t, dateObj){ return !filterTag || isAssignedOn(t, dateObj, filterTag); }
+function floatMine(a, b, da, db){
+  if(me){ const am=isAssignedOn(a, da, me.tag)?0:1, bm=isAssignedOn(b, db, me.tag)?0:1; if(am!==bm) return am-bm; }
   return stableOrder(a,b);
 }
 function setAssigneeFilter(v){ filterTag=v; renderScheduler(); }
@@ -319,7 +338,7 @@ async function loadAll(){
   else state.coworkers = (cw.data||[]).sort((a,b)=>a.tag.localeCompare(b.tag));
   state.notes = (nt && !nt.error && nt.data) ? nt.data : [];
   state.tasks = (tk.data||[]).map(r=>({
-    id:r.id, title:r.title||'', desc:r.notes||'', assignees:r.assignees||[],
+    id:r.id, title:r.title||'', desc:r.notes||'', dayAssignees:r.day_assignees||{},
     frequency:U2F[r.recur_unit]||'once', due:r.due_at, priority:r.priority||'medium', status:r.status||'todo',
     duration:r.duration_min||30, createdAt:r.created_at||''
   })).sort(stableOrder);
@@ -370,14 +389,47 @@ function renderCoworkerList(){
     list.appendChild(item);
   });
 }
-function renderAssigneeGridForm(){
-  const grid=document.getElementById('modal-assignees-grid'); grid.innerHTML='';
-  state.coworkers.forEach(c=>{
-    const item=document.createElement('label');
-    item.className="flex items-center space-x-2 p-2 bg-white dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900";
-    item.innerHTML=`<input type="checkbox" value="${esc(c.tag)}" name="task-assignees-check" class="rounded text-thansen-500 focus:ring-thansen-500"><span class="w-4 h-4 rounded text-[8px] font-bold text-white flex items-center justify-center" style="background-color:${c.color}">${esc(c.tag)}</span><span class="text-xs text-slate-700 dark:text-slate-300 font-medium truncate">${esc(c.name)}</span>`;
-    grid.appendChild(item);
-  });
+/* ---------- per-day assignee picker (click to choose who does a task on a date) ---------- */
+let _pickerCtx=null;
+function openAssigneePickerBoard(taskId){ const t=state.tasks.find(x=>x.id===taskId); if(t) openAssigneePicker(taskId, boardDateFor(t)); }
+function openAssigneePickerToday(taskId){ openAssigneePicker(taskId, new Date()); }
+function removeAssigneeBoard(taskId, tag){ const t=state.tasks.find(x=>x.id===taskId); if(t) removeAssigneeOn(taskId, boardDateFor(t), tag); }
+function openAssigneePicker(taskId, dateObj){
+  const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
+  if(!isAdmin){ openTaskDetailModal(taskId); return; }   // non-admins just see details
+  _pickerCtx={taskId, date:new Date(dateObj)};
+  const cur=assigneesFor(t, dateObj);
+  const dstr=new Date(dateObj).toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'short'});
+  const rows = state.coworkers.length ? state.coworkers.map(c=>`
+      <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900">
+        <input type="checkbox" value="${esc(c.tag)}" ${cur.includes(c.tag)?'checked':''} class="rounded text-thansen-500 focus:ring-thansen-500 w-4 h-4">
+        <span class="w-6 h-6 rounded-lg text-[9px] font-bold text-white inline-flex items-center justify-center shrink-0" style="background-color:${c.color}">${esc(c.tag)}</span>
+        <span class="text-sm text-slate-700 dark:text-slate-200 font-medium truncate">${esc(c.name)}</span>
+      </label>`).join('') : '<p class="text-xs text-slate-400 italic p-2">Ingen ansatte registrert.</p>';
+  let ov=document.getElementById('assignee-picker');
+  if(!ov){ ov=document.createElement('div'); ov.id='assignee-picker'; document.body.appendChild(ov); }
+  ov.className='fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4';
+  ov.innerHTML=`
+    <div class="bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="p-4 border-b border-slate-200 dark:border-slate-800">
+        <h3 class="font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-user-check text-thansen-500"></i><span>Hvem gjør dette?</span></h3>
+        <p class="text-[11px] text-slate-400 mt-0.5 truncate">${esc(t.title)} · <span class="capitalize">${esc(dstr)}</span></p>
+      </div>
+      <div class="p-3 space-y-2 overflow-y-auto">${rows}</div>
+      <div class="p-3 border-t border-slate-100 dark:border-slate-900 flex items-center justify-end gap-2">
+        <button onclick="closeAssigneePicker()" class="px-4 py-2 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 font-bold rounded-xl">Avbryt</button>
+        <button onclick="applyAssigneePicker()" class="px-4 py-2 text-xs bg-thansen-500 hover:bg-thansen-600 text-white font-bold rounded-xl shadow-md">Ferdig</button>
+      </div>
+    </div>`;
+  ov.onclick=ev=>{ if(ev.target===ov) closeAssigneePicker(); };
+}
+function closeAssigneePicker(){ const ov=document.getElementById('assignee-picker'); if(ov) ov.remove(); _pickerCtx=null; }
+async function applyAssigneePicker(){
+  if(!_pickerCtx) return;
+  const ov=document.getElementById('assignee-picker');
+  const tags=ov?[...ov.querySelectorAll('input[type=checkbox]:checked')].map(b=>b.value):[];
+  const {taskId,date}=_pickerCtx; closeAssigneePicker();
+  await setDayAssignees(taskId, date, tags, 'Ansvarlige oppdatert','#004595');
 }
 let editingCoworkerTag = null;
 function openCoworkerModal(tag){
@@ -466,7 +518,7 @@ function renderTimelineView(){
   const now=new Date(), todayStr=now.toDateString();
   const timeOf=t=>{ if(!t.due) return 24*60+1; const d=new Date(t.due); return d.getHours()*60+d.getMinutes(); };
   const items=state.tasks.filter(t=>{
-    if(!passFilter(t)) return false;
+    if(!passFilterOn(t, now)) return false;
     if(t.frequency==='daily') return true;
     if(!t.due) return false;
     return new Date(t.due).toDateString()===todayStr;
@@ -488,17 +540,20 @@ function timelineRow(t, now){
   const time=t.due?new Date(t.due).toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'}):'—';
   const dot=t.priority==='high'?'bg-red-500':t.priority==='medium'?'bg-amber-500':'bg-emerald-500';
   const overdue=t.frequency==='once' && t.due && new Date(t.due)<now && !t.done;
-  const asg=(t.assignees||[]).map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="w-5 h-5 rounded text-[8px] font-bold text-white inline-flex items-center justify-center" style="background-color:${c.color}" title="${e(tag)}">${e(tag)}</span>`;}).join('');
+  const done=t.status==='done';
+  const people=assigneesFor(t, now);
+  const asg=people.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="w-5 h-5 rounded text-[8px] font-bold text-white inline-flex items-center justify-center" style="background-color:${c.color}" title="${e(tag)}">${e(tag)}</span>`;}).join('')
+    || `<span class="text-[9px] text-slate-400 italic">${isAdmin?'+ sett opp ansvarlig':'Ingen tildelt'}</span>`;
   const fr={once:'Engang',daily:'Daglig',weekly:'Ukentlig',monthly:'Månedlig'}[t.frequency]||'';
-  return `<div class="tl-row${t.done?' tl-done':''}" onclick="openTaskDetailModal('${e(t.id)}')">
+  return `<div class="tl-row${done?' tl-done':''}" onclick="openTaskDetailModal('${e(t.id)}')">
     <div class="tl-time">${e(time)}</div>
     <div class="tl-dot"><span class="w-2.5 h-2.5 rounded-full ${dot} inline-block"></span></div>
     <div class="tl-card">
       <div class="flex items-center gap-2">
-        <input type="checkbox" ${t.done?'checked':''} onclick="event.stopPropagation()" onchange="tlDone('${e(t.id)}',this.checked)" class="w-4 h-4 rounded accent-emerald-500 shrink-0">
-        <span class="font-semibold text-sm ${t.done?'line-through text-slate-400':''}">${e(t.title)}</span>
+        <input type="checkbox" ${done?'checked':''} onclick="event.stopPropagation()" onchange="tlDone('${e(t.id)}',this.checked)" class="w-4 h-4 rounded accent-emerald-500 shrink-0">
+        <span class="font-semibold text-sm ${done?'line-through text-slate-400':''}">${e(t.title)}</span>
       </div>
-      <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">${asg}<span class="text-[9px] text-slate-400">${e(fr)}</span>${overdue?'<span class="text-[9px] font-bold text-red-500">OVERTID</span>':''}</div>
+      <div class="flex items-center gap-1.5 mt-1.5 flex-wrap ${isAdmin?'cursor-pointer hover:opacity-80':''}" ${isAdmin?`onclick="event.stopPropagation();openAssigneePickerToday('${e(t.id)}')" title="Velg hvem som gjør dette i dag"`:''}>${asg}<span class="text-[9px] text-slate-400">${e(fr)}</span>${overdue?'<span class="text-[9px] font-bold text-red-500">OVERTID</span>':''}</div>
     </div>
   </div>`;
 }
@@ -514,7 +569,7 @@ function renderKanbanView(){
     el.addEventListener('dragover',e=>{ e.preventDefault(); el.classList.add('border-thansen-500'); });
     el.addEventListener('dragleave',()=>el.classList.remove('border-thansen-500'));
     el.addEventListener('drop',e=>{ el.classList.remove('border-thansen-500'); const d=e.dataTransfer.getData('text/plain'); if(d.startsWith('task:')) moveTaskStatus(d.slice(5), col.id); });
-    const colTasks=state.tasks.filter(t=>t.status===col.id && passFilter(t)).sort(taskSort);
+    const colTasks=state.tasks.filter(t=>t.status===col.id && passFilterOn(t, boardDateFor(t))).sort((a,b)=>floatMine(a,b,boardDateFor(a),boardDateFor(b)));
     el.innerHTML=`<div class="flex items-center justify-between mb-4 shrink-0"><div class="flex items-center space-x-2"><span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300">${col.title}</span><span class="text-xs text-slate-400 font-medium">${colTasks.length}</span></div></div><div class="flex-1 overflow-y-auto space-y-3 pb-4" id="kanban-col-${col.id}"></div>`;
     c.appendChild(el);
     const cl=document.getElementById(`kanban-col-${col.id}`);
@@ -563,7 +618,7 @@ function createTaskCard(task, weekly=false){
   if(weekly){
     card.className=`p-2 rounded-lg border bg-white dark:bg-slate-950 shadow-sm hover:shadow-md transition-all cursor-pointer ${overdue?'border-red-300 dark:border-red-900':'border-slate-200 dark:border-slate-800/80 hover:border-thansen-500/50'}`;
     const time = task.due ? new Date(task.due).toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'}) : '';
-    let w=''; (task.assignees||[]).forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-4 h-4 rounded text-[7px] font-bold text-white inline-flex items-center justify-center" style="background-color:${c.color}" title="${esc(tag)}">${esc(tag)}</span>`; });
+    let w=''; assigneesFor(task, task.due?new Date(task.due):new Date()).forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-4 h-4 rounded text-[7px] font-bold text-white inline-flex items-center justify-center" style="background-color:${c.color}" title="${esc(tag)}">${esc(tag)}</span>`; });
     const dur = task.duration ? `<span class="text-[9px] text-slate-400">${fmtDur(task.duration)}</span>` : '';
     const desc = task.desc ? `<div class="mt-1 space-y-0.5 text-[11px]">${parseDescriptionToHTML(task.id, task.desc)}</div>` : '';
     card.innerHTML=`<div class="flex items-center justify-between gap-1"><span class="text-[9px] font-bold text-slate-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${time?'kl. '+time:''}</span>${overdue?'<span class="text-[8px] text-red-500 font-extrabold">OVERTID</span>':dur}</div>
@@ -575,15 +630,19 @@ function createTaskCard(task, weekly=false){
   card.className=`p-4 rounded-xl border bg-white dark:bg-slate-950 shadow-sm hover:shadow-md transition-all cursor-pointer ${overdue?'border-red-300 dark:border-red-900 bg-red-50/10':'border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700'}`;
   card.addEventListener('dragover',e=>{ e.preventDefault(); if(isAdmin) card.classList.add('ring-2','ring-thansen-500'); });
   card.addEventListener('dragleave',()=>card.classList.remove('ring-2','ring-thansen-500'));
-  card.addEventListener('drop',e=>{ e.preventDefault(); card.classList.remove('ring-2','ring-thansen-500'); const d=e.dataTransfer.getData('text/plain'); if(d.startsWith('coworker:')) appendAssigneeToTask(task.id, d.slice(9)); });
+  card.addEventListener('drop',e=>{ e.preventDefault(); card.classList.remove('ring-2','ring-thansen-500'); const d=e.dataTransfer.getData('text/plain'); if(d.startsWith('coworker:')) addAssigneeOn(task.id, boardDateFor(task), d.slice(9)); });
 
   let pri = task.priority==='high'?`<span class="bg-red-100 text-red-700 dark:bg-red-950/45 dark:text-red-400 text-[9px] font-bold px-2 py-0.5 rounded uppercase">Kritisk</span>`
            :task.priority==='medium'?`<span class="bg-amber-100 text-amber-700 dark:bg-amber-950/45 dark:text-amber-400 text-[9px] font-bold px-2 py-0.5 rounded uppercase">Middels</span>`
            :`<span class="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/45 dark:text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded uppercase">Lav</span>`;
   const FR={ once:{i:'fa-bullseye',d:'Én gang'},daily:{i:'fa-arrows-spin',d:'Daglig'},weekly:{i:'fa-rotate',d:'Ukentlig'},monthly:{i:'fa-calendar-days',d:'Månedlig'} };
   const fr=FR[task.frequency]||FR.once;
-  let asg=''; if((task.assignees||[]).length){ asg='<div class="flex items-center gap-2 flex-wrap">'; task.assignees.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{name:tag,color:'#64748b'}; asg+=`<div ${isAdmin?`draggable="true" ondragstart="handleAssigneeDragStart(event,'${task.id}','${tag}')" ondragend="handleAssigneeDragEnd()"`:''} class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-white text-[9px] shadow-sm ring-2 ring-slate-100 dark:ring-slate-900 ${isAdmin?'cursor-grab active:cursor-grabbing hover:scale-110':''} transition-transform relative group/pill" style="background-color:${c.color}" title="${esc(c.name)}">${esc(tag)}${isAdmin?`<button onclick="removeAssigneeFromTask('${task.id}','${tag}')" class="absolute -top-1 -right-1 hidden group-hover/pill:flex bg-thansen-red rounded-full w-3.5 h-3.5 items-center justify-center text-[8px] text-white">×</button>`:''}</div>`; }); asg+='</div>'; }
-  else asg=`<span class="text-[9px] text-slate-400 italic">Ingen tildelt</span>`;
+  const bdPeople=assigneesFor(task, boardDateFor(task));
+  const assignHint = task.frequency==='once' ? 'Velg hvem som gjør dette' : 'Velg hvem som gjør dette i dag';
+  let asg=`<div data-assign class="flex items-center gap-2 flex-wrap ${isAdmin?'cursor-pointer':''}" ${isAdmin?`onclick="event.stopPropagation();openAssigneePickerBoard('${task.id}')" title="${assignHint}"`:''}>`;
+  if(bdPeople.length){ bdPeople.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{name:tag,color:'#64748b'}; asg+=`<div ${isAdmin?`draggable="true" ondragstart="handleAssigneeDragStart(event,'${task.id}','${tag}')" ondragend="handleAssigneeDragEnd()"`:''} class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-white text-[9px] shadow-sm ring-2 ring-slate-100 dark:ring-slate-900 ${isAdmin?'cursor-grab active:cursor-grabbing hover:scale-110':''} transition-transform relative group/pill" style="background-color:${c.color}" title="${esc(c.name)}">${esc(tag)}${isAdmin?`<button onclick="event.stopPropagation();removeAssigneeBoard('${task.id}','${tag}')" class="absolute -top-1 -right-1 hidden group-hover/pill:flex bg-thansen-red rounded-full w-3.5 h-3.5 items-center justify-center text-[8px] text-white">×</button>`:''}</div>`; }); }
+  else asg+=`<span class="text-[9px] text-slate-400 italic">${isAdmin?'+ sett opp ansvarlig':'Ingen tildelt'}</span>`;
+  asg+='</div>';
 
   card.innerHTML=`<div class="flex flex-col space-y-2.5">
     <div class="flex items-center justify-between"><div class="flex items-center space-x-1.5 flex-wrap">${pri}<span class="bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-[9px] font-medium px-1.5 py-0.5 rounded flex items-center space-x-1"><i class="fa-solid ${fr.i}"></i><span>${fr.d}</span></span></div>${overdue?'<span class="text-[9px] font-bold text-red-500 flex items-center space-x-1"><i class="fa-solid fa-triangle-exclamation"></i><span>OVERTID</span></span>':''}</div>
@@ -609,7 +668,7 @@ function handleAssigneeDragEnd(){ const z=document.getElementById('assignee-tras
 (function(){ const z=document.getElementById('assignee-trash-zone');
   z.addEventListener('dragover',e=>{ e.preventDefault(); z.classList.add('scale-105'); });
   z.addEventListener('dragleave',()=>z.classList.remove('scale-105'));
-  z.addEventListener('drop',e=>{ e.preventDefault(); z.classList.remove('scale-105'); if(activeDragAssignee) removeAssigneeFromTask(activeDragAssignee.taskId, activeDragAssignee.tag); });
+  z.addEventListener('drop',e=>{ e.preventDefault(); z.classList.remove('scale-105'); if(activeDragAssignee){ const t=state.tasks.find(x=>x.id===activeDragAssignee.taskId); if(t) removeAssigneeOn(activeDragAssignee.taskId, boardDateFor(t), activeDragAssignee.tag); } });
 })();
 
 /* ---------- weekly (timebasert) ---------- */
@@ -640,7 +699,7 @@ function renderWeeklyPlannerView(){
   // projiser gjentakelser → grupper per (dag, start-time)
   const groups={};
   state.tasks.forEach(t=>{
-    if(t.status==='done' || !passFilter(t)) return;
+    if(t.status==='done') return;
     const due=t.due?new Date(t.due):null;
     const startH=Math.min(21,Math.max(7, due?due.getHours():9));
     const startIdx=startH-7;
@@ -650,7 +709,7 @@ function renderWeeklyPlannerView(){
     else if(t.frequency==='weekly'){ if(due){ const wd=(due.getDay()===0)?6:due.getDay()-1; if(wd<6) placeDays.push(wd); } }
     else if(t.frequency==='monthly'){ if(due) dates.forEach((d,i)=>{ if(d.getDate()===due.getDate()) placeDays.push(i); }); }
     else { if(due) dates.forEach((d,i)=>{ if(d.toDateString()===due.toDateString()) placeDays.push(i); }); }
-    placeDays.forEach(i=>{ const k=i+'_'+startIdx; (groups[k]=groups[k]||[]).push({t,span}); });
+    placeDays.forEach(i=>{ if(!passFilterOn(t, dates[i])) return; const k=i+'_'+startIdx; (groups[k]=groups[k]||[]).push({t,span}); });
   });
 
   const grid=document.createElement('div');
@@ -681,9 +740,10 @@ function renderWeeklyPlannerView(){
   Object.entries(groups).forEach(([key,arr])=>{
     const i=+key.split('_')[0], si=+key.split('_')[1];
     const maxSpan=Math.max(...arr.map(x=>x.span));
+    const cellDate=dates[i];
     const wrap=document.createElement('div'); wrap.className='flex gap-1 p-0.5'; wrap.style.zIndex='2';
     gset(wrap, i+2, si+2, maxSpan);
-    arr.sort((a,b)=>taskSort(a.t,b.t)).forEach(({t,span})=>{ const blk=createWeeklyBlock(t,span); blk.style.flex='1'; blk.style.minWidth='0'; blk.style.height=(span*ROWH-5)+'px'; blk.style.alignSelf='flex-start'; wrap.appendChild(blk); });
+    arr.sort((a,b)=>floatMine(a.t,b.t,cellDate,cellDate)).forEach(({t,span})=>{ const blk=createWeeklyBlock(t,span,cellDate); blk.style.flex='1'; blk.style.minWidth='0'; blk.style.height=(span*ROWH-5)+'px'; blk.style.alignSelf='flex-start'; wrap.appendChild(blk); });
   });
   root.appendChild(grid);
 
@@ -697,7 +757,7 @@ function renderWeeklyPlannerView(){
     });
   });
 }
-function createWeeklyBlock(t, span){
+function createWeeklyBlock(t, span, cellDate){
   const e=T.esc;
   const due=t.due?new Date(t.due):null;
   const startH=due?Math.min(21,Math.max(7,due.getHours())):9;
@@ -706,18 +766,29 @@ function createWeeklyBlock(t, span){
   const blk=document.createElement('div');
   blk.className='relative overflow-hidden rounded-lg border bg-white dark:bg-slate-950 shadow-sm cursor-pointer';
   blk.style.borderLeft='3px solid '+col; blk.style.borderColor=(t.priority==='high'?'#ef4444':'');
-  let w=''; (t.assignees||[]).forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-4 h-4 rounded text-[7px] font-bold text-white inline-flex items-center justify-center" style="background-color:${c.color}" title="${e(tag)}">${e(tag)}</span>`; });
+  const people=assigneesFor(t, cellDate);
+  let w=''; people.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-4 h-4 rounded text-[7px] font-bold text-white inline-flex items-center justify-center" style="background-color:${c.color}" title="${e(tag)}">${e(tag)}</span>`; });
+  if(!people.length && isAdmin) w='<span class="text-[8px] text-slate-400 italic">+ sett opp</span>';
   const md=t.desc?`<div class="mt-0.5 space-y-0.5 text-[10px] leading-tight">${parseDescriptionToHTML(t.id,t.desc)}</div>`:'';
   blk.innerHTML=`<div class="p-1.5">
     <div class="flex items-center gap-1 text-[9px] font-bold text-slate-400"><span class="w-1.5 h-1.5 rounded-full" style="background-color:${col}"></span>${String(startH).padStart(2,'0')}–${String(endH).padStart(2,'0')}</div>
     <div class="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">${e(t.title)}</div>${md}
-    <div class="flex flex-wrap gap-1 mt-1">${w}</div>
+    <div class="wk-assign flex flex-wrap gap-1 mt-1 ${isAdmin?'cursor-pointer':''}" title="${isAdmin?'Velg hvem som gjør dette denne dagen':''}">${w}</div>
   </div>${isAdmin?'<div class="wk-resize" title="Dra for å endre varighet"></div>':''}`;
-  blk.addEventListener('click',ev=>{ if(ev.target.tagName==='INPUT'||ev.target.classList.contains('wk-resize')) return; openTaskDetailModal(t.id); });
+  blk.addEventListener('click',ev=>{ if(ev.target.tagName==='INPUT'||ev.target.classList.contains('wk-resize')||ev.target.closest('.wk-assign')) return; openTaskDetailModal(t.id); });
   blk.setAttribute('draggable','true');
   blk.addEventListener('dragstart',ev=>{ ev.dataTransfer.setData('text/plain',`task:${t.id}`); blk.classList.add('opacity-40'); });
   blk.addEventListener('dragend',()=>blk.classList.remove('opacity-40'));
-  if(isAdmin){ const handle=blk.querySelector('.wk-resize'); if(handle) attachResize(handle, blk, t, startH); }
+  if(isAdmin){
+    const aArea=blk.querySelector('.wk-assign');
+    if(aArea) aArea.addEventListener('click',ev=>{ ev.stopPropagation(); openAssigneePicker(t.id, cellDate); });
+    blk.addEventListener('dragover',ev=>{ ev.preventDefault(); blk.classList.add('ring-2','ring-thansen-500'); });
+    blk.addEventListener('dragleave',()=>blk.classList.remove('ring-2','ring-thansen-500'));
+    blk.addEventListener('drop',ev=>{ ev.preventDefault(); blk.classList.remove('ring-2','ring-thansen-500'); const d=ev.dataTransfer.getData('text/plain');
+      if(d.startsWith('coworker:')){ ev.stopPropagation(); addAssigneeOn(t.id, cellDate, d.slice(9)); }
+      else if(d.startsWith('task:')){ ev.stopPropagation(); rescheduleTaskToSlot(d.slice(5), cellDate, startH); } });   // drop a task on a block → reschedule to that slot
+    const handle=blk.querySelector('.wk-resize'); if(handle) attachResize(handle, blk, t, startH);
+  }
   return blk;
 }
 function attachResize(handle, blk, t, startH){
@@ -758,8 +829,11 @@ function openTaskDetailModal(taskId){
   document.getElementById('detail-task-frequency').innerText=(({once:'Én gang',daily:'Daglig',weekly:'Ukentlig',monthly:'Månedlig'}[t.frequency])||t.frequency)+' · '+fmtDur(t.duration||30);
   document.getElementById('detail-task-parsed-desc').innerHTML=parseDescriptionToHTML(t.id,t.desc,false);
   const ac=document.getElementById('detail-task-assignees'); ac.innerHTML='';
-  if((t.assignees||[]).length) t.assignees.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{name:tag,color:'#64748b'}; const b=document.createElement('div'); b.className="px-3 py-1.5 rounded-lg text-white text-xs font-bold flex items-center space-x-1.5 shadow-sm"; b.style.backgroundColor=c.color; b.innerHTML=`<span>${esc(tag)}</span><span class="text-[10px] opacity-80">(${esc(c.name.split(' ')[0])})</span>`; ac.appendChild(b); });
-  else ac.innerHTML=`<span class="text-xs text-slate-400 italic">Ingen tildelt.</span>`;
+  const todayAsg=assigneesFor(t, new Date());
+  if(todayAsg.length) todayAsg.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{name:tag,color:'#64748b'}; const b=document.createElement('div'); b.className="px-3 py-1.5 rounded-lg text-white text-xs font-bold flex items-center space-x-1.5 shadow-sm"; b.style.backgroundColor=c.color; b.innerHTML=`<span>${esc(tag)}</span><span class="text-[10px] opacity-80">(${esc(c.name.split(' ')[0])})</span>`; ac.appendChild(b); });
+  else ac.innerHTML=`<span class="text-xs text-slate-400 italic">Ingen satt opp i dag.</span>`;
+  document.getElementById('detail-assignee-hint').textContent =
+    (t.frequency==='once') ? 'Velg ansvarlige på tavla eller i ukesplanen.' : 'Ansvarlige settes per dag — endre i ukesplanen eller på tavla.';
   document.getElementById('detail-task-status-select').value=t.status;
   document.getElementById('detail-btn-delete').classList.toggle('hidden',!isAdmin);
   document.getElementById('detail-btn-edit').classList.toggle('hidden',!isAdmin);
@@ -778,19 +852,6 @@ async function moveTaskStatus(taskId, target){
     showToast(target==='done' ? 'Fullført ✓' : 'Status oppdatert', target==='done' ? '#10b981' : '#004595');
   }catch(e){ showToast('Feil: '+e.message,'#e30613'); loadAll(); }
 }
-async function appendAssigneeToTask(taskId, tag){
-  if(!isAdmin){ showToast('Kun Butikksjef kan tildele.','#e30613'); return; }
-  const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
-  if(t.assignees.includes(tag)){ showToast(`${tag} er allerede tildelt.`,'#f59e0b'); return; }
-  try{ await T.rpcAuth('set_assignees',{p_id:taskId,p_assignees:[...t.assignees,tag]}); await loadAll(); showToast(`Tildelte ${tag}`,'#004595'); }
-  catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
-}
-async function removeAssigneeFromTask(taskId, tag){
-  if(!isAdmin){ showToast('Kun Butikksjef kan endre ansvar.','#e30613'); return; }
-  const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
-  try{ await T.rpcAuth('set_assignees',{p_id:taskId,p_assignees:t.assignees.filter(a=>a!==tag)}); await loadAll(); showToast(`Fjernet ${tag}`,'#e30613'); }
-  catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
-}
 async function rescheduleTaskToSlot(taskId, dateObj, hour){
   if(!isAdmin){ showToast('Kun Butikksjef kan flytte.','#e30613'); return; }
   const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
@@ -807,7 +868,7 @@ function openTaskModal(){
   document.getElementById('task-modal-title').innerHTML=`<i class="fa-solid fa-circle-plus text-thansen-500"></i> <span>Opprett Gjøremål</span>`;
   document.getElementById('task-form-submit-btn').innerText='Lagre & Publiser';
   document.getElementById('form-task-id').value=''; document.getElementById('task-form').reset();
-  renderAssigneeGridForm(); toggleFrequencyNotice();
+  toggleFrequencyNotice();
   const d=new Date(); d.setHours(d.getHours()+24); document.getElementById('task-due-date').value=toLocalInput(d.toISOString());
   document.getElementById('task-duration').value=30;
   document.getElementById('task-modal').classList.remove('hidden');
@@ -816,7 +877,6 @@ function closeTaskModal(){ document.getElementById('task-modal').classList.add('
 function editTask(taskId){
   if(!isAdmin){ showToast('Kun Butikksjef kan redigere.','#e30613'); return; }
   const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
-  renderAssigneeGridForm();
   document.getElementById('form-task-id').value=t.id;
   document.getElementById('task-title').value=t.title;
   document.getElementById('task-desc').value=t.desc;
@@ -825,7 +885,6 @@ function editTask(taskId){
   document.getElementById('task-priority').value=t.priority;
   document.getElementById('task-status').value=t.status;
   document.getElementById('task-duration').value=t.duration||30;
-  document.getElementsByName('task-assignees-check').forEach(b=>{ b.checked=(t.assignees||[]).includes(b.value); });
   toggleFrequencyNotice();
   document.getElementById('task-modal-title').innerHTML=`<i class="fa-solid fa-pen text-thansen-500"></i> <span>Rediger Oppgave</span>`;
   document.getElementById('task-form-submit-btn').innerText='Lagre Endringer';
@@ -835,10 +894,9 @@ async function handleTaskSubmit(e){
   e.preventDefault();
   if(!isAdmin){ showToast('Kun Butikksjef kan lagre oppgaver.','#e30613'); return; }
   const id=document.getElementById('form-task-id').value;
-  const sel=[]; document.getElementsByName('task-assignees-check').forEach(b=>{ if(b.checked) sel.push(b.value); });
   const due=document.getElementById('task-due-date').value;
   const payload={ title:document.getElementById('task-title').value.trim(), notes:document.getElementById('task-desc').value.trim()||null,
-    assignees:sel, recur_unit:F2U[document.getElementById('task-frequency').value], recur_n:1,
+    recur_unit:F2U[document.getElementById('task-frequency').value], recur_n:1,
     due_at:due?new Date(due).toISOString():null, status:document.getElementById('task-status').value, priority:document.getElementById('task-priority').value,
     duration_min: parseInt(document.getElementById('task-duration').value)||30 };
   try{
@@ -858,8 +916,9 @@ async function deleteTask(taskId){
 function recalculateAlerts(){
   const now=new Date(); const a=[];
   state.tasks.forEach(t=>{ if(t.status==='done'||!t.due) return; const h=(new Date(t.due)-now)/3600000;
-    if(h<0) a.push({taskId:t.id,type:'critical',title:'RØD FRIST: OVERTID',message:`"${t.title}" skulle vært gjort innen ${formatCardDate(t.due)}.`,assignees:t.assignees||[]});
-    else if(h<12) a.push({taskId:t.id,type:'warning',title:'Frist nærmer seg (< 12t)',message:`Husk å fullføre "${t.title}".`,assignees:t.assignees||[]});
+    const asg=assigneesFor(t, new Date(t.due));
+    if(h<0) a.push({taskId:t.id,type:'critical',title:'RØD FRIST: OVERTID',message:`"${t.title}" skulle vært gjort innen ${formatCardDate(t.due)}.`,assignees:asg});
+    else if(h<12) a.push({taskId:t.id,type:'warning',title:'Frist nærmer seg (< 12t)',message:`Husk å fullføre "${t.title}".`,assignees:asg});
   });
   if(a.length>state.alerts.length) playSound(a.some(x=>x.type==='critical')?'critical':'info');
   state.alerts=a;

@@ -6,3 +6,6 @@ docs/
 node_modules/
 .env
 .env.*
+
+# Local one-time data backup (pre per-day-assignment wipe) — not for the public repo
+db/assignees-backup.json
