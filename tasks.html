@@ -248,7 +248,7 @@
 <script>
 const T = window.THelper;
 let isAdmin = false, isDev = false, me = null, filterTag = '', weekOffset = 0;
-let state = { activeViewTab:'board', coworkers:[], tasks:[], alerts:[], notes:[] };
+let state = { activeViewTab:'board', coworkers:[], tasks:[], alerts:[], notes:[], staffStatus:[] };
 const F2U = { once:'none', daily:'day', weekly:'week', monthly:'month' };
 const U2F = { none:'once', day:'daily', week:'weekly', month:'monthly', hour:'daily' };
 const PALETTE = ['#004595','#e30613','#10b981','#f59e0b','#3b82f6','#ec4899'];
@@ -274,7 +274,8 @@ function addAssigneeOn(taskId, dateObj, tag){
   const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
   const cur=assigneesFor(t, dateObj);
   if(cur.includes(tag)){ showToast(`${tag} er allerede satt opp denne dagen.`,'#f59e0b'); return; }
-  setDayAssignees(taskId, dateObj, [...cur, tag], `Satte opp ${tag}`, '#004595');
+  const ab=absenceOn(tag, dateObj);
+  setDayAssignees(taskId, dateObj, [...cur, tag], ab?`Satte opp ${tag} — obs: ${STATUS_DEF[ab].label.toLowerCase()} denne dagen`:`Satte opp ${tag}`, ab?'#f59e0b':'#004595');
 }
 function removeAssigneeOn(taskId, dateObj, tag){
   if(!isAdmin){ showToast('Kun Butikksjef kan endre ansvar.','#e30613'); return; }
@@ -286,6 +287,54 @@ function passFilterOn(t, dateObj){ return !filterTag || isAssignedOn(t, dateObj,
 function floatMine(a, b, da, db){
   if(me){ const am=isAssignedOn(a, da, me.tag)?0:1, bm=isAssignedOn(b, db, me.tag)?0:1; if(am!==bm) return am-bm; }
   return stableOrder(a,b);
+}
+
+// ---------- staff status (vaktstyring) ----------
+const STATUS_DEF = {
+  pause: {label:'Pause', icon:'fa-mug-hot',         color:'#f59e0b', dur:15,   allDay:false},
+  lunsj: {label:'Lunsj', icon:'fa-utensils',        color:'#fb923c', dur:30,   allDay:false},
+  arend: {label:'Ærend', icon:'fa-car',             color:'#3b82f6', dur:30,   allDay:false},
+  kurs:  {label:'Kurs',  icon:'fa-graduation-cap',  color:'#8b5cf6', dur:60,   allDay:false},
+  syk:   {label:'Syk',   icon:'fa-head-side-cough', color:'#ef4444', dur:null, allDay:true},
+  ferie: {label:'Ferie', icon:'fa-umbrella-beach',  color:'#14b8a6', dur:null, allDay:true},
+  fri:   {label:'Fri',   icon:'fa-moon',            color:'#64748b', dur:null, allDay:true},
+};
+const STATUS_TIMED=['pause','lunsj','arend','kurs'], STATUS_ALLDAY=['syk','ferie','fri'];
+function minNow(){ const d=new Date(); return d.getHours()*60+d.getMinutes(); }
+function fmtMin(m){ const p=n=>String(n).padStart(2,'0'); return p(Math.floor(m/60))+':'+p(m%60); }
+function statusesOn(dateObj){ const k=ymd(dateObj); return state.staffStatus.filter(s=>s.day===k); }
+function statusOf(tag, dateObj){ const k=ymd(dateObj); return state.staffStatus.filter(s=>s.tag===tag && s.day===k); }
+function absenceOn(tag, dateObj){ const s=statusOf(tag,dateObj).find(x=>x.allDay); return s?s.kind:null; }
+// current status right now: all-day today, else the timed block covering now (latest start), else null
+function currentStatus(tag){
+  const list=statusOf(tag, new Date());
+  const all=list.find(s=>s.allDay); if(all) return all;
+  const now=minNow();
+  const active=list.filter(s=>!s.allDay && s.startMin!=null && now>=s.startMin && now<s.startMin+(s.durMin||0));
+  return active.length ? active.sort((a,b)=>b.startMin-a.startMin)[0] : null;
+}
+function canEditStatus(tag){ return !!me && (isAdmin || me.tag===tag); }
+async function setStaffStatus(tag, dateObj, kind, startMin, durMin, okMsg){
+  try{
+    await T.rpcAuth('set_staff_status',{p_tag:tag,p_kind:kind,p_day:ymd(dateObj),p_start_min:startMin==null?null:startMin,p_dur_min:durMin==null?null:durMin});
+    await loadAll(); if(okMsg!==false) showToast(okMsg||(STATUS_DEF[kind].label+' satt'), STATUS_DEF[kind].color);
+  }catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
+}
+async function deleteStaffStatus(id, okMsg){
+  try{ await T.rpcAuth('delete_staff_status',{p_id:id}); await loadAll(); if(okMsg!==false) showToast(okMsg||'Status fjernet','#64748b'); }
+  catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
+}
+function setStatusNow(tag, kind){
+  const d=STATUS_DEF[kind]; if(!d) return;
+  if(d.allDay) setStaffStatus(tag, new Date(), kind, null, null, d.label+' i dag');
+  else setStaffStatus(tag, new Date(), kind, minNow(), d.dur, d.label+' til '+fmtMin(minNow()+d.dur));
+}
+async function clearStatusNow(tag){   // remove every status active right now (all-day + any timed covering now)
+  const now=minNow();
+  const active=statusOf(tag, new Date()).filter(s=>s.allDay || (s.startMin!=null && now>=s.startMin && now<s.startMin+(s.durMin||0)));
+  if(!active.length){ showToast('Allerede tilgjengelig','#10b981'); return; }
+  try{ for(const s of active){ await T.rpcAuth('delete_staff_status',{p_id:s.id}); } await loadAll(); showToast('Tilgjengelig','#10b981'); }
+  catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); loadAll(); }
 }
 function setAssigneeFilter(v){ filterTag=v; renderScheduler(); }
 function renderFilterOptions(){
@@ -311,22 +360,24 @@ window.onload = function () {
   (async () => { try { if (T.sb){ await T.sb.rpc('rollover_recurring'); await T.sb.rpc('rollover_incomplete'); } } catch(e){} loadAll(); })();
   setInterval(async () => {
     try { const a=await T.sb.rpc('rollover_recurring'); const b=await T.sb.rpc('rollover_incomplete'); if((a.data||b.data)) await loadAll(); } catch(e){}
-    recalculateAlerts(); renderAlertsList(); renderStats();
+    recalculateAlerts(); renderAlertsList(); renderStats(); renderCoworkerList();   // refresh "now" status as breaks expire
   }, 60000);
   if (T.sb) {
     T.sb.channel('board-rt')
       .on('postgres_changes',{event:'*',schema:'public',table:'tasks'}, loadAll)
       .on('postgres_changes',{event:'*',schema:'public',table:'planner_notes'}, loadAll)
+      .on('postgres_changes',{event:'*',schema:'public',table:'staff_status'}, loadAll)
       .subscribe();
   }
 };
 
 async function loadAll(){
   if(!T.sb){ showToast('Supabase utilgjengelig','#e30613'); return; }
-  const [cw, tk, nt] = await Promise.all([
+  const [cw, tk, nt, ss] = await Promise.all([
     T.sb.from('coworkers_public').select('*'),
     T.sb.from('tasks').select('*'),
-    T.sb.from('planner_notes').select('*')
+    T.sb.from('planner_notes').select('*'),
+    T.sb.from('staff_status').select('*')
   ]);
   if(tk.error){
     const msg=tk.error.message||'';
@@ -337,6 +388,9 @@ async function loadAll(){
   if(cw.error){ state.coworkers=[]; showToast('Ansattregister mangler — kjør tasks_v7.sql','#f59e0b'); }
   else state.coworkers = (cw.data||[]).sort((a,b)=>a.tag.localeCompare(b.tag));
   state.notes = (nt && !nt.error && nt.data) ? nt.data : [];
+  state.staffStatus = ((ss && !ss.error && ss.data) ? ss.data : []).map(r=>({
+    id:r.id, tag:r.tag, kind:r.kind, day:r.day, startMin:r.start_min, durMin:r.dur_min, allDay:r.all_day, author:r.author
+  }));
   state.tasks = (tk.data||[]).map(r=>({
     id:r.id, title:r.title||'', desc:r.notes||'', dayAssignees:r.day_assignees||{},
     frequency:U2F[r.recur_unit]||'once', due:r.due_at, priority:r.priority||'medium', status:r.status||'todo',
@@ -376,12 +430,17 @@ function renderCoworkerList(){
       item.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text/plain',`coworker:${c.tag}`); item.classList.add('opacity-40'); });
       item.addEventListener('dragend',()=>item.classList.remove('opacity-40'));
     }
+    const cur=currentStatus(c.tag), sd=cur?STATUS_DEF[cur.kind]:null;
+    const chip = cur
+      ? `<span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 w-fit" style="color:${sd.color};background:${sd.color}1a"><i class="fa-solid ${sd.icon} text-[8px]"></i>${esc(sd.label)}${cur.allDay?'':' · til '+fmtMin(cur.startMin+cur.durMin)}</span>`
+      : `<span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 w-fit text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"><i class="fa-solid fa-circle text-[6px]"></i>Tilgjengelig</span>`;
     item.innerHTML=`
-      <div class="flex items-center space-x-2.5">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-[10px]" style="background-color:${c.color}">${esc(c.tag)}</div>
-        <div class="flex flex-col"><span class="text-xs font-semibold text-slate-700 dark:text-slate-200">${esc(c.name)}</span><span class="text-[9px] text-slate-400">${esc(c.title||'Butikkmedarbeider')}</span></div>
+      <div class="flex items-center space-x-2.5 min-w-0">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-[10px] shrink-0" style="background-color:${c.color}">${esc(c.tag)}</div>
+        <div class="flex flex-col min-w-0"><span class="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(c.name)}</span><span class="text-[9px] text-slate-400">${esc(c.title||'Butikkmedarbeider')}</span>${chip}</div>
       </div>
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center space-x-2 shrink-0">
+        ${canEditStatus(c.tag)?`<button onclick="openStatusMenu('${esc(c.tag)}')" class="text-slate-300 hover:text-thansen-500" title="Sett status (pause, lunsj …)"><i class="fa-regular fa-clock text-sm"></i></button>`:''}
         ${isAdmin?`<button onclick="editCoworker('${esc(c.tag)}')" class="text-slate-300 hover:text-thansen-500" title="Rediger profil"><i class="fa-solid fa-pen text-xs"></i></button>
                    <button onclick="deleteCoworker('${esc(c.tag)}')" class="text-slate-300 hover:text-thansen-red" title="Fjern"><i class="fa-solid fa-user-xmark text-xs"></i></button>`
                  :`<i class="fa-solid fa-grip-vertical text-xs text-slate-300 dark:text-slate-700"></i>`}
@@ -405,6 +464,7 @@ function openAssigneePicker(taskId, dateObj){
         <input type="checkbox" value="${esc(c.tag)}" ${cur.includes(c.tag)?'checked':''} class="rounded text-thansen-500 focus:ring-thansen-500 w-4 h-4">
         <span class="w-6 h-6 rounded-lg text-[9px] font-bold text-white inline-flex items-center justify-center shrink-0" style="background-color:${c.color}">${esc(c.tag)}</span>
         <span class="text-sm text-slate-700 dark:text-slate-200 font-medium truncate">${esc(c.name)}</span>
+        ${(ab=>ab?`<span class="ml-auto shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded" style="color:${STATUS_DEF[ab].color};background:${STATUS_DEF[ab].color}1a"><i class="fa-solid ${STATUS_DEF[ab].icon} text-[8px] mr-0.5"></i>${esc(STATUS_DEF[ab].label.toLowerCase())}</span>`:'')(absenceOn(c.tag, dateObj))}
       </label>`).join('') : '<p class="text-xs text-slate-400 italic p-2">Ingen ansatte registrert.</p>';
   let ov=document.getElementById('assignee-picker');
   if(!ov){ ov=document.createElement('div'); ov.id='assignee-picker'; document.body.appendChild(ov); }
@@ -430,6 +490,84 @@ async function applyAssigneePicker(){
   const tags=ov?[...ov.querySelectorAll('input[type=checkbox]:checked')].map(b=>b.value):[];
   const {taskId,date}=_pickerCtx; closeAssigneePicker();
   await setDayAssignees(taskId, date, tags, 'Ansvarlige oppdatert','#004595');
+  // warn (don't block) if anyone picked is away all day that date
+  const away=tags.filter(tag=>absenceOn(tag, date)).map(tag=>tag+' ('+STATUS_DEF[absenceOn(tag,date)].label.toLowerCase()+')');
+  if(away.length) showToast('Obs: '+away.join(', ')+' har fravær denne dagen','#f59e0b');
+}
+
+/* ---------- staff status menu (sidebar "now") + planner modal ---------- */
+function openStatusMenu(tag){
+  if(!canEditStatus(tag)){ showToast('Du kan kun sette din egen status.','#e30613'); return; }
+  const c=state.coworkers.find(x=>x.tag===tag)||{name:tag,color:'#64748b'};
+  const cur=currentStatus(tag);
+  const btn=k=>{ const d=STATUS_DEF[k]; return `<button onclick="setStatusNow('${esc(tag)}','${k}');closeStatusMenu()" class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-left"><span class="w-7 h-7 rounded-lg inline-flex items-center justify-center text-white shrink-0" style="background:${d.color}"><i class="fa-solid ${d.icon} text-xs"></i></span><span class="text-xs font-semibold text-slate-700 dark:text-slate-200">${d.label}${d.allDay?'':' ('+d.dur+'m)'}</span></button>`; };
+  let ov=document.getElementById('status-menu'); if(!ov){ ov=document.createElement('div'); ov.id='status-menu'; document.body.appendChild(ov); }
+  ov.className='fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4';
+  ov.innerHTML=`
+    <div class="bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
+        <span class="w-7 h-7 rounded-lg inline-flex items-center justify-center font-bold text-white text-[10px]" style="background:${c.color}">${esc(tag)}</span>
+        <div><h3 class="font-bold text-sm">${esc(c.name)}</h3><p class="text-[11px] text-slate-400">Status nå · ${cur?esc(STATUS_DEF[cur.kind].label):'Tilgjengelig'}</p></div>
+      </div>
+      <div class="p-3 overflow-y-auto">
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Pause / aktivitet</p>
+        <div class="grid grid-cols-2 gap-2">${STATUS_TIMED.map(btn).join('')}</div>
+        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-3 mb-1.5">Fravær (hele dagen)</p>
+        <div class="grid grid-cols-3 gap-2">${STATUS_ALLDAY.map(btn).join('')}</div>
+      </div>
+      <div class="p-3 border-t border-slate-100 dark:border-slate-900 flex items-center justify-between gap-2">
+        <button onclick="clearStatusNow('${esc(tag)}');closeStatusMenu()" class="px-3 py-2 text-xs font-bold rounded-xl text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 flex items-center gap-1.5"><i class="fa-solid fa-circle-check"></i>Tilgjengelig</button>
+        <button onclick="closeStatusMenu()" class="px-4 py-2 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 font-bold rounded-xl">Lukk</button>
+      </div>
+    </div>`;
+  ov.onclick=ev=>{ if(ev.target===ov) closeStatusMenu(); };
+}
+function closeStatusMenu(){ const ov=document.getElementById('status-menu'); if(ov) ov.remove(); }
+
+function parseYmd(s){ const a=s.split('-').map(Number); return new Date(a[0], a[1]-1, a[2]); }
+let _statusModalDay=null;
+function openStatusModal(ymdStr){
+  if(!me){ showToast('Logg inn for å registrere status.','#e30613'); return; }
+  _statusModalDay=ymdStr;
+  const dstr=parseYmd(ymdStr).toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'short'});
+  const persons = isAdmin
+    ? state.coworkers.map(c=>`<option value="${esc(c.tag)}">${esc(c.name)} (${esc(c.tag)})</option>`).join('')
+    : `<option value="${esc(me.tag)}">${esc(me.name||me.tag)} (${esc(me.tag)})</option>`;
+  const kinds = Object.keys(STATUS_DEF).map(k=>`<option value="${k}">${STATUS_DEF[k].label}</option>`).join('');
+  let ov=document.getElementById('status-modal'); if(!ov){ ov=document.createElement('div'); ov.id='status-modal'; document.body.appendChild(ov); }
+  ov.className='fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4';
+  ov.innerHTML=`
+   <div class="bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+     <div class="p-4 border-b border-slate-200 dark:border-slate-800"><h3 class="font-bold text-sm flex items-center gap-2"><i class="fa-regular fa-clock text-thansen-500"></i>Registrer status</h3><p class="text-[11px] text-slate-400 capitalize">${esc(dstr)}</p></div>
+     <div class="p-4 space-y-3 text-xs">
+       <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Ansatt</label><select id="sm-tag" ${isAdmin?'':'disabled'} class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2">${persons}</select></div>
+       <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Status</label><select id="sm-kind" onchange="statusModalKindChange()" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2">${kinds}</select></div>
+       <div id="sm-timed" class="grid grid-cols-2 gap-3">
+         <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Fra kl.</label><input id="sm-start" type="time" value="09:00" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2"></div>
+         <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Varighet (min)</label><input id="sm-dur" type="number" min="5" step="5" value="15" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2"></div>
+       </div>
+     </div>
+     <div class="p-3 border-t border-slate-100 dark:border-slate-900 flex items-center justify-end gap-2">
+       <button onclick="closeStatusModal()" class="px-4 py-2 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 font-bold rounded-xl">Avbryt</button>
+       <button onclick="submitStatusModal()" class="px-4 py-2 text-xs bg-thansen-500 hover:bg-thansen-600 text-white font-bold rounded-xl shadow-md">Lagre</button>
+     </div>
+   </div>`;
+  ov.onclick=ev=>{ if(ev.target===ov) closeStatusModal(); };
+  statusModalKindChange();
+}
+function statusModalKindChange(){
+  const d=STATUS_DEF[document.getElementById('sm-kind').value];
+  document.getElementById('sm-timed').style.display = d.allDay?'none':'';
+  if(!d.allDay) document.getElementById('sm-dur').value = d.dur;
+}
+function closeStatusModal(){ const ov=document.getElementById('status-modal'); if(ov) ov.remove(); _statusModalDay=null; }
+function submitStatusModal(){
+  const tag=document.getElementById('sm-tag').value, kind=document.getElementById('sm-kind').value, d=STATUS_DEF[kind];
+  const dateObj=parseYmd(_statusModalDay);
+  if(d.allDay){ setStaffStatus(tag, dateObj, kind, null, null); }
+  else { const [hh,mm]=(document.getElementById('sm-start').value||'09:00').split(':').map(Number);
+    setStaffStatus(tag, dateObj, kind, hh*60+mm, parseInt(document.getElementById('sm-dur').value)||d.dur); }
+  closeStatusModal();
 }
 let editingCoworkerTag = null;
 function openCoworkerModal(tag){
@@ -711,6 +849,15 @@ function renderWeeklyPlannerView(){
     else { if(due) dates.forEach((d,i)=>{ if(d.toDateString()===due.toDateString()) placeDays.push(i); }); }
     placeDays.forEach(i=>{ if(!passFilterOn(t, dates[i])) return; const k=i+'_'+startIdx; (groups[k]=groups[k]||[]).push({t,span}); });
   });
+  // project timed staff statuses (pause/lunsj/ærend/kurs) into the same (day, hour) groups
+  state.staffStatus.forEach(s=>{
+    if(s.allDay || s.startMin==null) return;
+    if(filterTag && s.tag!==filterTag) return;
+    const di=dates.findIndex(d=>ymd(d)===s.day); if(di<0) return;
+    const startH=Math.min(21, Math.max(7, Math.floor(s.startMin/60))), startIdx=startH-7;
+    const span=Math.max(1, Math.min(HOURS.length-startIdx, Math.ceil((s.durMin||30)/60)));
+    const k=di+'_'+startIdx; (groups[k]=groups[k]||[]).push({status:s, span});
+  });
 
   const grid=document.createElement('div');
   grid.className='grid gap-px bg-slate-200/50 dark:bg-slate-800/50 rounded-xl overflow-hidden min-w-[760px]';
@@ -721,7 +868,7 @@ function renderWeeklyPlannerView(){
   dates.forEach((d,i)=>{
     const isToday=d.getTime()===today.getTime();
     const hd=document.createElement('div'); hd.className='bg-slate-50 dark:bg-slate-950 p-2 '+(isToday?'border-b-2 border-thansen-500':'');
-    hd.innerHTML=`<div class="flex items-center justify-between"><span class="text-xs font-bold ${isToday?'text-thansen-500 dark:text-thansen-yellow':'text-slate-700 dark:text-slate-300'}">${D[i]} ${d.getDate()}.</span>${me?`<button class="text-[10px] text-thansen-500" title="Legg igjen notat" onclick="addPlannerNote(${i})"><i class="fa-solid fa-note-sticky"></i></button>`:''}</div><div class="th-notes mt-1 space-y-1" data-day="${i}"></div>`;
+    hd.innerHTML=`<div class="flex items-center justify-between"><span class="text-xs font-bold ${isToday?'text-thansen-500 dark:text-thansen-yellow':'text-slate-700 dark:text-slate-300'}">${D[i]} ${d.getDate()}.</span><div class="flex items-center gap-1.5">${me?`<button class="text-[10px] text-thansen-500" title="Registrer status (pause, lunsj, fravær …)" onclick="openStatusModal('${ymd(d)}')"><i class="fa-regular fa-clock"></i></button>`:''}${me?`<button class="text-[10px] text-thansen-500" title="Legg igjen notat" onclick="addPlannerNote(${i})"><i class="fa-solid fa-note-sticky"></i></button>`:''}</div></div><div class="th-avail mt-1 flex flex-wrap gap-1" data-day="${i}"></div><div class="th-notes mt-1 space-y-1" data-day="${i}"></div>`;
     gset(hd,i+2,1);
   });
   HOURS.forEach((h,hi)=>{
@@ -743,10 +890,24 @@ function renderWeeklyPlannerView(){
     const cellDate=dates[i];
     const wrap=document.createElement('div'); wrap.className='flex gap-1 p-0.5'; wrap.style.zIndex='2';
     gset(wrap, i+2, si+2, maxSpan);
-    arr.sort((a,b)=>floatMine(a.t,b.t,cellDate,cellDate)).forEach(({t,span})=>{ const blk=createWeeklyBlock(t,span,cellDate); blk.style.flex='1'; blk.style.minWidth='0'; blk.style.height=(span*ROWH-5)+'px'; blk.style.alignSelf='flex-start'; wrap.appendChild(blk); });
+    const ord=x=>x.status?1:0;   // tasks first, then status chips
+    arr.sort((a,b)=> ord(a)-ord(b) || (a.t&&b.t?floatMine(a.t,b.t,cellDate,cellDate):0)).forEach(it=>{
+      const el = it.status ? createStatusChip(it.status) : createWeeklyBlock(it.t, it.span, cellDate);
+      el.style.flex='1'; el.style.minWidth='0'; el.style.height=(it.span*ROWH-5)+'px'; el.style.alignSelf='flex-start'; wrap.appendChild(el);
+    });
   });
   root.appendChild(grid);
 
+  dates.forEach((d,i)=>{
+    const box=grid.querySelector(`.th-avail[data-day="${i}"]`); if(!box) return;
+    statusesOn(d).filter(s=>s.allDay && (!filterTag || s.tag===filterTag)).forEach(s=>{
+      const def=STATUS_DEF[s.kind], can=canEditStatus(s.tag);
+      const el=document.createElement('span'); el.className='inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded';
+      el.style.color=def.color; el.style.background=def.color+'1a';
+      el.innerHTML=`<i class="fa-solid ${def.icon} text-[8px]"></i>${esc(s.tag)} · ${esc(def.label.toLowerCase())}${can?` <button onclick="deleteStaffStatus('${s.id}')" class="ml-0.5 hover:text-thansen-red" title="Fjern">✕</button>`:''}`;
+      box.appendChild(el);
+    });
+  });
   dates.forEach((d,i)=>{
     const box=grid.querySelector(`.th-notes[data-day="${i}"]`); if(!box) return;
     state.notes.filter(n=>n.weekday===i).forEach(n=>{
@@ -790,6 +951,22 @@ function createWeeklyBlock(t, span, cellDate){
     const handle=blk.querySelector('.wk-resize'); if(handle) attachResize(handle, blk, t, startH);
   }
   return blk;
+}
+// a striped status chip in the weekly grid (pause/lunsj/ærend/kurs)
+function createStatusChip(s){
+  const e=T.esc, d=STATUS_DEF[s.kind];
+  const c=state.coworkers.find(x=>x.tag===s.tag)||{name:s.tag,color:'#64748b'};
+  const can=canEditStatus(s.tag);
+  const el=document.createElement('div');
+  el.className='relative overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm';
+  el.style.borderLeft='3px solid '+d.color;
+  el.style.background=`repeating-linear-gradient(45deg, ${d.color}14, ${d.color}14 6px, ${d.color}26 6px, ${d.color}26 12px)`;
+  el.innerHTML=`<div class="p-1.5">
+    <div class="flex items-center gap-1 text-[9px] font-bold" style="color:${d.color}"><i class="fa-solid ${d.icon}"></i>${e(fmtMin(s.startMin))}</div>
+    <div class="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">${e(d.label)}</div>
+    <div class="flex flex-wrap gap-1 mt-1"><span class="w-4 h-4 rounded text-[7px] font-bold text-white inline-flex items-center justify-center" style="background-color:${c.color}" title="${e(c.name)}">${e(s.tag)}</span></div>
+  </div>${can?`<button onclick="deleteStaffStatus('${s.id}')" class="absolute top-0.5 right-0.5 text-slate-400 hover:text-thansen-red text-[10px] leading-none" title="Fjern">✕</button>`:''}`;
+  return el;
 }
 function attachResize(handle, blk, t, startH){
   handle.addEventListener('pointerdown', ev=>{
