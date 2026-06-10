@@ -362,11 +362,10 @@ window.onload = function () {
   refreshAdminUI();
   (async () => {
     if (!T.getUser()) { await T.ensureUser(); refreshAdminUI(); }   // persondata krever innlogging (v19)
-    try { if (T.sb){ await T.sb.rpc('rollover_recurring'); await T.sb.rpc('rollover_incomplete'); } } catch(e){}
     loadAll();
   })();
-  setInterval(async () => {
-    try { const a=await T.sb.rpc('rollover_recurring'); const b=await T.sb.rpc('rollover_incomplete'); if((a.data||b.data)) await loadAll(); } catch(e){}
+  // rollover kjøres server-side via pg_cron (v21); realtime på tasks plukker opp endringene
+  setInterval(() => {
     recalculateAlerts(); renderAlertsList(); renderStats(); renderCoworkerList();   // refresh "now" status as breaks expire
   }, 60000);
   if (T.sb) {
