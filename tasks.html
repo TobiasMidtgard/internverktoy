@@ -244,7 +244,7 @@
   <div><p class="text-xs font-bold">Fjern fra oppgave</p><p class="text-[10px] opacity-90">Slipp ansatt-kortet her.</p></div>
 </div>
 
-<script src="shared.js?v=8"></script>
+<script src="shared.js?v=9"></script>
 <script>
 const T = window.THelper;
 const BUILD = '2026-06-09c';   // bumped on each deploy so a stale cache is easy to spot
@@ -736,8 +736,8 @@ function parseDescriptionToHTML(taskId, desc, readOnly=false){
   return out.join('');
 }
 async function toggleTaskCheckline(taskId, idx){
-  try{ const {error}=await T.sb.rpc('toggle_check',{p_id:taskId,p_ci:idx}); if(error) throw error; await loadAll(); showToast('Sjekkliste oppdatert','#10b981'); }
-  catch(e){ showToast('Feil: '+e.message,'#e30613'); }
+  try{ await T.rpcAuth('toggle_check',{p_id:taskId,p_ci:idx}); await loadAll(); showToast('Sjekkliste oppdatert','#10b981'); }
+  catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); loadAll(); }
 }
 
 /* ---------- task cards ---------- */
@@ -1124,10 +1124,10 @@ function triggerEditFromDetail(){ const id=currentTaskId; closeTaskDetailModal()
 /* ---------- mutations ---------- */
 async function moveTaskStatus(taskId, target){
   try{
-    const {error}=await T.sb.rpc('set_status',{p_id:taskId,p_status:target}); if(error) throw error;
+    await T.rpcAuth('set_status',{p_id:taskId,p_status:target});
     await loadAll();
     showToast(target==='done' ? 'Fullført ✓' : 'Status oppdatert', target==='done' ? '#10b981' : '#004595');
-  }catch(e){ showToast('Feil: '+e.message,'#e30613'); loadAll(); }
+  }catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); loadAll(); }
 }
 async function rescheduleTaskToSlot(taskId, dateObj, hour){
   if(!isAdmin){ showToast('Kun Butikksjef kan flytte.','#e30613'); return; }

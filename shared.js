@@ -59,8 +59,8 @@ window.THelper = (function () {
     const { data, error } = await sb.rpc('login_account', { p_tag: tag, p_password: pw });
     if (error) throw error; return Array.isArray(data) ? data[0] : data;
   }
-  async function callRegister(tag, name, title, color, pw){
-    const { data, error } = await sb.rpc('register_account', { p_tag: tag, p_name: name, p_title: title, p_color: color, p_password: pw });
+  async function callRegister(tag, name, title, color, pw, invite){
+    const { data, error } = await sb.rpc('register_account', { p_tag: tag, p_name: name, p_title: title, p_color: color, p_password: pw, p_invite: invite });
     if (error) throw error; return Array.isArray(data) ? data[0] : data;
   }
 
@@ -80,6 +80,7 @@ window.THelper = (function () {
             <div class="th-f"><label>Ansattkode (4 bokstaver)</label><input class="thr-tag" maxlength="4" placeholder="OLAN" style="text-transform:uppercase"></div>
             <div class="th-f"><label>Stillingstittel</label><select class="thr-title">${TITLES.map(t=>`<option ${t==='Butikkmedarbeider'?'selected':''}>${t}</option>`).join('')}</select></div>
             <div class="th-f"><label>Passord (min. 4 tegn)</label><input class="thr-pw" type="password" autocomplete="new-password" placeholder="••••"></div>
+            <div class="th-f"><label>Invitasjonskode (spør butikksjefen)</label><input class="thr-inv" autocomplete="off" placeholder="····"></div>
           </div>
           <div class="th-err"></div>
           <div class="th-row"><button class="th-btn ghost" data-x="cancel">Avbryt</button><button class="th-btn" data-x="ok">Logg inn</button></div>
@@ -109,9 +110,11 @@ window.THelper = (function () {
           } else {
             const tag = q('.thr-tag').value.trim().toUpperCase(); pw = q('.thr-pw').value;
             const name = q('.thr-name').value.trim(), title = q('.thr-title').value, color = '#004595';
+            const invite = q('.thr-inv').value.trim();
             if (tag.length !== 4) throw new Error('Koden må være 4 bokstaver');
             if (pw.length < 4) throw new Error('Passord må ha minst 4 tegn');
-            user = await callRegister(tag, name, title, color, pw);
+            if (!invite) throw new Error('Fyll inn invitasjonskoden (spør butikksjefen)');
+            user = await callRegister(tag, name, title, color, pw, invite);
           }
           setSession(user, pw); close(user);
         } catch (e) {
