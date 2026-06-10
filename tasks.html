@@ -439,7 +439,7 @@ function renderCoworkerList(){
       : `<span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 w-fit text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"><i class="fa-solid fa-circle text-[6px]"></i>Tilgjengelig</span>`;
     item.innerHTML=`
       <div class="flex items-center space-x-2.5 min-w-0">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-[10px] shrink-0" style="background-color:${c.color}">${esc(c.tag)}</div>
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-[10px] shrink-0" style="background-color:${col(c.color)}">${esc(c.tag)}</div>
         <div class="flex flex-col min-w-0"><span class="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(c.name)}</span><span class="text-[9px] text-slate-400">${esc(c.title||'Butikkmedarbeider')}</span>${chip}</div>
       </div>
       <div class="flex items-center space-x-2 shrink-0">
@@ -465,7 +465,7 @@ function openAssigneePicker(taskId, dateObj){
   const rows = state.coworkers.length ? state.coworkers.map(c=>`
       <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900">
         <input type="checkbox" value="${esc(c.tag)}" ${cur.includes(c.tag)?'checked':''} class="rounded text-thansen-500 focus:ring-thansen-500 w-4 h-4">
-        <span class="w-6 h-6 rounded-lg text-[9px] font-bold text-white inline-flex items-center justify-center shrink-0" style="background-color:${c.color}">${esc(c.tag)}</span>
+        <span class="w-6 h-6 rounded-lg text-[9px] font-bold text-white inline-flex items-center justify-center shrink-0" style="background-color:${col(c.color)}">${esc(c.tag)}</span>
         <span class="text-sm text-slate-700 dark:text-slate-200 font-medium truncate">${esc(c.name)}</span>
         ${(ab=>ab?`<span class="ml-auto shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded" style="color:${STATUS_DEF[ab].color};background:${STATUS_DEF[ab].color}1a"><i class="fa-solid ${STATUS_DEF[ab].icon} text-[8px] mr-0.5"></i>${esc(STATUS_DEF[ab].label.toLowerCase())}</span>`:'')(absenceOn(c.tag, dateObj))}
       </label>`).join('') : '<p class="text-xs text-slate-400 italic p-2">Ingen ansatte registrert.</p>';
@@ -509,7 +509,7 @@ function openStatusMenu(tag){
   ov.innerHTML=`
     <div class="bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
       <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
-        <span class="w-7 h-7 rounded-lg inline-flex items-center justify-center font-bold text-white text-[10px]" style="background:${c.color}">${esc(tag)}</span>
+        <span class="w-7 h-7 rounded-lg inline-flex items-center justify-center font-bold text-white text-[10px]" style="background:${col(c.color)}">${esc(tag)}</span>
         <div><h3 class="font-bold text-sm">${esc(c.name)}</h3><p class="text-[11px] text-slate-400">Status nå · ${cur?esc(STATUS_DEF[cur.kind].label):'Tilgjengelig'}</p></div>
       </div>
       <div class="p-3 overflow-y-auto">
@@ -683,7 +683,7 @@ function timelineRow(t, now){
   const overdue=t.frequency==='once' && t.due && new Date(t.due)<now && !t.done;
   const done=t.status==='done';
   const people=assigneesFor(t, now);
-  const asg=people.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="w-5 h-5 rounded text-[8px] font-bold text-white inline-flex items-center justify-center" style="background-color:${c.color}" title="${e(tag)}">${e(tag)}</span>`;}).join('')
+  const asg=people.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="w-5 h-5 rounded text-[8px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`;}).join('')
     || `<span class="text-[9px] text-slate-400 italic">${isAdmin?'+ sett opp ansvarlig':'Ingen tildelt'}</span>`;
   const fr={once:'Engang',daily:'Daglig',weekly:'Ukentlig',monthly:'Månedlig'}[t.frequency]||'';
   return `<div class="tl-row${done?' tl-done':''}" onclick="openTaskDetailModal('${e(t.id)}')">
@@ -730,7 +730,7 @@ function parseDescriptionToHTML(taskId, desc, readOnly=false){
     if(p.includes('!viktig')||p.includes('!important')){ p=p.replace('!viktig','').replace('!important','').trim(); out.push(`<div class="bg-red-500/10 border-l-4 border-thansen-red p-2 my-2 rounded-r text-[11px] text-red-700 dark:text-red-400 font-bold flex items-center space-x-1.5"><i class="fa-solid fa-triangle-exclamation text-thansen-red"></i><span>VIKTIG: ${esc(p)}</span></div>`); return; }
     if(p.startsWith('?avklare')||p.startsWith('?clarify')){ p=p.replace('?avklare','').replace('?clarify','').trim(); out.push(`<div class="bg-amber-500/10 border-l-4 border-thansen-yellow p-2 my-2 rounded-r text-[11px] text-amber-800 dark:text-amber-400 font-bold flex items-center space-x-1.5"><i class="fa-solid fa-circle-question text-amber-600"></i><span>SPØRSMÅL: ${esc(p)}</span></div>`); return; }
     p=esc(p).replace(/(https?:\/\/[^\s]+)/g,m=>`<a href="${m}" target="_blank" rel="noopener" class="text-thansen-500 dark:text-thansen-yellow hover:underline font-bold"><i class="fa-solid fa-external-link text-[9px] mr-0.5"></i>Lenke</a>`);
-    state.coworkers.forEach(c=>{ p=p.replace(new RegExp(`@${c.tag}\\b`,'g'),`<span class="inline-flex items-center px-1.5 py-0.5 rounded-md font-extrabold text-[9px] text-white" style="background-color:${c.color}">@${c.tag}</span>`); });
+    state.coworkers.forEach(c=>{ if(!/^[A-ZÆØÅ0-9]{4}$/.test(c.tag||'')) return; p=p.replace(new RegExp(`@${c.tag}\\b`,'g'),`<span class="inline-flex items-center px-1.5 py-0.5 rounded-md font-extrabold text-[9px] text-white" style="background-color:${col(c.color)}">@${esc(c.tag)}</span>`); });
     if(p.trim()!=='') out.push(`<p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-1">${p}</p>`);
   });
   return out.join('');
@@ -759,7 +759,7 @@ function createTaskCard(task, weekly=false){
   if(weekly){
     card.className=`p-2 rounded-lg border bg-white dark:bg-slate-950 shadow-sm hover:shadow-md transition-all cursor-pointer ${overdue?'border-red-300 dark:border-red-900':'border-slate-200 dark:border-slate-800/80 hover:border-thansen-500/50'}`;
     const time = task.due ? new Date(task.due).toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'}) : '';
-    let w=''; assigneesFor(task, task.due?new Date(task.due):new Date()).forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-4 h-4 rounded text-[7px] font-bold text-white inline-flex items-center justify-center" style="background-color:${c.color}" title="${esc(tag)}">${esc(tag)}</span>`; });
+    let w=''; assigneesFor(task, task.due?new Date(task.due):new Date()).forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-4 h-4 rounded text-[7px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${esc(tag)}">${esc(tag)}</span>`; });
     const dur = task.duration ? `<span class="text-[9px] text-slate-400">${fmtDur(task.duration)}</span>` : '';
     const desc = task.desc ? `<div class="mt-1 space-y-0.5 text-[11px]">${parseDescriptionToHTML(task.id, task.desc)}</div>` : '';
     card.innerHTML=`<div class="flex items-center justify-between gap-1"><span class="text-[9px] font-bold text-slate-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${time?'kl. '+time:''}</span>${overdue?'<span class="text-[8px] text-red-500 font-extrabold">OVERTID</span>':dur}</div>
@@ -781,7 +781,7 @@ function createTaskCard(task, weekly=false){
   const bdPeople=assigneesFor(task, boardDateFor(task));
   const assignHint = task.frequency==='once' ? 'Velg hvem som gjør dette' : 'Velg hvem som gjør dette i dag';
   let asg=`<div data-assign class="flex items-center gap-2 flex-wrap ${isAdmin?'cursor-pointer':''}" ${isAdmin?`onclick="event.stopPropagation();openAssigneePickerBoard('${task.id}')" title="${assignHint}"`:''}>`;
-  if(bdPeople.length){ bdPeople.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{name:tag,color:'#64748b'}; asg+=`<div ${isAdmin?`draggable="true" ondragstart="handleAssigneeDragStart(event,'${task.id}','${tag}')" ondragend="handleAssigneeDragEnd()"`:''} class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-white text-[9px] shadow-sm ring-2 ring-slate-100 dark:ring-slate-900 ${isAdmin?'cursor-grab active:cursor-grabbing hover:scale-110':''} transition-transform relative group/pill" style="background-color:${c.color}" title="${esc(c.name)}">${esc(tag)}${isAdmin?`<button onclick="event.stopPropagation();removeAssigneeBoard('${task.id}','${tag}')" class="absolute -top-1 -right-1 hidden group-hover/pill:flex bg-thansen-red rounded-full w-3.5 h-3.5 items-center justify-center text-[8px] text-white">×</button>`:''}</div>`; }); }
+  if(bdPeople.length){ bdPeople.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{name:tag,color:'#64748b'}; asg+=`<div ${isAdmin?`draggable="true" ondragstart="handleAssigneeDragStart(event,'${task.id}','${tag}')" ondragend="handleAssigneeDragEnd()"`:''} class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-white text-[9px] shadow-sm ring-2 ring-slate-100 dark:ring-slate-900 ${isAdmin?'cursor-grab active:cursor-grabbing hover:scale-110':''} transition-transform relative group/pill" style="background-color:${col(c.color)}" title="${esc(c.name)}">${esc(tag)}${isAdmin?`<button onclick="event.stopPropagation();removeAssigneeBoard('${task.id}','${tag}')" class="absolute -top-1 -right-1 hidden group-hover/pill:flex bg-thansen-red rounded-full w-3.5 h-3.5 items-center justify-center text-[8px] text-white">×</button>`:''}</div>`; }); }
   else asg+=`<span class="text-[9px] text-slate-400 italic">${isAdmin?'+ sett opp ansvarlig':'Ingen tildelt'}</span>`;
   asg+='</div>';
 
@@ -952,7 +952,7 @@ function agendaTaskRow(t, dateObj, now){
   const dot=t.priority==='high'?'bg-red-500':t.priority==='medium'?'bg-amber-500':'bg-emerald-500';
   const overdue=t.frequency==='once' && t.due && new Date(t.due)<now && t.status!=='done';
   const ppl=assigneesFor(t, dateObj);
-  let pills=ppl.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="w-5 h-5 rounded text-[8px] font-bold text-white inline-flex items-center justify-center" style="background-color:${c.color}" title="${e(tag)}">${e(tag)}</span>`;}).join('');
+  let pills=ppl.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="w-5 h-5 rounded text-[8px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`;}).join('');
   if(!ppl.length) pills=`<span class="text-[9px] text-slate-400 italic">${isAdmin?'+ sett opp ansvarlig':'Ingen tildelt'}</span>`;
   return `<div class="flex items-start gap-2 p-2 rounded-xl bg-white dark:bg-slate-950 border ${overdue?'border-red-300 dark:border-red-900':'border-slate-200 dark:border-slate-800/80'}" onclick="openTaskDetailModal('${e(t.id)}')">
     <div class="text-[11px] font-bold text-slate-400 w-9 shrink-0 pt-0.5">${e(time)}</div>
@@ -969,7 +969,7 @@ function agendaStatusRow(s){
     <div class="text-[11px] font-bold w-9 shrink-0" style="color:${d.color}">${e(fmtMin(s.startMin))}</div>
     <i class="fa-solid ${d.icon}" style="color:${d.color}"></i>
     <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">${e(d.label)}</span>
-    <span class="w-5 h-5 rounded text-[8px] font-bold text-white inline-flex items-center justify-center" style="background:${c.color}" title="${e(c.name)}">${e(s.tag)}</span>
+    <span class="w-5 h-5 rounded text-[8px] font-bold text-white inline-flex items-center justify-center" style="background:${col(c.color)}" title="${e(c.name)}">${e(s.tag)}</span>
     ${can?`<button onclick="deleteStaffStatus('${s.id}')" class="ml-auto text-slate-400 hover:text-thansen-red text-xs" title="Fjern">✕</button>`:''}
   </div>`;
 }
@@ -978,7 +978,7 @@ function buildDayPage(dateObj, i, D){
   const page=document.createElement('section'); page.setAttribute('data-daypage', String(i));
   page.className='snap-center shrink-0 w-[85vw] max-w-sm bg-slate-100/40 dark:bg-slate-950/40 rounded-2xl p-3 border border-slate-200/60 dark:border-slate-800/50';
   const pills=statusesOn(dateObj).filter(s=>s.allDay && (!filterTag||s.tag===filterTag)).map(s=>{ const d=STATUS_DEF[s.kind], can=canEditStatus(s.tag); return `<span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded" style="color:${d.color};background:${d.color}1a"><i class="fa-solid ${d.icon} text-[8px]"></i>${esc(s.tag)} · ${esc(d.label.toLowerCase())}${can?` <button onclick="deleteStaffStatus('${s.id}')" class="hover:text-thansen-red">✕</button>`:''}</span>`; }).join('');
-  const noteEls=state.notes.filter(n=>n.weekday===i).map(n=>{ const canDel=me&&(n.author===me.tag||isAdmin); return `<span class="inline-flex items-start gap-1 text-[10px] px-1.5 py-0.5 rounded" style="background:${(n.color||'#ffd400')+'22'};border-left:2px solid ${n.color||'#ffd400'}"><span class="whitespace-pre-wrap">${esc(n.body)}</span>${canDel?`<button onclick="deletePlannerNote('${n.id}')" class="text-slate-400">✕</button>`:''}</span>`; }).join('');
+  const noteEls=state.notes.filter(n=>n.weekday===i).map(n=>{ const canDel=me&&(n.author===me.tag||isAdmin); return `<span class="inline-flex items-start gap-1 text-[10px] px-1.5 py-0.5 rounded" style="background:${col(n.color,'#ffd400')+'22'};border-left:2px solid ${col(n.color,'#ffd400')}"><span class="whitespace-pre-wrap">${esc(n.body)}</span>${canDel?`<button onclick="deletePlannerNote('${n.id}')" class="text-slate-400">✕</button>`:''}</span>`; }).join('');
   const items=[ ...weekTasksForDay(dateObj).map(t=>({t})), ...statusesOn(dateObj).filter(s=>!s.allDay && (!filterTag||s.tag===filterTag)).map(s=>({status:s})) ].sort((a,b)=>weekItemTime(a)-weekItemTime(b));
   const body = items.length
     ? items.map(it=> it.status ? agendaStatusRow(it.status) : agendaTaskRow(it.t, dateObj, now)).join('')
@@ -1028,7 +1028,7 @@ function createWeeklyBlock(t, span, cellDate){
   blk.className='relative overflow-hidden rounded-lg border bg-white dark:bg-slate-950 shadow-sm cursor-pointer';
   blk.style.borderLeft='3px solid '+col; blk.style.borderColor=(t.priority==='high'?'#ef4444':'');
   const people=assigneesFor(t, cellDate);
-  let w=''; people.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-4 h-4 rounded text-[7px] font-bold text-white inline-flex items-center justify-center" style="background-color:${c.color}" title="${e(tag)}">${e(tag)}</span>`; });
+  let w=''; people.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-4 h-4 rounded text-[7px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`; });
   if(!people.length && isAdmin) w='<span class="text-[8px] text-slate-400 italic">+ sett opp</span>';
   const md=t.desc?`<div class="mt-0.5 space-y-0.5 text-[10px] leading-tight">${parseDescriptionToHTML(t.id,t.desc)}</div>`:'';
   blk.innerHTML=`<div class="p-1.5">
@@ -1064,7 +1064,7 @@ function createStatusChip(s){
   el.innerHTML=`<div class="p-1.5">
     <div class="flex items-center gap-1 text-[9px] font-bold" style="color:${d.color}"><i class="fa-solid ${d.icon}"></i>${e(fmtMin(s.startMin))}</div>
     <div class="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">${e(d.label)}</div>
-    <div class="flex flex-wrap gap-1 mt-1"><span class="w-4 h-4 rounded text-[7px] font-bold text-white inline-flex items-center justify-center" style="background-color:${c.color}" title="${e(c.name)}">${e(s.tag)}</span></div>
+    <div class="flex flex-wrap gap-1 mt-1"><span class="w-4 h-4 rounded text-[7px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(c.name)}">${e(s.tag)}</span></div>
   </div>${can?`<button onclick="deleteStaffStatus('${s.id}')" class="absolute top-0.5 right-0.5 text-slate-400 hover:text-thansen-red text-[10px] leading-none" title="Fjern">✕</button>`:''}`;
   return el;
 }
@@ -1206,7 +1206,7 @@ function renderAlertsList(){
   if(!state.alerts.length){ l.innerHTML=`<div class="h-48 flex flex-col items-center justify-center text-center text-slate-400"><i class="fa-solid fa-square-check text-slate-300 dark:text-slate-800 text-3xl mb-2"></i><p class="text-xs font-bold text-slate-500">Alt er i rute!</p></div>`; return; }
   state.alerts.forEach(al=>{ const crit=al.type==='critical'; const c=document.createElement('div');
     c.className=`p-4 rounded-xl border flex flex-col space-y-2 ${crit?'bg-red-50/50 border-red-200 dark:bg-red-950/15 dark:border-red-900/40 pulse-alert':'bg-amber-50/50 border-amber-200 dark:bg-amber-950/15 dark:border-amber-900/40'}`;
-    let ah=''; (al.assignees||[]).forEach(tag=>{ const cw=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; ah+=`<div class="w-4 h-4 rounded text-[7px] font-bold text-white flex items-center justify-center" style="background-color:${cw.color}">${esc(tag)}</div>`; });
+    let ah=''; (al.assignees||[]).forEach(tag=>{ const cw=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; ah+=`<div class="w-4 h-4 rounded text-[7px] font-bold text-white flex items-center justify-center" style="background-color:${col(cw.color)}">${esc(tag)}</div>`; });
     c.innerHTML=`<div class="flex items-center justify-between"><span class="text-[10px] font-bold uppercase tracking-wider ${crit?'text-red-600 dark:text-red-400':'text-amber-700 dark:text-amber-400'}">${esc(al.title)}</span><div class="flex items-center -space-x-1">${ah}</div></div><p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">${esc(al.message)}</p><div class="flex items-center justify-end pt-1"><button onclick="focusOnTaskCard('${al.taskId}')" class="text-[10px] text-thansen-500 dark:text-thansen-yellow font-bold hover:underline">Vis i plan</button></div>`;
     l.appendChild(c);
   });
@@ -1220,11 +1220,13 @@ function renderStats(){ document.getElementById('stat-total-tasks').innerText=st
 function formatCardDate(iso){ if(!iso) return 'Ingen frist'; return new Date(iso).toLocaleDateString('no-NO',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
 function toLocalInput(iso){ const d=new Date(iso); const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); }
 function esc(s){ return T.esc(s); }
+/* DB-lagrede farger interpoleres i style-attributter: slipp kun gyldig hex gjennom (XSS-vern) */
+function col(s, d='#004595'){ s=String(s==null?'':s).trim(); return /^#[0-9a-fA-F]{3,8}$/.test(s)?s:d; }
 function showToast(message, color='#004595'){
   const t=document.createElement('div');
   t.className="fixed bottom-5 left-5 z-50 glass border border-slate-200/80 dark:border-slate-800 shadow-2xl p-4 rounded-xl flex items-center space-x-3 transition-all duration-300 transform translate-y-20 opacity-0";
   t.style.borderLeft=`4px solid ${color}`;
-  t.innerHTML=`<div class="w-2 h-2 rounded-full" style="background-color:${color}"></div><p class="text-xs font-bold text-slate-700 dark:text-slate-200">${esc(message)}</p>`;
+  t.innerHTML=`<div class="w-2 h-2 rounded-full" style="background-color:${col(color)}"></div><p class="text-xs font-bold text-slate-700 dark:text-slate-200">${esc(message)}</p>`;
   document.body.appendChild(t);
   setTimeout(()=>t.classList.remove('translate-y-20','opacity-0'),50);
   setTimeout(()=>{ t.classList.add('translate-y-20','opacity-0'); setTimeout(()=>t.remove(),300); },3500);
