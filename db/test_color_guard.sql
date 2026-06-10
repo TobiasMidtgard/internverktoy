@@ -3,8 +3,10 @@
 begin;
 
 do $$
-declare v text;
+declare v text; inv text;
 begin
+  select value into inv from public.app_config where key='invite_code';
+
   -- _clean_color
   if public._clean_color('#abc', 'x') <> '#abc' then raise exception 'FAIL: #abc avvist'; end if;
   if public._clean_color('#aabbcc', 'x') <> '#aabbcc' then raise exception 'FAIL: #aabbcc avvist'; end if;
@@ -12,13 +14,13 @@ begin
   if public._clean_color(null, 'x') <> 'x' then raise exception 'FAIL: null ga ikke default'; end if;
 
   -- register_account: ond farge skal coerces til default, ikke lagres
-  perform public.register_account('ZZC1','Test','Deltid','#fff"><script>1</script>','test1234');
+  perform public.register_account('ZZC1','Test','Deltid','#fff"><script>1</script>','test1234', inv);
   select color into v from public.coworkers where tag='ZZC1';
   if v <> '#004595' then raise exception 'FAIL: ond farge lagret: %', v; end if;
 
   -- register_account: ond/ugyldig kode skal avvises
   begin
-    perform public.register_account('"><i','Test','Deltid','#004595','test1234');
+    perform public.register_account('"><i','Test','Deltid','#004595','test1234', inv);
     raise exception 'FAIL: ugyldig kode akseptert';
   exception when others then
     if sqlerrm like 'FAIL:%' then raise; end if;

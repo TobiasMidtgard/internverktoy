@@ -12,10 +12,20 @@ window.THelper = (function () {
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-  /* ---------- session ---------- */
-  function getSession(){ try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; } }
-  function setSession(user, pw){ sessionStorage.setItem(SESSION_KEY, JSON.stringify({ user, pw })); }
-  function clearSession(){ sessionStorage.removeItem(SESSION_KEY); }
+  /* ---------- session (lagrer KUN sesjonstoken, aldri passord) ---------- */
+  function getSession(){
+    try {
+      const s = JSON.parse(sessionStorage.getItem(SESSION_KEY));
+      if (s && !s.token && s.pw) s.token = s.pw;   // eldre sesjoner (pre-token) — passordet godtas fortsatt av serveren
+      return s;
+    } catch { return null; }
+  }
+  function setSession(user, token){ sessionStorage.setItem(SESSION_KEY, JSON.stringify({ user, token })); }
+  function clearSession(){
+    const s = getSession();
+    if (s && s.token && sb) sb.rpc('logout_account', { p_tag: s.user.tag, p_token: s.token }).then(()=>{}, ()=>{});
+    sessionStorage.removeItem(SESSION_KEY);
+  }
   const getUser = () => { const s = getSession(); return s ? s.user : null; };
   const role    = () => { const u = getUser(); return u ? u.role : null; };
   const level   = () => LEVEL[role()] || 0;
@@ -54,7 +64,7 @@ window.THelper = (function () {
     toastWrap.appendChild(t); setTimeout(() => t.remove(), opts.ms || 3500); return t;
   }
 
-  /* ---------- auth ---------- */
+  /* ---------- auth (login/register returnerer {user, token}) ---------- */
   async function callLogin(tag, pw){
     const { data, error } = await sb.rpc('login_account', { p_tag: tag, p_password: pw });
     if (error) throw error; return Array.isArray(data) ? data[0] : data;
@@ -102,21 +112,21 @@ window.THelper = (function () {
       const submit = async () => {
         if (busy) return; busy = true; err.textContent = ''; okBtn.textContent = '…';
         try {
-          let user, pw;
+          let res;
           if (mode === 'login'){
-            const tag = q('.thi-tag').value.trim().toUpperCase(); pw = q('.thi-pw').value;
+            const tag = q('.thi-tag').value.trim().toUpperCase(), pw = q('.thi-pw').value;
             if (tag.length !== 4 || !pw) throw new Error('Fyll inn kode og passord');
-            user = await callLogin(tag, pw);
+            res = await callLogin(tag, pw);
           } else {
-            const tag = q('.thr-tag').value.trim().toUpperCase(); pw = q('.thr-pw').value;
+            const tag = q('.thr-tag').value.trim().toUpperCase(), pw = q('.thr-pw').value;
             const name = q('.thr-name').value.trim(), title = q('.thr-title').value, color = '#004595';
             const invite = q('.thr-inv').value.trim();
             if (tag.length !== 4) throw new Error('Koden må være 4 bokstaver');
             if (pw.length < 4) throw new Error('Passord må ha minst 4 tegn');
             if (!invite) throw new Error('Fyll inn invitasjonskoden (spør butikksjefen)');
-            user = await callRegister(tag, name, title, color, pw, invite);
+            res = await callRegister(tag, name, title, color, pw, invite);
           }
-          setSession(user, pw); close(user);
+          setSession(res.user, res.token); close(res.user);
         } catch (e) {
           err.textContent = (e && e.message) || 'Noe gikk galt'; okBtn.textContent = mode === 'login' ? 'Logg inn' : 'Opprett konto';
         } finally { busy = false; }
@@ -132,11 +142,11 @@ window.THelper = (function () {
 
   async function ensureUser(){ return getUser() || await authModal('login'); }
 
-  /* manager+/role-gated RPC — injects the logged-in account's credentials */
+  /* manager+/role-gated RPC — injects the logged-in account's session token */
   async function rpcAuth(fn, args = {}){
     let s = getSession();
     if (!s){ const u = await ensureUser(); if (!u) throw new Error('no-auth'); s = getSession(); }
-    const { data, error } = await sb.rpc(fn, { p_auth_tag: s.user.tag, p_auth_pw: s.pw, ...args });
+    const { data, error } = await sb.rpc(fn, { p_auth_tag: s.user.tag, p_auth_pw: s.token, ...args });
     if (error) throw error;
     return data;
   }
