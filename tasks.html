@@ -40,6 +40,11 @@
   .empty{color:#94a3b8;text-align:center;padding:36px 10px;}
   .wk-resize{position:absolute;left:0;right:0;bottom:0;height:9px;cursor:ns-resize;background:linear-gradient(transparent,rgba(38,132,230,.25));touch-action:none;}
   .wk-resize:hover{background:linear-gradient(transparent,rgba(38,132,230,.55));}
+  /* Touch-enheter har ingen hover: vis fjern-knappen alltid, og gi de små ✕-ene 44px-ish trykkflate */
+  @media (hover: none){
+    .pill-x{ display:flex !important; width:20px !important; height:20px !important; top:-8px !important; right:-8px !important; font-size:11px !important; }
+    .tap-x{ padding:10px !important; margin:-10px !important; }
+  }
 </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
@@ -101,8 +106,8 @@
         <div id="coworkers-list" class="space-y-2 pr-1"></div>
         <div class="mt-6 bg-slate-50 dark:bg-slate-900/60 rounded-xl p-4 border border-slate-200/60 dark:border-slate-800/60 text-xs">
           <p class="font-bold text-slate-700 dark:text-slate-300 mb-1 flex items-center"><i class="fa-solid fa-circle-info text-thansen-500 mr-1.5"></i> Endre Oppgaveansvar</p>
-          <p class="text-slate-500 leading-relaxed mb-2"><strong>Tildel:</strong> Dra en ansatt og slipp på en oppgave (krever admin).</p>
-          <p class="text-slate-500 leading-relaxed"><strong>Fjern:</strong> Dra en person ut fra kortet til den røde slett-sonen.</p>
+          <p class="text-slate-500 leading-relaxed mb-2"><strong>Tildel:</strong> Trykk på ansvarlig-feltet på et kort og velg hvem som gjør oppgaven (krever butikksjef). På PC kan du også dra en ansatt og slippe på kortet.</p>
+          <p class="text-slate-500 leading-relaxed"><strong>Fjern:</strong> Trykk ✕ på personens brikke, eller fjern haken i velgeren. På PC: dra brikken til den røde slett-sonen.</p>
         </div>
       </div>
     </aside>
@@ -328,6 +333,8 @@ async function setStaffStatus(tag, dateObj, kind, startMin, durMin, okMsg){
   }catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
 }
 async function deleteStaffStatus(id, okMsg){
+  const s=state.staffStatus.find(x=>x.id===id);
+  if(s && !confirm(`Fjerne ${STATUS_DEF[s.kind]?STATUS_DEF[s.kind].label.toLowerCase():'status'} for ${s.tag}?`)) return;
   try{ await T.rpcAuth('delete_staff_status',{p_id:id}); await loadAll(); if(okMsg!==false) showToast(okMsg||'Status fjernet','#64748b'); }
   catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
 }
@@ -847,7 +854,7 @@ function createTaskCard(task, weekly=false){
   const bdPeople=assigneesFor(task, boardDateFor(task));
   const assignHint = task.frequency==='once' ? 'Velg hvem som gjør dette' : 'Velg hvem som gjør dette i dag';
   let asg=`<div data-assign class="flex items-center gap-2 flex-wrap ${isAdmin?'cursor-pointer':''}" ${isAdmin?`onclick="event.stopPropagation();openAssigneePickerBoard('${task.id}')" title="${assignHint}"`:''}>`;
-  if(bdPeople.length){ bdPeople.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{name:tag,color:'#64748b'}; asg+=`<div ${isAdmin?`draggable="true" ondragstart="handleAssigneeDragStart(event,'${task.id}','${tag}')" ondragend="handleAssigneeDragEnd()"`:''} class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-white text-[9px] shadow-sm ring-2 ring-slate-100 dark:ring-slate-900 ${isAdmin?'cursor-grab active:cursor-grabbing hover:scale-110':''} transition-transform relative group/pill" style="background-color:${col(c.color)}" title="${esc(c.name)}">${esc(tag)}${isAdmin?`<button onclick="event.stopPropagation();removeAssigneeBoard('${task.id}','${tag}')" class="absolute -top-1 -right-1 hidden group-hover/pill:flex bg-thansen-red rounded-full w-3.5 h-3.5 items-center justify-center text-[8px] text-white">×</button>`:''}</div>`; }); }
+  if(bdPeople.length){ bdPeople.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{name:tag,color:'#64748b'}; asg+=`<div ${isAdmin?`draggable="true" ondragstart="handleAssigneeDragStart(event,'${task.id}','${tag}')" ondragend="handleAssigneeDragEnd()"`:''} class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-white text-[9px] shadow-sm ring-2 ring-slate-100 dark:ring-slate-900 ${isAdmin?'cursor-grab active:cursor-grabbing hover:scale-110':''} transition-transform relative group/pill" style="background-color:${col(c.color)}" title="${esc(c.name)}">${esc(tag)}${isAdmin?`<button onclick="event.stopPropagation();removeAssigneeBoard('${task.id}','${tag}')" aria-label="Fjern ${esc(tag)}" class="pill-x absolute -top-1 -right-1 hidden group-hover/pill:flex bg-thansen-red rounded-full w-3.5 h-3.5 items-center justify-center text-[8px] text-white">×</button>`:''}</div>`; }); }
   else asg+=`<span class="text-[9px] text-slate-400 italic">${isAdmin?'+ sett opp ansvarlig':'Ingen tildelt'}</span>`;
   asg+='</div>';
 
@@ -988,7 +995,7 @@ function renderWeeklyPlannerView(){
     state.notes.filter(n=>n.weekday===i).forEach(n=>{
       const canDel=me&&(n.author===me.tag||isAdmin);
       const el=document.createElement('div'); el.className='rounded p-1 text-[10px] relative'; el.style.background=(n.color||'#ffd400')+'22'; el.style.borderLeft=`2px solid ${n.color||'#ffd400'}`;
-      el.innerHTML=`<div class="text-slate-700 dark:text-slate-200 pr-3 whitespace-pre-wrap">${esc(n.body)}</div>${canDel?`<button onclick="deletePlannerNote('${n.id}')" class="absolute top-0 right-0.5 text-slate-400 text-[10px]">✕</button>`:''}`;
+      el.innerHTML=`<div class="text-slate-700 dark:text-slate-200 pr-3 whitespace-pre-wrap">${esc(n.body)}</div>${canDel?`<button onclick="deletePlannerNote('${n.id}')" aria-label="Slett notat" class="tap-x absolute top-0 right-0.5 text-slate-400 text-[10px]">✕</button>`:''}`;
       box.appendChild(el);
     });
   });
@@ -1047,15 +1054,15 @@ function agendaStatusRow(s){
     <i class="fa-solid ${d.icon}" style="color:${d.color}"></i>
     <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">${e(d.label)}</span>
     <span class="w-5 h-5 rounded text-[8px] font-bold text-white inline-flex items-center justify-center" style="background:${col(c.color)}" title="${e(c.name)}">${e(s.tag)}</span>
-    ${can?`<button onclick="deleteStaffStatus('${s.id}')" class="ml-auto text-slate-400 hover:text-thansen-red text-xs" title="Fjern">✕</button>`:''}
+    ${can?`<button onclick="deleteStaffStatus('${s.id}')" aria-label="Fjern status" class="tap-x ml-auto text-slate-400 hover:text-thansen-red text-xs" title="Fjern">✕</button>`:''}
   </div>`;
 }
 function buildDayPage(dateObj, i, D){
   const isToday=ymd(dateObj)===ymd(new Date()), now=new Date();
   const page=document.createElement('section'); page.setAttribute('data-daypage', String(i));
   page.className='snap-center shrink-0 w-[85vw] max-w-sm bg-slate-100/40 dark:bg-slate-950/40 rounded-2xl p-3 border border-slate-200/60 dark:border-slate-800/50';
-  const pills=statusesOn(dateObj).filter(s=>s.allDay && (!filterTag||s.tag===filterTag)).map(s=>{ const d=STATUS_DEF[s.kind], can=canEditStatus(s.tag); return `<span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded" style="color:${d.color};background:${d.color}1a"><i class="fa-solid ${d.icon} text-[8px]"></i>${esc(s.tag)} · ${esc(d.label.toLowerCase())}${can?` <button onclick="deleteStaffStatus('${s.id}')" class="hover:text-thansen-red">✕</button>`:''}</span>`; }).join('');
-  const noteEls=state.notes.filter(n=>n.weekday===i).map(n=>{ const canDel=me&&(n.author===me.tag||isAdmin); return `<span class="inline-flex items-start gap-1 text-[10px] px-1.5 py-0.5 rounded" style="background:${col(n.color,'#ffd400')+'22'};border-left:2px solid ${col(n.color,'#ffd400')}"><span class="whitespace-pre-wrap">${esc(n.body)}</span>${canDel?`<button onclick="deletePlannerNote('${n.id}')" class="text-slate-400">✕</button>`:''}</span>`; }).join('');
+  const pills=statusesOn(dateObj).filter(s=>s.allDay && (!filterTag||s.tag===filterTag)).map(s=>{ const d=STATUS_DEF[s.kind], can=canEditStatus(s.tag); return `<span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded" style="color:${d.color};background:${d.color}1a"><i class="fa-solid ${d.icon} text-[8px]"></i>${esc(s.tag)} · ${esc(d.label.toLowerCase())}${can?` <button onclick="deleteStaffStatus('${s.id}')" aria-label="Fjern status" class="tap-x hover:text-thansen-red">✕</button>`:''}</span>`; }).join('');
+  const noteEls=state.notes.filter(n=>n.weekday===i).map(n=>{ const canDel=me&&(n.author===me.tag||isAdmin); return `<span class="inline-flex items-start gap-1 text-[10px] px-1.5 py-0.5 rounded" style="background:${col(n.color,'#ffd400')+'22'};border-left:2px solid ${col(n.color,'#ffd400')}"><span class="whitespace-pre-wrap">${esc(n.body)}</span>${canDel?`<button onclick="deletePlannerNote('${n.id}')" aria-label="Slett notat" class="tap-x text-slate-400">✕</button>`:''}</span>`; }).join('');
   const items=[ ...weekTasksForDay(dateObj).map(t=>({t})), ...statusesOn(dateObj).filter(s=>!s.allDay && (!filterTag||s.tag===filterTag)).map(s=>({status:s})) ].sort((a,b)=>weekItemTime(a)-weekItemTime(b));
   const body = items.length
     ? items.map(it=> it.status ? agendaStatusRow(it.status) : agendaTaskRow(it.t, dateObj, now)).join('')
@@ -1142,7 +1149,7 @@ function createStatusChip(s){
     <div class="flex items-center gap-1 text-[9px] font-bold" style="color:${d.color}"><i class="fa-solid ${d.icon}"></i>${e(fmtMin(s.startMin))}</div>
     <div class="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">${e(d.label)}</div>
     <div class="flex flex-wrap gap-1 mt-1"><span class="w-4 h-4 rounded text-[7px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(c.name)}">${e(s.tag)}</span></div>
-  </div>${can?`<button onclick="deleteStaffStatus('${s.id}')" class="absolute top-0.5 right-0.5 text-slate-400 hover:text-thansen-red text-[10px] leading-none" title="Fjern">✕</button>`:''}`;
+  </div>${can?`<button onclick="deleteStaffStatus('${s.id}')" aria-label="Fjern status" class="tap-x absolute top-0.5 right-0.5 text-slate-400 hover:text-thansen-red text-[10px] leading-none" title="Fjern">✕</button>`:''}`;
   return el;
 }
 function attachResize(handle, blk, t, startH){
@@ -1166,6 +1173,8 @@ async function addPlannerNote(weekday){
   catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
 }
 async function deletePlannerNote(id){
+  const n=state.notes.find(x=>x.id===id);
+  if(!confirm(`Slette notatet${n?` «${(n.body||'').slice(0,40)}»`:''}?`)) return;
   try{ await T.rpcAuth('delete_planner_note',{p_id:id}); await loadAll(); showToast('Notat slettet','#e30613'); }
   catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
 }
