@@ -369,17 +369,23 @@ window.onload = function () {
     if (!T.getUser()) { await T.ensureUser(); refreshAdminUI(); }   // persondata krever innlogging (v19)
     loadAll();
   })();
-  // rollover kjøres server-side via pg_cron (v21); realtime på tasks plukker opp endringene
+  // rollover kjøres server-side via pg_cron (v21); realtime på tasks plukker opp endringene.
+  // Minuttticken full-laster når fanen er synlig — det fanger også staff_status-endringer
+  // fra andre (RLS-stengt i v19, så realtime dekker dem ikke lenger).
   setInterval(() => {
-    recalculateAlerts(); renderAlertsList(); renderStats(); renderCoworkerList();   // refresh "now" status as breaks expire
+    if(document.visibilityState==='visible') loadAll();
+    else { recalculateAlerts(); renderAlertsList(); renderStats(); renderCoworkerList(); }
   }, 60000);
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState==='visible') loadAll(); });
   if (T.sb) {
+    let _rtFirst=true;
     T.sb.channel('board-rt')
       .on('postgres_changes',{event:'*',schema:'public',table:'tasks'}, loadAll)
       .on('postgres_changes',{event:'*',schema:'public',table:'planner_notes'}, loadAll)
-      .subscribe();
-    // staff_status er RLS-stengt (v19) — realtime leverer ikke events for den lenger;
-    // status-endringer hentes via egne handlinger + minuttticken.
+      .subscribe(status => {
+        // re-SUBSCRIBED etter frakobling = vi kan ha gått glipp av events — hent alt på nytt
+        if(status==='SUBSCRIBED'){ if(_rtFirst) _rtFirst=false; else loadAll(); }
+      });
   }
 };
 
@@ -751,7 +757,11 @@ function tlDone(id, checked){ moveTaskStatus(id, checked?'done':'todo'); }
 
 /* ---------- kanban ---------- */
 function renderKanbanView(){
-  const c=document.getElementById('view-kanban'); c.innerHTML='';
+  const c=document.getElementById('view-kanban');
+  // husk scroll i kolonnene (og horisontalt på mobil) så oppdateringer ikke hopper til toppen
+  const keep={h:c.scrollLeft};
+  ['todo','progress','done'].forEach(s=>{ const el=document.getElementById('kanban-col-'+s); if(el) keep[s]=el.scrollTop; });
+  c.innerHTML='';
   const cols=[ {id:'todo',title:'🔴 Gjøremål'},{id:'progress',title:'🔵 Pågår'},{id:'done',title:'🟢 Fullført'} ];
   cols.forEach(col=>{
     const el=document.createElement('div');
@@ -766,6 +776,8 @@ function renderKanbanView(){
     if(!colTasks.length){ cl.innerHTML=`<div class="h-28 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center text-slate-400 text-xs"><i class="fa-solid fa-clipboard-list mb-1.5"></i><span>Ingen oppgaver</span></div>`; }
     else colTasks.forEach(t=>cl.appendChild(createTaskCard(t,false)));
   });
+  if(keep.h) c.scrollLeft=keep.h;
+  ['todo','progress','done'].forEach(s=>{ const el=document.getElementById('kanban-col-'+s); if(el && keep[s]) el.scrollTop=keep[s]; });
 }
 
 /* ---------- rich text ---------- */
@@ -870,6 +882,10 @@ function gotoThisWeek(){ weekOffset=0; renderWeeklyPlannerView(); }
 const NAVBTN="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-800";
 const ROWH=46;  // px per time-rad i ukesplanen
 function renderWeeklyPlannerView(){
+  // husk swipe-posisjonen så realtime-/tick-oppdateringer ikke rykker brukeren tilbake til i dag
+  const _prevSwipe=document.getElementById('weekly-swipe');
+  const _prevScroll=_prevSwipe?{left:_prevSwipe.scrollLeft, week:window.__wkRenderedWeek}:null;
+  window.__wkRenderedWeek=weekOffset;
   const root=document.getElementById('view-weekly'); root.innerHTML='';
   const D=['Man','Tir','Ons','Tor','Fre','Lør'];
   const monday=mondayOf(weekOffset);
@@ -971,12 +987,16 @@ function renderWeeklyPlannerView(){
       box.appendChild(el);
     });
   });
-  // mobile: open on today (current week) and sync the weekday selector
+  // mobile: gjenopprett posisjonen ved re-render av samme uke; ellers åpne på i dag
   const _ti=dates.findIndex(d=>ymd(d)===ymd(new Date()));
   requestAnimationFrame(()=>{
     const c=document.getElementById('weekly-swipe');
-    if(c && weekOffset===0 && _ti>=0){ const p=c.querySelector(`[data-daypage="${_ti}"]`); if(p) c.scrollLeft=Math.max(0,p.offsetLeft-c.offsetLeft-8); weekSetActiveChip(_ti); }
+    if(!c){ weekSetActiveChip(0); return; }
+    c.style.scrollBehavior='auto';
+    if(_prevScroll && _prevScroll.week===weekOffset){ c.scrollLeft=_prevScroll.left; weekSyncActiveChip(); }
+    else if(weekOffset===0 && _ti>=0){ const p=c.querySelector(`[data-daypage="${_ti}"]`); if(p) c.scrollLeft=Math.max(0,p.offsetLeft-c.offsetLeft-8); weekSetActiveChip(_ti); }
     else weekSetActiveChip(0);
+    c.style.scrollBehavior='';
   });
 }
 /* ---------- weekly: mobile one-day-at-a-time agenda ---------- */
