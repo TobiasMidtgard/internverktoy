@@ -10,7 +10,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = { darkMode:'class', theme:{ extend:{ colors:{ thansen:{
-    50:'#f0f6fc',100:'#e1edf9',500:'#004595',600:'#003573',700:'#002552',
+    50:'#f0f6fc',100:'#e1edf9',400:'#5b9bd5',500:'#004595',600:'#003573',700:'#002552',
     yellow:'#ffcc00', red:'#e30613' } }, fontFamily:{ sans:['Inter','sans-serif'] } } } }
 </script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -750,7 +750,7 @@ function timelineRow(t, now){
   const overdue=t.due && new Date(t.due)<now && t.status!=='done';
   const done=t.status==='done';
   const people=assigneesFor(t, now);
-  const asg=people.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="w-5 h-5 rounded text-[8px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`;}).join('')
+  const asg=people.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="w-6 h-5 rounded text-[9px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`;}).join('')
     || `<span class="text-[9px] text-slate-400 italic">${isAdmin?'+ sett opp ansvarlig':'Ingen tildelt'}</span>`;
   const fr={once:'Engang',daily:'Daglig',weekly:'Ukentlig',monthly:'Månedlig'}[t.frequency]||'';
   return `<div class="tl-row${done?' tl-done':''}" role="button" tabindex="0" onclick="openTaskDetailModal('${e(t.id)}')">
@@ -833,10 +833,10 @@ function createTaskCard(task, weekly=false){
   if(weekly){
     card.className=`p-2 rounded-lg border bg-white dark:bg-slate-950 shadow-sm hover:shadow-md transition-all cursor-pointer ${overdue?'border-red-300 dark:border-red-900':'border-slate-200 dark:border-slate-800/80 hover:border-thansen-500/50'}`;
     const time = task.due ? new Date(task.due).toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'}) : '';
-    let w=''; assigneesFor(task, task.due?new Date(task.due):new Date()).forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-4 h-4 rounded text-[7px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${esc(tag)}">${esc(tag)}</span>`; });
+    let w=''; assigneesFor(task, task.due?new Date(task.due):new Date()).forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-6 h-5 rounded text-[9px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${esc(tag)}">${esc(tag)}</span>`; });
     const dur = task.duration ? `<span class="text-[9px] text-slate-400">${fmtDur(task.duration)}</span>` : '';
     const desc = task.desc ? `<div class="mt-1 space-y-0.5 text-[11px]">${parseDescriptionToHTML(task.id, task.desc)}</div>` : '';
-    card.innerHTML=`<div class="flex items-center justify-between gap-1"><span class="text-[9px] font-bold text-slate-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${time?'kl. '+time:''}</span>${overdue?'<span class="text-[8px] text-red-500 font-extrabold">OVERTID</span>':dur}</div>
+    card.innerHTML=`<div class="flex items-center justify-between gap-1"><span class="text-[9px] font-bold text-slate-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${time?'kl. '+time:''}</span>${overdue?'<span class="text-[10px] text-red-500 font-extrabold">OVERTID</span>':dur}</div>
       <div class="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight mt-0.5">${esc(task.title)}</div>${desc}
       <div class="flex flex-wrap gap-1 mt-1">${w}</div>`;
     return card;
@@ -1037,7 +1037,7 @@ function agendaTaskRow(t, dateObj, now){
   const dot=t.priority==='high'?'bg-red-500':t.priority==='medium'?'bg-amber-500':'bg-emerald-500';
   const overdue=t.due && new Date(t.due)<now && t.status!=='done';
   const ppl=assigneesFor(t, dateObj);
-  let pills=ppl.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="w-5 h-5 rounded text-[8px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`;}).join('');
+  let pills=ppl.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="w-6 h-5 rounded text-[9px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`;}).join('');
   if(!ppl.length) pills=`<span class="text-[9px] text-slate-400 italic">${isAdmin?'+ sett opp ansvarlig':'Ingen tildelt'}</span>`;
   return `<div class="flex items-start gap-2 p-2 rounded-xl bg-white dark:bg-slate-950 border ${overdue?'border-red-300 dark:border-red-900':'border-slate-200 dark:border-slate-800/80'}" role="button" tabindex="0" onclick="openTaskDetailModal('${e(t.id)}')">
     <div class="text-[11px] font-bold text-slate-400 w-9 shrink-0 pt-0.5">${e(time)}</div>
@@ -1054,7 +1054,7 @@ function agendaStatusRow(s){
     <div class="text-[11px] font-bold w-9 shrink-0" style="color:${d.color}">${e(fmtMin(s.startMin))}</div>
     <i class="fa-solid ${d.icon}" style="color:${d.color}"></i>
     <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">${e(d.label)}</span>
-    <span class="w-5 h-5 rounded text-[8px] font-bold text-white inline-flex items-center justify-center" style="background:${col(c.color)}" title="${e(c.name)}">${e(s.tag)}</span>
+    <span class="w-6 h-5 rounded text-[9px] font-bold text-white inline-flex items-center justify-center" style="background:${col(c.color)}" title="${e(c.name)}">${e(s.tag)}</span>
     ${can?`<button onclick="deleteStaffStatus('${s.id}')" aria-label="Fjern status" class="tap-x ml-auto text-slate-400 hover:text-thansen-red text-xs" title="Fjern">✕</button>`:''}
   </div>`;
 }
@@ -1113,8 +1113,8 @@ function createWeeklyBlock(t, span, cellDate){
   blk.className='relative overflow-hidden rounded-lg border bg-white dark:bg-slate-950 shadow-sm cursor-pointer';
   blk.style.borderLeft='3px solid '+col; blk.style.borderColor=(t.priority==='high'?'#ef4444':'');
   const people=assigneesFor(t, cellDate);
-  let w=''; people.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-4 h-4 rounded text-[7px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`; });
-  if(!people.length && isAdmin) w='<span class="text-[8px] text-slate-400 italic">+ sett opp</span>';
+  let w=''; people.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-6 h-5 rounded text-[9px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`; });
+  if(!people.length && isAdmin) w='<span class="text-[10px] text-slate-400 italic">+ sett opp</span>';
   const md=t.desc?`<div class="mt-0.5 space-y-0.5 text-[10px] leading-tight">${parseDescriptionToHTML(t.id,t.desc)}</div>`:'';
   blk.innerHTML=`<div class="p-1.5">
     <div class="flex items-center gap-1 text-[9px] font-bold text-slate-400"><span class="w-1.5 h-1.5 rounded-full" style="background-color:${col}"></span>${String(startH).padStart(2,'0')}–${String(endH).padStart(2,'0')}</div>
@@ -1149,7 +1149,7 @@ function createStatusChip(s){
   el.innerHTML=`<div class="p-1.5">
     <div class="flex items-center gap-1 text-[9px] font-bold" style="color:${d.color}"><i class="fa-solid ${d.icon}"></i>${e(fmtMin(s.startMin))}</div>
     <div class="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">${e(d.label)}</div>
-    <div class="flex flex-wrap gap-1 mt-1"><span class="w-4 h-4 rounded text-[7px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(c.name)}">${e(s.tag)}</span></div>
+    <div class="flex flex-wrap gap-1 mt-1"><span class="w-6 h-5 rounded text-[9px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(c.name)}">${e(s.tag)}</span></div>
   </div>${can?`<button onclick="deleteStaffStatus('${s.id}')" aria-label="Fjern status" class="tap-x absolute top-0.5 right-0.5 text-slate-400 hover:text-thansen-red text-[10px] leading-none" title="Fjern">✕</button>`:''}`;
   return el;
 }
@@ -1299,7 +1299,7 @@ function renderAlertsList(){
   if(!state.alerts.length){ l.innerHTML=`<div class="h-48 flex flex-col items-center justify-center text-center text-slate-400"><i class="fa-solid fa-square-check text-slate-300 dark:text-slate-800 text-3xl mb-2"></i><p class="text-xs font-bold text-slate-500">Alt er i rute!</p></div>`; return; }
   state.alerts.forEach(al=>{ const crit=al.type==='critical'; const c=document.createElement('div');
     c.className=`p-4 rounded-xl border flex flex-col space-y-2 ${crit?'bg-red-50/50 border-red-200 dark:bg-red-950/15 dark:border-red-900/40 pulse-alert':'bg-amber-50/50 border-amber-200 dark:bg-amber-950/15 dark:border-amber-900/40'}`;
-    let ah=''; (al.assignees||[]).forEach(tag=>{ const cw=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; ah+=`<div class="w-4 h-4 rounded text-[7px] font-bold text-white flex items-center justify-center" style="background-color:${col(cw.color)}">${esc(tag)}</div>`; });
+    let ah=''; (al.assignees||[]).forEach(tag=>{ const cw=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; ah+=`<div class="w-6 h-5 rounded text-[9px] font-bold text-white flex items-center justify-center" style="background-color:${col(cw.color)}">${esc(tag)}</div>`; });
     c.innerHTML=`<div class="flex items-center justify-between"><span class="text-[10px] font-bold uppercase tracking-wider ${crit?'text-red-600 dark:text-red-400':'text-amber-700 dark:text-amber-400'}">${esc(al.title)}</span><div class="flex items-center -space-x-1">${ah}</div></div><p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">${esc(al.message)}</p><div class="flex items-center justify-end pt-1"><button onclick="focusOnTaskCard('${al.taskId}')" class="text-[10px] text-thansen-500 dark:text-thansen-yellow font-bold hover:underline">Vis i plan</button></div>`;
     l.appendChild(c);
   });
