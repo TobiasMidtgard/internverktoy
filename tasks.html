@@ -664,13 +664,18 @@ function renderScheduler(){
 function renderTimelineView(){
   const box=document.getElementById('view-timeline');
   const now=new Date(), todayStr=now.toDateString();
+  const startOfToday=new Date(now); startOfToday.setHours(0,0,0,0);
+  // Forfalt en TIDLIGERE dag og fortsatt ugjort (gjelder også høyprioritet som
+  // rollover_incomplete bevisst lar stå) — skal alltid synes på «I dag», øverst.
+  const crossOverdue=t=> t.status!=='done' && t.due && new Date(t.due)<startOfToday;
   const timeOf=t=>{ if(!t.due) return 24*60+1; const d=new Date(t.due); return d.getHours()*60+d.getMinutes(); };
   const items=state.tasks.filter(t=>{
     if(!passFilterOn(t, now)) return false;
+    if(crossOverdue(t)) return true;
     if(t.frequency==='daily') return true;
     if(!t.due) return false;
     return new Date(t.due).toDateString()===todayStr;
-  }).sort((a,b)=> timeOf(a)-timeOf(b) || stableOrder(a,b));
+  }).sort((a,b)=> (crossOverdue(b)?1:0)-(crossOverdue(a)?1:0) || timeOf(a)-timeOf(b) || stableOrder(a,b));
   const heading=`<div class="text-xs text-slate-400 mb-3">${now.toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'long'})}</div>`;
   if(!items.length){ box.innerHTML=heading+'<div class="empty">Ingen oppgaver i dag 🎉</div>'; return; }
   const nowMin=now.getHours()*60+now.getMinutes(); let placed=false;
@@ -685,9 +690,12 @@ function renderTimelineView(){
 function nowMarker(now){ return `<div class="tl-now"><span>NÅ ${now.toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'})}</span></div>`; }
 function timelineRow(t, now){
   const e=T.esc;
-  const time=t.due?new Date(t.due).toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'}):'—';
+  const startOfToday=new Date(now); startOfToday.setHours(0,0,0,0);
+  const crossDay=t.due && new Date(t.due)<startOfToday;
+  const time=t.due?(crossDay ? new Date(t.due).toLocaleDateString('nb-NO',{day:'numeric',month:'short'})
+                             : new Date(t.due).toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'})):'—';
   const dot=t.priority==='high'?'bg-red-500':t.priority==='medium'?'bg-amber-500':'bg-emerald-500';
-  const overdue=t.frequency==='once' && t.due && new Date(t.due)<now && !t.done;
+  const overdue=t.due && new Date(t.due)<now && t.status!=='done';
   const done=t.status==='done';
   const people=assigneesFor(t, now);
   const asg=people.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="w-5 h-5 rounded text-[8px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`;}).join('')
@@ -750,7 +758,7 @@ async function toggleTaskCheckline(taskId, idx){
 /* ---------- task cards ---------- */
 function createTaskCard(task, weekly=false){
   const card=document.createElement('div');
-  const overdue = task.frequency==='once' && task.due && new Date(task.due)<new Date() && task.status!=='done';
+  const overdue = task.due && new Date(task.due)<new Date() && task.status!=='done';
   card.id=`card-${task.id}`;
   card.addEventListener('click',e=>{
     if(e.target.tagName==='INPUT'||e.target.tagName==='A'||e.target.closest('button')) return;
@@ -940,9 +948,12 @@ function renderWeeklyPlannerView(){
 /* ---------- weekly: mobile one-day-at-a-time agenda ---------- */
 function weekTasksForDay(dateObj){
   const dWd=(dateObj.getDay()===0)?6:dateObj.getDay()-1;
+  const isToday=dateObj.toDateString()===new Date().toDateString();
+  const startOfDate=new Date(dateObj); startOfDate.setHours(0,0,0,0);
   return state.tasks.filter(t=>{
     if(t.status==='done' || !passFilterOn(t, dateObj)) return false;
     const due=t.due?new Date(t.due):null;
+    if(isToday && due && due<startOfDate) return true;   // forfalt tidligere dag — vis på dagens side
     if(t.frequency==='daily') return true;
     if(t.frequency==='weekly'){ if(!due) return false; const tWd=(due.getDay()===0)?6:due.getDay()-1; return tWd===dWd; }
     if(t.frequency==='monthly') return !!due && due.getDate()===dateObj.getDate();
@@ -957,7 +968,7 @@ function agendaTaskRow(t, dateObj, now){
   const e=T.esc;
   const time=t.due?new Date(t.due).toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'}):'—';
   const dot=t.priority==='high'?'bg-red-500':t.priority==='medium'?'bg-amber-500':'bg-emerald-500';
-  const overdue=t.frequency==='once' && t.due && new Date(t.due)<now && t.status!=='done';
+  const overdue=t.due && new Date(t.due)<now && t.status!=='done';
   const ppl=assigneesFor(t, dateObj);
   let pills=ppl.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="w-5 h-5 rounded text-[8px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`;}).join('');
   if(!ppl.length) pills=`<span class="text-[9px] text-slate-400 italic">${isAdmin?'+ sett opp ansvarlig':'Ingen tildelt'}</span>`;
