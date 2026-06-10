@@ -20,6 +20,19 @@ test('throws when Algolia returns no hits array', async () => {
   await assert.rejects(() => fetchBikeHits(async () => ({ message: 'boom' })), /no hits/i);
 });
 
+test('fetchBikeHits pages through nbPages and merges hits', async () => {
+  const pages = [
+    { nbPages: 3, hits: [{ url: '/a' }, { url: '/b' }] },
+    { nbPages: 3, hits: [{ url: '/c' }] },
+    { nbPages: 3, hits: [{ url: '/d' }, { url: null }] },   // null-url filtered out
+  ];
+  const requested = [];
+  const fake = async (url, opts) => { const b = JSON.parse(opts.body); requested.push(b.page); return pages[b.page]; };
+  const hits = await fetchBikeHits(fake);
+  assert.deepEqual(requested, [0, 1, 2]);
+  assert.deepEqual(hits.map(h => h.url), ['/a', '/b', '/c', '/d']);
+});
+
 import { fetchSpareParts } from '../src/algolia.js';
 
 test('fetchSpareParts queries Reservedeler by model and returns item array', async () => {

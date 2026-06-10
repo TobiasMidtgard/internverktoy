@@ -8,6 +8,10 @@ on:
         description: 'Dry run (no DB writes)'
         type: boolean
         default: false
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   import:
     runs-on: ubuntu-latest
@@ -25,3 +29,12 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE }}
         run: node src/run.js ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
+      # Stille feil = utdaterte priser/lagerstatus i butikken på ubestemt tid.
+      - name: Create issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "Sykkelimport feilet $(date -u +%F)" \
+            --body "Nattlig Thansen-import feilet — prisene/lagerstatus i Velodex oppdateres ikke. Se kjøringen: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"

@@ -1,6 +1,6 @@
 import { fetchBikeHits, fetchSpareParts, defaultFetchJson } from './algolia.js';
 import { mapHitToBike } from './map.js';
-import { makeClient, upsertBike, markDiscontinued } from './supabase.js';
+import { makeClient, upsertBike, markDiscontinued, countActiveThansen } from './supabase.js';
 
 const GRID_COLS = 5, GRID_DX = 340, GRID_DY = 460, GRID_X0 = 140, GRID_Y0 = 140;
 const SPARE_DELAY_MS = 800; // polite delay between per-model spare-part queries
@@ -56,8 +56,18 @@ async function main(){
       await upsertBike(client, payload);
     }
   }
+  // Discontinued-sweep guard: if this run saw far fewer bikes than are currently
+  // active, the Algolia result was probably partial (outage, renamed category) —
+  // sweeping then would hide real showroom bikes. Skip and let the next run retry.
   let disc = 0;
-  if (!dryRun && seen.length) disc = await markDiscontinued(client, seen);
+  if (!dryRun && seen.length){
+    const active = await countActiveThansen(client).catch(e => { console.warn('sweep count failed: ' + e.message); return null; });
+    if (active !== null && active > 0 && seen.length < active * 0.7){
+      console.warn(`discontinued-sweep SKIPPED: saw ${seen.length} bikes vs ${active} active — looks partial`);
+    } else {
+      disc = await markDiscontinued(client, seen);
+    }
+  }
   console.log(`Done. upserted=${bikes.length} discontinued=${disc} dryRun=${dryRun}`);
 }
 

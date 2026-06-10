@@ -10,34 +10,42 @@ export function algoliaUrl(appId = APP_ID, index = INDEX){
   return `https://${appId}-dsn.algolia.net/1/indexes/${index}/query`;
 }
 
+const BIKE_FACETS = [[
+  'al_menu.lvl2:Sykkel > Sykler > Elsykler',
+  'al_menu.lvl2:Sykkel > Sykler > Barnesykler 12-18" (1-6 år)',
+  'al_menu.lvl2:Sykkel > Sykler > Juniorsykler 20-26" (6-14 år)',
+  'al_menu.lvl2:Sykkel > Sykler > Mountainbikes',
+  'al_menu.lvl2:Sykkel > Sykler > Herresykler',
+  'al_menu.lvl2:Sykkel > Sykler > Damesykler',
+  'al_menu.lvl2:Sykkel > Sykler > Racer  Gravel',
+  'al_menu.lvl2:Sykkel > Sykler > Sammenleggbare sykler'
+]];
+
 // fetchJson(url, options) -> parsed JSON. Injected so tests can stub the network.
+// Pages through the index (Algolia caps hitsPerPage at 1000) so partial results
+// can't masquerade as the full catalogue and trigger a false discontinued-sweep.
 export async function fetchBikeHits(fetchJson, { hitsPerPage = 1000 } = {}){
-  const body = JSON.stringify({
-    query: '', hitsPerPage,
-    facetFilters: [[
-      'al_menu.lvl2:Sykkel > Sykler > Elsykler',
-      'al_menu.lvl2:Sykkel > Sykler > Barnesykler 12-18" (1-6 år)',
-      'al_menu.lvl2:Sykkel > Sykler > Juniorsykler 20-26" (6-14 år)',
-      'al_menu.lvl2:Sykkel > Sykler > Mountainbikes',
-      'al_menu.lvl2:Sykkel > Sykler > Herresykler',
-      'al_menu.lvl2:Sykkel > Sykler > Damesykler',
-      'al_menu.lvl2:Sykkel > Sykler > Racer  Gravel',
-      'al_menu.lvl2:Sykkel > Sykler > Sammenleggbare sykler'
-    ]]
-  });
-  const data = await fetchJson(algoliaUrl(), {
-    method: 'POST',
-    headers: {
-      'X-Algolia-Application-Id': APP_ID,
-      'X-Algolia-API-Key': SEARCH_KEY,
-      'Content-Type': 'application/json'
-    },
-    body
-  });
-  if (!data || !Array.isArray(data.hits)){
-    throw new Error('Algolia returned no hits array: ' + ((data && data.message) || 'unknown'));
-  }
-  return data.hits.filter(h => h && h.url); // all results from this category query are complete bikes
+  const all = [];
+  let page = 0, nbPages = 1;
+  do {
+    const body = JSON.stringify({ query: '', hitsPerPage, page, facetFilters: BIKE_FACETS });
+    const data = await fetchJson(algoliaUrl(), {
+      method: 'POST',
+      headers: {
+        'X-Algolia-Application-Id': APP_ID,
+        'X-Algolia-API-Key': SEARCH_KEY,
+        'Content-Type': 'application/json'
+      },
+      body
+    });
+    if (!data || !Array.isArray(data.hits)){
+      throw new Error('Algolia returned no hits array: ' + ((data && data.message) || 'unknown'));
+    }
+    all.push(...data.hits);
+    nbPages = Number.isInteger(data.nbPages) ? data.nbPages : 1;
+    page += 1;
+  } while (page < nbPages);
+  return all.filter(h => h && h.url); // all results from this category query are complete bikes
 }
 
 export const defaultFetchJson = async (url, opts) => {
