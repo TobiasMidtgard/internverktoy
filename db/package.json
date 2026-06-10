@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Runs supabase/*.sql migrations against Postgres via a connection string in db/.env",
   "dependencies": {
+    "jsdom": "^29.1.1",
     "pg": "^8.13.1"
   }
 }
