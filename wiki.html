@@ -140,7 +140,7 @@
   </div>
 </div>
 
-<script src="shared.js?v=10"></script>
+<script src="shared.js?v=11"></script>
 <script>
 const T=window.THelper, $=id=>document.getElementById(id), esc=s=>T.esc(s);
 const CATS=['Bildeler','Dekk','Sykkel','Bilvask','Barneseter','Takbokser','Takstativ','Vindusviskere','Verktøy','MC','Generelt'];
@@ -190,9 +190,13 @@ function setCat(c){ cat=c; renderCats(); doSearch(); }
 let tmr;
 function debounce(){ clearTimeout(tmr); tmr=setTimeout(doSearch,250); }
 async function doSearch(){
-  const q=$('q').value;
-  const { data, error } = await T.sb.rpc('wiki_search',{ p_q:q, p_category:cat||null });
-  if(error){ $('results').innerHTML=`<div class="empty">${/function|does not exist|schema/i.test(error.message)?'Kjør wiki.sql i Supabase først.':esc(error.message)}</div>`; return; }
+  if(!T.getUser()){
+    $('results').innerHTML=`<div class="empty">Kunnskapsbasen er intern — <button class="btn" onclick="toggleAuth().then(doSearch)">Logg inn</button> for å lese.</div>`;
+    return;
+  }
+  const q=$('q').value; let data;
+  try{ data = await T.rpcAuth('wiki_search',{ p_q:q, p_category:cat||null }); }
+  catch(error){ if(error.message==='no-auth') return; $('results').innerHTML=`<div class="empty">${/function|does not exist|schema/i.test(error.message)?'Kjør wiki_v2.sql i Supabase først.':esc(error.message)}</div>`; return; }
   const rows=data||[];
   if(!rows.length){ $('results').innerHTML='<div class="empty">Ingen treff. Prøv et annet søkeord'+(canManage?' eller lag en ny artikkel.':', eller foreslå en ny artikkel.')+'</div>'; return; }
   $('results').innerHTML = rows.map(r=>`<div class="res" onclick="openArticle('${r.id}')">
@@ -203,7 +207,7 @@ async function doSearch(){
 /* ---------- article ---------- */
 async function openArticle(id){
   let a=articles[id];
-  if(!a){ const {data,error}=await T.sb.from('wiki_articles').select('*').eq('id',id).single(); if(error){ T.toast('Feil: '+error.message); return; } a=data; articles[id]=a; }
+  if(!a){ try{ a=await T.rpcAuth('get_article',{p_id:id}); articles[id]=a; }catch(e){ if(e.message!=='no-auth') T.toast('Feil: '+e.message); return; } }
   $('aTitle').textContent=a.title;
   $('aMeta').innerHTML=`<span class="cat">${esc(a.category)}</span> · Sist endret ${new Date(a.updated_at).toLocaleDateString('nb-NO',{day:'numeric',month:'short',year:'numeric'})}${a.updated_by?' av '+esc(a.updated_by):''}`;
   $('aBody').innerHTML=md(a.body);
@@ -223,7 +227,7 @@ function sourcesToText(arr){ return (arr||[]).map(s=>s.label?`${s.label} | ${s.u
 async function openEditor(id, prefillBody){
   editId=id; $('eNote').style.display='none';
   fillCatSelect($('fCat'), cat||'Generelt');
-  if(id){ const a=articles[id]||(await T.sb.from('wiki_articles').select('*').eq('id',id).single()).data; articles[id]=a;
+  if(id){ const a=articles[id]||await T.rpcAuth('get_article',{p_id:id}).catch(()=>null); if(!a){ T.toast('Fant ikke artikkelen'); return; } articles[id]=a;
     $('eTitle').textContent='Rediger artikkel'; $('fTitle').value=a.title; $('fCat').value=a.category; $('fTags').value=(a.tags||[]).join(', '); $('fBody').value=a.body||''; $('fSources').value=sourcesToText(a.sources); }
   else { $('eTitle').textContent='Ny artikkel'; $('fTitle').value=''; $('fTags').value=''; $('fBody').value=prefillBody||''; $('fSources').value=''; }
   closeModal('articleModal'); show('editModal');
@@ -258,12 +262,13 @@ async function submitSuggest(){
 
 /* ---------- suggestions review (manager) ---------- */
 async function loadSuggestionCount(){
-  const {data}=await T.sb.from('wiki_suggestions').select('id').eq('status','open');
-  $('sugCount').textContent=(data||[]).length;
+  try{ const data=await T.rpcAuth('get_suggestions',{p_status:'open'}); $('sugCount').textContent=(data||[]).length; }
+  catch(e){ /* stille — telleren er pynt */ }
 }
 async function openSuggestions(){
-  const {data,error}=await T.sb.from('wiki_suggestions').select('*').eq('status','open').order('created_at',{ascending:false});
-  if(error){ T.toast('Feil: '+error.message); return; }
+  let data;
+  try{ data=await T.rpcAuth('get_suggestions',{p_status:'open'}); }
+  catch(e){ if(e.message!=='no-auth') T.toast('Feil: '+e.message); return; }
   const rows=data||[]; sugMap={}; rows.forEach(s=>sugMap[s.id]=s);
   $('sugList').innerHTML = rows.length ? rows.map(s=>`<div class="sug">
       <div><b>${s.article_title?esc(s.article_title):'Ny artikkel'}</b></div>
@@ -296,10 +301,8 @@ $('q').addEventListener('keydown',e=>{ if(e.key==='Enter') doSearch(); });
 
 /* ---------- boot ---------- */
 renderCats(); refreshAuth(); doSearch();
-if(T.sb){ T.sb.channel('wiki-rt')
-  .on('postgres_changes',{event:'*',schema:'public',table:'wiki_articles'},()=>{ articles={}; doSearch(); })
-  .on('postgres_changes',{event:'*',schema:'public',table:'wiki_suggestions'},()=>{ if(canManage) loadSuggestionCount(); })
-  .subscribe(); }
+// (realtime på wiki-tabellene er fjernet: lesing er RLS-stengt i wiki_v2, så anon-kanalen
+// får ingen events lenger; lagring/sletting oppdaterer lista direkte.)
 </script>
 </body>
 </html>

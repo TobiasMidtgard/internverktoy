@@ -12,19 +12,25 @@ window.THelper = (function () {
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-  /* ---------- session (lagrer KUN sesjonstoken, aldri passord) ---------- */
+  /* ---------- session (lagrer KUN sesjonstoken, aldri passord) ----------
+     localStorage så innloggingen overlever fane-/nettleserlukking (tokenet
+     utløper server-side etter 30 dager, og kan trekkes tilbake med logg ut). */
   function getSession(){
     try {
-      const s = JSON.parse(sessionStorage.getItem(SESSION_KEY));
+      const s = JSON.parse(localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY));
       if (s && !s.token && s.pw) s.token = s.pw;   // eldre sesjoner (pre-token) — passordet godtas fortsatt av serveren
       return s;
     } catch { return null; }
   }
-  function setSession(user, token){ sessionStorage.setItem(SESSION_KEY, JSON.stringify({ user, token })); }
+  function setSession(user, token){
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ user, token }));
+    try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+  }
   function clearSession(){
     const s = getSession();
     if (s && s.token && sb) sb.rpc('logout_account', { p_tag: s.user.tag, p_token: s.token }).then(()=>{}, ()=>{});
-    sessionStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SESSION_KEY);
+    try { sessionStorage.removeItem(SESSION_KEY); } catch {}
   }
   const getUser = () => { const s = getSession(); return s ? s.user : null; };
   const role    = () => { const u = getUser(); return u ? u.role : null; };

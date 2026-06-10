@@ -244,7 +244,7 @@
   <div><p class="text-xs font-bold">Fjern fra oppgave</p><p class="text-[10px] opacity-90">Slipp ansatt-kortet her.</p></div>
 </div>
 
-<script src="shared.js?v=10"></script>
+<script src="shared.js?v=11"></script>
 <script>
 const T = window.THelper;
 const BUILD = '2026-06-09c';   // bumped on each deploy so a stale cache is easy to spot
@@ -360,7 +360,11 @@ window.onload = function () {
   const _bs=document.getElementById('build-stamp'); if(_bs) _bs.textContent='· '+BUILD;
   console.info('ButikkPlanlegger build '+BUILD);
   refreshAdminUI();
-  (async () => { try { if (T.sb){ await T.sb.rpc('rollover_recurring'); await T.sb.rpc('rollover_incomplete'); } } catch(e){} loadAll(); })();
+  (async () => {
+    if (!T.getUser()) { await T.ensureUser(); refreshAdminUI(); }   // persondata krever innlogging (v19)
+    try { if (T.sb){ await T.sb.rpc('rollover_recurring'); await T.sb.rpc('rollover_incomplete'); } } catch(e){}
+    loadAll();
+  })();
   setInterval(async () => {
     try { const a=await T.sb.rpc('rollover_recurring'); const b=await T.sb.rpc('rollover_incomplete'); if((a.data||b.data)) await loadAll(); } catch(e){}
     recalculateAlerts(); renderAlertsList(); renderStats(); renderCoworkerList();   // refresh "now" status as breaks expire
@@ -369,29 +373,32 @@ window.onload = function () {
     T.sb.channel('board-rt')
       .on('postgres_changes',{event:'*',schema:'public',table:'tasks'}, loadAll)
       .on('postgres_changes',{event:'*',schema:'public',table:'planner_notes'}, loadAll)
-      .on('postgres_changes',{event:'*',schema:'public',table:'staff_status'}, loadAll)
       .subscribe();
+    // staff_status er RLS-stengt (v19) — realtime leverer ikke events for den lenger;
+    // status-endringer hentes via egne handlinger + minuttticken.
   }
 };
 
 async function loadAll(){
   if(!T.sb){ showToast('Supabase utilgjengelig','#e30613'); return; }
-  const [cw, tk, nt, ss] = await Promise.all([
-    T.sb.from('coworkers_public').select('*'),
+  const [tk, nt] = await Promise.all([
     T.sb.from('tasks').select('*'),
-    T.sb.from('planner_notes').select('*'),
-    T.sb.from('staff_status').select('*')
+    T.sb.from('planner_notes').select('*')
   ]);
   if(tk.error){
     const msg=tk.error.message||'';
     showToast(/relation|does not exist|column|schema cache/i.test(msg) ? 'Kjør migreringene (tasks.sql … tasks_v8.sql)' : 'Lastefeil: '+msg,'#e30613');
     return;
   }
-  // oppgaver vises uansett; ansattregisteret tåler at v7-viewet mangler
-  if(cw.error){ state.coworkers=[]; showToast('Ansattregister mangler — kjør tasks_v7.sql','#f59e0b'); }
-  else state.coworkers = (cw.data||[]).sort((a,b)=>a.tag.localeCompare(b.tag));
+  // ansatte + status krever innlogging (v19); tavla vises uansett
+  let people=null;
+  if(T.getUser()){
+    try{ people = await T.rpcAuth('get_people'); }
+    catch(e){ if(e.message!=='no-auth') showToast('Kunne ikke hente ansatte: '+e.message,'#f59e0b'); }
+  }
+  state.coworkers = people ? (people.coworkers||[]).sort((a,b)=>a.tag.localeCompare(b.tag)) : [];
   state.notes = (nt && !nt.error && nt.data) ? nt.data : [];
-  state.staffStatus = ((ss && !ss.error && ss.data) ? ss.data : []).map(r=>({
+  state.staffStatus = (people ? (people.staff_status||[]) : []).map(r=>({
     id:r.id, tag:r.tag, kind:r.kind, day:r.day, startMin:r.start_min, durMin:r.dur_min, allDay:r.all_day, author:r.author
   }));
   state.tasks = (tk.data||[]).map(r=>({
