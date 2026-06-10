@@ -6,6 +6,7 @@
 -- ============================================================================
 
 -- ---------- utvidelser ----------
+create extension if not exists "pg_cron" with schema extensions;
 create extension if not exists "pg_stat_statements" with schema extensions;
 create extension if not exists "pg_trgm" with schema extensions;
 create extension if not exists "pgcrypto" with schema extensions;
@@ -297,6 +298,36 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.add_day_assignee(p_auth_tag text, p_auth_pw text, p_id uuid, p_day date, p_tag text)
+ RETURNS tasks
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  r public.tasks;
+  k      text := to_char(p_day, 'YYYY-MM-DD');
+  cutoff text := to_char((now() at time zone 'Europe/Oslo')::date - 60, 'YYYY-MM-DD');
+begin
+  perform public._require_manager(p_auth_tag, p_auth_pw);
+  if not exists (select 1 from public.coworkers where tag = upper(p_tag)) then
+    raise exception 'Ukjent ansattkode: %', upper(p_tag);
+  end if;
+  update public.tasks t set day_assignees =
+    ( select coalesce(jsonb_object_agg(e.key, e.value), '{}'::jsonb)
+        from jsonb_each(coalesce(t.day_assignees, '{}'::jsonb)) e
+        where e.key <> k and e.key >= cutoff )
+    || jsonb_build_object(k,
+         (select jsonb_agg(distinct v) from (
+            select jsonb_array_elements_text(coalesce(t.day_assignees->k, '[]'::jsonb)) as v
+            union select upper(p_tag)) s))
+  where t.id = p_id
+  returning * into r;
+  if not found then raise exception 'Task not found'; end if;
+  return r;
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.add_planner_note(p_auth_tag text, p_auth_pw text, p_weekday integer, p_body text, p_color text)
  RETURNS planner_notes
  LANGUAGE plpgsql
@@ -562,6 +593,33 @@ AS $function$
   end; $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.prune_old_data()
+ RETURNS integer
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare n int := 0; m int;
+begin
+  -- ferdige engangsoppgaver eldre enn 60 dager (gjentakende beholdes alltid)
+  delete from public.tasks
+   where recur_unit = 'none' and status = 'done'
+     and coalesce(last_done_at, created_at) < now() - interval '60 days';
+  get diagnostics m = row_count; n := n + m;
+
+  -- vaktstatus eldre enn 60 dager
+  delete from public.staff_status
+   where day < (now() at time zone 'Europe/Oslo')::date - 60;
+  get diagnostics m = row_count; n := n + m;
+
+  -- utløpte sesjoner
+  delete from public.sessions where expires_at < now();
+  get diagnostics m = row_count; n := n + m;
+
+  return n;
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.register_account(p_tag text, p_name text, p_title text, p_color text, p_password text, p_invite text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -593,6 +651,56 @@ begin
             coalesce(nullif(p_title,''),'Butikkmedarbeider'), 'coworker', crypt(p_password, gen_salt('bf')));
   end if;
   return public._issue_session(p_tag);
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.remove_day_assignee(p_auth_tag text, p_auth_pw text, p_id uuid, p_day date, p_tag text)
+ RETURNS tasks
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  r public.tasks;
+  k      text := to_char(p_day, 'YYYY-MM-DD');
+  cutoff text := to_char((now() at time zone 'Europe/Oslo')::date - 60, 'YYYY-MM-DD');
+begin
+  perform public._require_manager(p_auth_tag, p_auth_pw);
+  update public.tasks t set day_assignees =
+    ( select coalesce(jsonb_object_agg(e.key, e.value), '{}'::jsonb)
+        from jsonb_each(coalesce(t.day_assignees, '{}'::jsonb)) e
+        where e.key <> k and e.key >= cutoff )
+    || case when exists (select 1 from jsonb_array_elements_text(coalesce(t.day_assignees->k, '[]'::jsonb)) v
+                         where v <> upper(p_tag))
+            then jsonb_build_object(k,
+                   (select jsonb_agg(v) from jsonb_array_elements_text(coalesce(t.day_assignees->k, '[]'::jsonb)) v
+                    where v <> upper(p_tag)))
+            else '{}'::jsonb end
+  where t.id = p_id
+  returning * into r;
+  if not found then raise exception 'Task not found'; end if;
+  return r;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.reset_password(p_auth_tag text, p_auth_pw text, p_target text, p_new text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'extensions'
+AS $function$
+declare target_role text;
+begin
+  perform public._require_manager(p_auth_tag,p_auth_pw);
+  if length(coalesce(p_new,'')) < 4 then raise exception 'Nytt passord må ha minst 4 tegn'; end if;
+  select role into target_role from public.coworkers where tag = upper(p_target);
+  if not found then raise exception 'Ukjent ansattkode'; end if;
+  -- en manager skal ikke kunne overta dev-kontoen via passord-nullstilling
+  if target_role = 'dev' and public.account_role(p_auth_tag,p_auth_pw) <> 'dev' then
+    raise exception 'Kun IT (dev) kan nullstille dev-kontoer';
+  end if;
+  update public.coworkers set pass_hash = crypt(p_new, gen_salt('bf')) where tag = upper(p_target);
+  delete from public.sessions where tag = upper(p_target);   -- logg ut alle enheter
 end $function$
 ;
 
@@ -651,14 +759,19 @@ begin
     )
   loop
     step := (r.recur_n || ' ' || r.recur_unit)::interval;
-    nd   := coalesce(r.due_at, now()) + step;          -- one cycle forward, alignment kept
-    if step > interval '0' then                        -- guard against a non-positive step
-      while nd <= now() loop                           -- overdue: skip missed cycles to next slot
-        nd := nd + step;
-      end loop;
+    nd   := coalesce(r.due_at, now()) + step;          -- én syklus frem, behold justeringen
+    if step > interval '0' then
+      if r.recur_unit = 'hour' then
+        while nd <= now() loop nd := nd + step; end loop;                      -- neste ledige time-slot
+      else
+        while ((nd + step) at time zone 'Europe/Oslo')::date <= (now() at time zone 'Europe/Oslo')::date loop
+          nd := nd + step;                                                     -- siste tapte dags-slot
+        end loop;
+      end if;
     end if;
     update public.tasks
-      set status = 'todo', done = false, due_at = nd
+      set status = 'todo', done = false, due_at = nd,
+          notes = regexp_replace(notes, '([-*]\s+)\[[xX]\]', '\1[ ]', 'g')     -- nullstill sjekklista
       where id = r.id;
     n := n + 1;
   end loop;
@@ -771,7 +884,10 @@ begin
   if p_status not in ('todo','progress','done') then raise exception 'bad status'; end if;
   update public.tasks set
     status = p_status, done = (p_status = 'done'),
-    last_done_at = case when p_status = 'done' then now() else last_done_at end
+    last_done_at = case when p_status = 'done' then now() else last_done_at end,
+    notes = case when p_status <> 'done' and status = 'done' and recur_unit <> 'none'
+                 then regexp_replace(notes, '([-*]\s+)\[[xX]\]', '\1[ ]', 'g')
+                 else notes end
   where id = p_id returning * into r;
   if not found then raise exception 'Task not found'; end if;
   return r;
@@ -875,9 +991,26 @@ CREATE OR REPLACE FUNCTION public.update_task(p_auth_tag text, p_auth_pw text, p
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-declare r public.tasks;
+declare r public.tasks; old_key text; new_key text; merged jsonb;
 begin
   perform public._require_manager(p_auth_tag,p_auth_pw);
+  select * into r from public.tasks where id = p_id;
+  if not found then raise exception 'Task not found'; end if;
+
+  if (p_task ? 'due_at') and r.recur_unit = 'none' and r.due_at is not null
+     and nullif(p_task->>'due_at','') is not null then
+    old_key := to_char(r.due_at at time zone 'Europe/Oslo', 'YYYY-MM-DD');
+    new_key := to_char((p_task->>'due_at')::timestamptz at time zone 'Europe/Oslo', 'YYYY-MM-DD');
+    if old_key <> new_key and (coalesce(r.day_assignees,'{}'::jsonb) ? old_key) then
+      merged := coalesce(r.day_assignees,'{}'::jsonb);
+      merged := jsonb_set(merged, array[new_key],
+                  coalesce((select jsonb_agg(distinct x)
+                            from jsonb_array_elements(coalesce(merged->new_key,'[]'::jsonb) || (merged->old_key)) as x),
+                           '[]'::jsonb)) - old_key;
+      update public.tasks set day_assignees = merged where id = p_id;
+    end if;
+  end if;
+
   update public.tasks set
     title=coalesce(nullif(trim(p_task->>'title'),''),title),
     notes=case when p_task ? 'notes' then nullif(p_task->>'notes','') else notes end,
@@ -888,7 +1021,7 @@ begin
     done=case when p_task ? 'status' then (p_task->>'status')='done' else done end,
     duration_min=case when p_task ? 'duration_min' then (p_task->>'duration_min')::int else duration_min end
   where id=p_id returning * into r;
-  if not found then raise exception 'Task not found'; end if; return r;
+  return r;
 end $function$
 ;
 
@@ -985,6 +1118,7 @@ grant execute on function public.account_role(p_tag text, p_password text) to an
 grant execute on function public.add_article(p_auth_tag text, p_auth_pw text, p_article jsonb) to anon, authenticated;
 grant execute on function public.add_bike(p_passcode text, p_data jsonb) to anon, authenticated;
 grant execute on function public.add_coworker(p_auth_tag text, p_auth_pw text, p_tag text, p_name text, p_color text, p_title text) to anon, authenticated;
+grant execute on function public.add_day_assignee(p_auth_tag text, p_auth_pw text, p_id uuid, p_day date, p_tag text) to anon, authenticated;
 grant execute on function public.add_planner_note(p_auth_tag text, p_auth_pw text, p_weekday integer, p_body text, p_color text) to anon, authenticated;
 grant execute on function public.add_suggestion(p_auth_tag text, p_auth_pw text, p_article_id uuid, p_article_title text, p_body text) to anon, authenticated;
 grant execute on function public.add_task(p_auth_tag text, p_auth_pw text, p_task jsonb) to anon, authenticated;
@@ -1000,10 +1134,11 @@ grant execute on function public.get_people(p_auth_tag text, p_auth_pw text) to 
 grant execute on function public.get_suggestions(p_auth_tag text, p_auth_pw text, p_status text) to anon, authenticated;
 grant execute on function public.login_account(p_tag text, p_password text) to anon, authenticated;
 grant execute on function public.logout_account(p_tag text, p_token text) to anon, authenticated;
+grant execute on function public.prune_old_data() to anon, authenticated;
 grant execute on function public.register_account(p_tag text, p_name text, p_title text, p_color text, p_password text, p_invite text) to anon, authenticated;
+grant execute on function public.remove_day_assignee(p_auth_tag text, p_auth_pw text, p_id uuid, p_day date, p_tag text) to anon, authenticated;
+grant execute on function public.reset_password(p_auth_tag text, p_auth_pw text, p_target text, p_new text) to anon, authenticated;
 grant execute on function public.resolve_suggestion(p_auth_tag text, p_auth_pw text, p_id uuid, p_status text) to anon, authenticated;
-grant execute on function public.rollover_incomplete() to anon, authenticated;
-grant execute on function public.rollover_recurring() to anon, authenticated;
 grant execute on function public.set_assignees(p_auth_tag text, p_auth_pw text, p_id uuid, p_assignees jsonb) to anon, authenticated;
 grant execute on function public.set_day_assignees(p_auth_tag text, p_auth_pw text, p_id uuid, p_day date, p_tags jsonb) to anon, authenticated;
 grant execute on function public.set_invite_code(p_auth_tag text, p_auth_pw text, p_new text) to anon, authenticated;
