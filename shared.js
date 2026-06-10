@@ -65,8 +65,8 @@ window.THelper = (function () {
   let toastWrap;
   function toast(msg, opts = {}){
     injectCss();
-    if (!toastWrap){ toastWrap = document.createElement('div'); toastWrap.className = 'th-toast-wrap'; document.body.appendChild(toastWrap); }
-    const t = document.createElement('div'); t.className = 'th-toast'; t.append(msg);
+    if (!toastWrap){ toastWrap = document.createElement('div'); toastWrap.className = 'th-toast-wrap'; toastWrap.setAttribute('aria-live','polite'); document.body.appendChild(toastWrap); }
+    const t = document.createElement('div'); t.className = 'th-toast'; t.setAttribute('role','status'); t.append(msg);
     toastWrap.appendChild(t); setTimeout(() => t.remove(), opts.ms || 3500); return t;
   }
 
@@ -85,23 +85,23 @@ window.THelper = (function () {
       injectCss();
       const ov = document.createElement('div'); ov.className = 'th-ov';
       ov.innerHTML = `
-        <div class="th-dialog" role="dialog" aria-modal="true">
+        <div class="th-dialog" role="dialog" aria-modal="true" aria-label="Innlogging">
           <div class="th-tabs"><button data-t="login">Logg inn</button><button data-t="reg">Ny konto</button><button data-t="pw">Bytt passord</button></div>
           <div data-pane="login">
-            <div class="th-f"><label>Ansattkode (4 bokstaver)</label><input class="thi-tag" maxlength="4" autocomplete="username" placeholder="MORT" style="text-transform:uppercase"></div>
-            <div class="th-f"><label>Passord</label><input class="thi-pw" type="password" autocomplete="current-password" placeholder="••••"></div>
+            <div class="th-f"><label for="thi-tag">Ansattkode (4 bokstaver)</label><input id="thi-tag" class="thi-tag" maxlength="4" autocomplete="username" placeholder="MORT" style="text-transform:uppercase"></div>
+            <div class="th-f"><label for="thi-pw">Passord</label><input id="thi-pw" class="thi-pw" type="password" autocomplete="current-password" placeholder="••••"></div>
           </div>
           <div data-pane="reg" hidden>
-            <div class="th-f"><label>Fullt navn</label><input class="thr-name" placeholder="Ola Nordmann"></div>
-            <div class="th-f"><label>Ansattkode (4 bokstaver)</label><input class="thr-tag" maxlength="4" placeholder="OLAN" style="text-transform:uppercase"></div>
-            <div class="th-f"><label>Stillingstittel</label><select class="thr-title">${TITLES.map(t=>`<option ${t==='Butikkmedarbeider'?'selected':''}>${t}</option>`).join('')}</select></div>
-            <div class="th-f"><label>Passord (min. 4 tegn)</label><input class="thr-pw" type="password" autocomplete="new-password" placeholder="••••"></div>
-            <div class="th-f"><label>Invitasjonskode (spør butikksjefen)</label><input class="thr-inv" autocomplete="off" placeholder="····"></div>
+            <div class="th-f"><label for="thr-name">Fullt navn</label><input id="thr-name" class="thr-name" placeholder="Ola Nordmann"></div>
+            <div class="th-f"><label for="thr-tag">Ansattkode (4 bokstaver)</label><input id="thr-tag" class="thr-tag" maxlength="4" placeholder="OLAN" style="text-transform:uppercase"></div>
+            <div class="th-f"><label for="thr-title">Stillingstittel</label><select id="thr-title" class="thr-title">${TITLES.map(t=>`<option ${t==='Butikkmedarbeider'?'selected':''}>${t}</option>`).join('')}</select></div>
+            <div class="th-f"><label for="thr-pw">Passord (min. 4 tegn)</label><input id="thr-pw" class="thr-pw" type="password" autocomplete="new-password" placeholder="••••"></div>
+            <div class="th-f"><label for="thr-inv">Invitasjonskode (spør butikksjefen)</label><input id="thr-inv" class="thr-inv" autocomplete="off" placeholder="····"></div>
           </div>
           <div data-pane="pw" hidden>
-            <div class="th-f"><label>Ansattkode (4 bokstaver)</label><input class="thp-tag" maxlength="4" autocomplete="username" placeholder="MORT" style="text-transform:uppercase"></div>
-            <div class="th-f"><label>Nåværende passord</label><input class="thp-old" type="password" autocomplete="current-password" placeholder="••••"></div>
-            <div class="th-f"><label>Nytt passord (min. 4 tegn)</label><input class="thp-new" type="password" autocomplete="new-password" placeholder="••••"></div>
+            <div class="th-f"><label for="thp-tag">Ansattkode (4 bokstaver)</label><input id="thp-tag" class="thp-tag" maxlength="4" autocomplete="username" placeholder="MORT" style="text-transform:uppercase"></div>
+            <div class="th-f"><label for="thp-old">Nåværende passord</label><input id="thp-old" class="thp-old" type="password" autocomplete="current-password" placeholder="••••"></div>
+            <div class="th-f"><label for="thp-new">Nytt passord (min. 4 tegn)</label><input id="thp-new" class="thp-new" type="password" autocomplete="new-password" placeholder="••••"></div>
           </div>
           <div class="th-err"></div>
           <div class="th-row"><button class="th-btn ghost" data-x="cancel">Avbryt</button><button class="th-btn" data-x="ok">Logg inn</button></div>

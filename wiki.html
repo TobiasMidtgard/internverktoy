@@ -92,9 +92,9 @@
 </main>
 
 <!-- Article -->
-<div class="modal" id="articleModal">
+<div class="modal" role="dialog" aria-modal="true" id="articleModal">
   <div class="sheet">
-    <div class="hd"><h2 id="aTitle"></h2><button class="x" onclick="closeModal('articleModal')">✕</button></div>
+    <div class="hd"><h2 id="aTitle"></h2><button class="x" aria-label="Lukk" onclick="closeModal('articleModal')">✕</button></div>
     <div class="bd">
       <div class="meta" id="aMeta"></div>
       <div class="md" id="aBody" style="margin-top:12px"></div>
@@ -105,42 +105,42 @@
 </div>
 
 <!-- Editor (manager) -->
-<div class="modal" id="editModal">
+<div class="modal" role="dialog" aria-modal="true" id="editModal">
   <div class="sheet">
-    <div class="hd"><h2 id="eTitle">Ny artikkel</h2><button class="x" onclick="closeModal('editModal')">✕</button></div>
+    <div class="hd"><h2 id="eTitle">Ny artikkel</h2><button class="x" aria-label="Lukk" onclick="closeModal('editModal')">✕</button></div>
     <div class="bd">
       <div class="note" id="eNote" style="display:none"></div>
-      <div class="row"><label>Tittel</label><input type="text" id="fTitle"></div>
-      <div class="row"><label>Kategori</label><select id="fCat"></select></div>
-      <div class="row"><label>Tagger (komma)</label><input type="text" id="fTags" placeholder="dekk, vinter, pigg"></div>
-      <div class="row"><label>Innhold (markdown: # overskrift, **fet**, - punkt, [tekst](lenke))</label><textarea id="fBody" rows="10"></textarea></div>
-      <div class="row"><label>Kilder — én per linje: «Tittel | https://…»</label><textarea id="fSources" rows="3" placeholder="Produsentens monteringsguide | https://…"></textarea></div>
+      <div class="row"><label for="fTitle">Tittel</label><input type="text" id="fTitle"></div>
+      <div class="row"><label for="fCat">Kategori</label><select id="fCat"></select></div>
+      <div class="row"><label for="fTags">Tagger (komma)</label><input type="text" id="fTags" placeholder="dekk, vinter, pigg"></div>
+      <div class="row"><label for="fBody">Innhold (markdown: # overskrift, **fet**, - punkt, [tekst](lenke))</label><textarea id="fBody" rows="10"></textarea></div>
+      <div class="row"><label for="fSources">Kilder — én per linje: «Tittel | https://…»</label><textarea id="fSources" rows="3" placeholder="Produsentens monteringsguide | https://…"></textarea></div>
     </div>
     <div class="ft"><button class="btn ghost" onclick="closeModal('editModal')">Avbryt</button><button class="btn" onclick="saveArticle()">Lagre</button></div>
   </div>
 </div>
 
 <!-- Suggest (others) -->
-<div class="modal" id="sugModal">
+<div class="modal" role="dialog" aria-modal="true" id="sugModal">
   <div class="sheet" style="max-width:520px">
-    <div class="hd"><h2 id="sgTitle">Foreslå endring</h2><button class="x" onclick="closeModal('sugModal')">✕</button></div>
+    <div class="hd"><h2 id="sgTitle">Foreslå endring</h2><button class="x" aria-label="Lukk" onclick="closeModal('sugModal')">✕</button></div>
     <div class="bd">
       <p class="meta" id="sgFor"></p>
-      <div class="row"><label>Ditt forslag (hva bør legges til / endres?)</label><textarea id="sgBody" rows="6" placeholder="Beskriv forslaget — gjerne med lenker til kilder."></textarea></div>
+      <div class="row"><label for="sgBody">Ditt forslag (hva bør legges til / endres?)</label><textarea id="sgBody" rows="6" placeholder="Beskriv forslaget — gjerne med lenker til kilder."></textarea></div>
     </div>
     <div class="ft"><button class="btn ghost" onclick="closeModal('sugModal')">Avbryt</button><button class="btn cta" onclick="submitSuggest()">Send forslag</button></div>
   </div>
 </div>
 
 <!-- Suggestions list (manager) -->
-<div class="modal" id="sugListModal">
+<div class="modal" role="dialog" aria-modal="true" id="sugListModal">
   <div class="sheet" style="max-width:560px">
-    <div class="hd"><h2>Innsendte forslag</h2><button class="x" onclick="closeModal('sugListModal')">✕</button></div>
+    <div class="hd"><h2>Innsendte forslag</h2><button class="x" aria-label="Lukk" onclick="closeModal('sugListModal')">✕</button></div>
     <div class="bd" id="sugList"></div>
   </div>
 </div>
 
-<script src="shared.js?v=12"></script>
+<script src="shared.js?v=13"></script>
 <script>
 const T=window.THelper, $=id=>document.getElementById(id), esc=s=>T.esc(s);
 const CATS=['Bildeler','Dekk','Sykkel','Bilvask','Barneseter','Takbokser','Takstativ','Vindusviskere','Verktøy','MC','Generelt'];
@@ -199,7 +199,7 @@ async function doSearch(){
   catch(error){ if(error.message==='no-auth') return; $('results').innerHTML=`<div class="empty">${/function|does not exist|schema/i.test(error.message)?'Kjør wiki_v2.sql i Supabase først.':esc(error.message)}</div>`; return; }
   const rows=data||[];
   if(!rows.length){ $('results').innerHTML='<div class="empty">Ingen treff. Prøv et annet søkeord'+(canManage?' eller lag en ny artikkel.':', eller foreslå en ny artikkel.')+'</div>'; return; }
-  $('results').innerHTML = rows.map(r=>`<div class="res" onclick="openArticle('${r.id}')">
+  $('results').innerHTML = rows.map(r=>`<div class="res" role="button" tabindex="0" onclick="openArticle('${r.id}')">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h3>${esc(r.title)}</h3><span class="cat">${esc(r.category)}</span></div>
     <div class="snip">${highlight(r.snippet)}</div></div>`).join('');
 }
@@ -295,7 +295,11 @@ async function dismissSuggestion(id){
 /* ---------- helpers ---------- */
 function show(id){ $(id).classList.add('show'); }
 function closeModal(id){ $(id).classList.remove('show'); }
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show')); });
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));
+  else if((e.key==='Enter'||e.key===' ') && e.target instanceof HTMLElement
+          && e.target.getAttribute('role')==='button' && e.target.tagName!=='BUTTON'){ e.preventDefault(); e.target.click(); }
+});
 $('q').addEventListener('input',debounce);
 $('q').addEventListener('keydown',e=>{ if(e.key==='Enter') doSearch(); });
 

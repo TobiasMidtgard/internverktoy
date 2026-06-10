@@ -68,7 +68,7 @@
     <div class="flex items-center space-x-2 sm:space-x-3">
       <span id="admin-state" class="hidden sm:inline text-[11px] font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400"></span>
       <button onclick="toggleMobileSidebar()" class="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900" title="Vis ansatte"><i class="fa-solid fa-users text-lg"></i></button>
-      <button onclick="toggleAlertsPanel()" class="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900"><i class="fa-solid fa-bell text-lg"></i><span id="alert-badge" class="absolute top-1 right-1 w-2.5 h-2.5 bg-thansen-red rounded-full hidden"></span></button>
+      <button onclick="toggleAlertsPanel()" aria-label="Varsler" class="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900"><i class="fa-solid fa-bell text-lg" aria-hidden="true"></i><span id="alert-badge" class="absolute top-0.5 right-0 min-w-[17px] h-[17px] px-1 bg-thansen-red rounded-full hidden text-[10px] font-bold text-white text-center leading-[17px]"></span></button>
       <button id="lockBtn" onclick="toggleAdmin()" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900" title="Logg inn som admin"><i class="fa-solid fa-lock text-lg"></i></button>
     </div>
   </header>
@@ -156,11 +156,11 @@
 </div>
 
 <!-- Detail modal -->
-<div id="task-detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+<div id="task-detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-task-title" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
   <div class="bg-white dark:bg-slate-950 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
     <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/20">
       <div class="flex items-center space-x-2 text-thansen-500"><i class="fa-solid fa-circle-info text-xl text-thansen-yellow bg-thansen-500 p-1.5 rounded-lg"></i><h3 class="font-bold text-base sm:text-lg">Oppgavedetaljer</h3></div>
-      <button onclick="closeTaskDetailModal()" class="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"><i class="fa-solid fa-times"></i></button>
+      <button onclick="closeTaskDetailModal()" aria-label="Lukk" class="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
     </div>
     <div class="p-6 overflow-y-auto flex-1 space-y-4">
       <div><span id="detail-task-priority" class="text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wide"></span><span id="detail-task-frequency" class="bg-slate-100 dark:bg-slate-900 text-slate-500 text-[9px] font-medium px-1.5 py-0.5 rounded ml-2"></span></div>
@@ -169,7 +169,7 @@
       <div><h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Beskrivelse & Sjekkliste</h4><div id="detail-task-parsed-desc" class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-xs space-y-2"></div></div>
       <div><h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Ansvarlige i dag</h4><div id="detail-task-assignees" class="flex flex-wrap gap-2.5"></div><p id="detail-assignee-hint" class="text-[10px] text-slate-400 mt-2"></p></div>
       <div class="bg-slate-50 dark:bg-slate-900/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
-        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Endre Status</label>
+        <label for="detail-task-status-select" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Endre Status</label>
         <select id="detail-task-status-select" onchange="handleDetailStatusChange()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-thansen-500">
           <option value="todo">🔴 Gjøremål (Ikke startet)</option><option value="progress">🔵 Pågår</option><option value="done">🟢 Fullført / Arkivert</option>
         </select>
@@ -186,29 +186,29 @@
 </div>
 
 <!-- Task create/edit modal -->
-<div id="task-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+<div id="task-modal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
   <div class="bg-white dark:bg-slate-950 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
     <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/20">
       <h3 id="task-modal-title" class="font-bold text-base sm:text-lg flex items-center space-x-2"><i class="fa-solid fa-circle-plus text-thansen-500"></i><span>Opprett Gjøremål</span></h3>
-      <button onclick="closeTaskModal()" class="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"><i class="fa-solid fa-times"></i></button>
+      <button onclick="closeTaskModal()" aria-label="Lukk" class="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
     </div>
     <form id="task-form" onsubmit="handleTaskSubmit(event)" class="p-6 space-y-4 overflow-y-auto flex-1 text-xs sm:text-sm">
       <input type="hidden" id="form-task-id">
-      <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Tittel</label><input type="text" id="task-title" required placeholder="F.eks. Klargjøre dekkskift-stasjon" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"></div>
+      <div><label for="task-title" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Tittel</label><input type="text" id="task-title" required placeholder="F.eks. Klargjøre dekkskift-stasjon" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"></div>
       <div>
-        <div class="flex items-center justify-between mb-2"><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Beskrivelse og sjekkliste</label><span class="text-[9px] text-slate-400">@navn, lenker, !viktig, ?avklare, - [ ]</span></div>
+        <div class="flex items-center justify-between mb-2"><label for="task-desc" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Beskrivelse og sjekkliste</label><span class="text-[9px] text-slate-400">@navn, lenker, !viktig, ?avklare, - [ ]</span></div>
         <textarea id="task-desc" rows="4" placeholder="Rydd verkstedet. @MORT !viktig&#10;- [ ] Rengjør verktøytavlen&#10;?avklare Nok sykkelfett på lager?" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none font-mono text-xs"></textarea>
       </div>
       <div class="grid grid-cols-2 gap-4">
-        <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Gjentakelse</label><select id="task-frequency" onchange="toggleFrequencyNotice()" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"><option value="once">Én gang</option><option value="daily">Daglig</option><option value="weekly">Ukentlig</option><option value="monthly">Månedlig</option></select></div>
-        <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Prioritet</label><select id="task-priority" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"><option value="low">🟢 Lav</option><option value="medium">🟡 Middels</option><option value="high">🔴 Kritisk</option></select></div>
+        <div><label for="task-frequency" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Gjentakelse</label><select id="task-frequency" onchange="toggleFrequencyNotice()" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"><option value="once">Én gang</option><option value="daily">Daglig</option><option value="weekly">Ukentlig</option><option value="monthly">Månedlig</option></select></div>
+        <div><label for="task-priority" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Prioritet</label><select id="task-priority" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"><option value="low">🟢 Lav</option><option value="medium">🟡 Middels</option><option value="high">🔴 Kritisk</option></select></div>
       </div>
       <div id="smart-recurring-info" class="hidden p-3 rounded-xl border border-thansen-100 dark:border-thansen-500/30 bg-thansen-50/50 dark:bg-thansen-500/10 text-[10px] text-thansen-600 dark:text-thansen-400 leading-relaxed"><p class="font-bold flex items-center mb-1"><i class="fa-solid fa-circle-nodes mr-1 text-thansen-yellow"></i> Intelligent rotasjon aktiv</p>Fullføres oppgaven i tide, settes neste frist nøyaktig 1 syklus frem. Ved forsinkelse hoppes det til neste kommende intervall for å unngå opphopning.</div>
       <div class="grid grid-cols-2 gap-4">
-        <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Frist (dato & tid)</label><input type="datetime-local" id="task-due-date" step="1" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"></div>
-        <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status</label><select id="task-status" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"><option value="todo">Gjøremål</option><option value="progress">Pågår</option><option value="done">Fullført</option></select></div>
+        <div><label for="task-due-date" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Frist (dato & tid)</label><input type="datetime-local" id="task-due-date" step="1" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"></div>
+        <div><label for="task-status" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status</label><select id="task-status" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"><option value="todo">Gjøremål</option><option value="progress">Pågår</option><option value="done">Fullført</option></select></div>
       </div>
-      <div><label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Varighet (minutter)</label><input type="number" id="task-duration" min="5" step="5" value="30" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"></div>
+      <div><label for="task-duration" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Varighet (minutter)</label><input type="number" id="task-duration" min="5" step="5" value="30" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"></div>
       <div class="pt-4 border-t border-slate-100 dark:border-slate-900 flex items-center justify-end space-x-3">
         <button type="button" onclick="closeTaskModal()" class="px-5 py-2.5 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 font-medium rounded-xl">Avbryt</button>
         <button type="submit" id="task-form-submit-btn" class="px-5 py-2.5 text-xs bg-thansen-500 hover:bg-thansen-600 text-white font-bold rounded-xl shadow-md">Lagre Oppgave</button>
@@ -218,27 +218,27 @@
 </div>
 
 <!-- Coworker modal -->
-<div id="coworker-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+<div id="coworker-modal" role="dialog" aria-modal="true" aria-labelledby="coworker-modal-title" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
   <div class="bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
-    <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between"><h3 id="coworker-modal-title" class="font-bold flex items-center space-x-2"><i class="fa-solid fa-user-plus text-thansen-500"></i><span>Registrer Ansatt</span></h3><button onclick="closeCoworkerModal()" class="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"><i class="fa-solid fa-times"></i></button></div>
+    <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between"><h3 id="coworker-modal-title" class="font-bold flex items-center space-x-2"><i class="fa-solid fa-user-plus text-thansen-500"></i><span>Registrer Ansatt</span></h3><button onclick="closeCoworkerModal()" aria-label="Lukk" class="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"><i class="fa-solid fa-times" aria-hidden="true"></i></button></div>
     <form id="coworker-form" onsubmit="handleCoworkerSubmit(event)" class="p-5 space-y-4">
-      <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fullt Navn</label><input type="text" id="coworker-name" required placeholder="F.eks. Alexander Thomsen" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-thansen-500 focus:outline-none"></div>
-      <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Unik 4-bokstavskode</label><input type="text" id="coworker-tag" maxlength="4" minlength="4" required placeholder="ALEX" class="w-full uppercase bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-thansen-500 focus:outline-none disabled:opacity-60"><p class="text-[10px] text-slate-400 mt-1">Nøyaktig 4 bokstaver (kan ikke endres etterpå)</p></div>
-      <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Stillingstittel</label>
+      <div><label for="coworker-name" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fullt Navn</label><input type="text" id="coworker-name" required placeholder="F.eks. Alexander Thomsen" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-thansen-500 focus:outline-none"></div>
+      <div><label for="coworker-tag" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Unik 4-bokstavskode</label><input type="text" id="coworker-tag" maxlength="4" minlength="4" required placeholder="ALEX" class="w-full uppercase bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-thansen-500 focus:outline-none disabled:opacity-60"><p class="text-[10px] text-slate-400 mt-1">Nøyaktig 4 bokstaver (kan ikke endres etterpå)</p></div>
+      <div><label for="coworker-title" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Stillingstittel</label>
         <select id="coworker-title" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-thansen-500 focus:outline-none">
           <option value="Deltid">Deltid</option>
           <option value="Butikkmedarbeider" selected>Butikkmedarbeider</option>
           <option value="BCT">BCT</option>
           <option value="Butikksjef">Butikksjef</option>
         </select></div>
-      <div id="coworker-role-wrap" class="hidden"><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tilgangsnivå <span class="text-thansen-yellow">(kun IT)</span></label>
+      <div id="coworker-role-wrap" class="hidden"><label for="coworker-role" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tilgangsnivå <span class="text-thansen-yellow">(kun IT)</span></label>
         <select id="coworker-role" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-thansen-500 focus:outline-none">
           <option value="coworker">Medarbeider</option>
           <option value="manager">Butikksjef</option>
           <option value="dev">IT / Dev</option>
         </select></div>
-      <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fargetema</label><div class="flex items-center gap-3"><input type="color" id="coworker-color" value="#004595" class="w-14 h-10 rounded-lg bg-transparent border border-slate-200 dark:border-slate-800 cursor-pointer p-0.5"><span class="text-xs text-slate-400">Velg farge i hjulet</span></div></div>
-      <div id="coworker-pw-wrap" class="hidden"><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Nullstill passord</label><input type="text" id="coworker-newpw" autocomplete="off" placeholder="La stå tom for å beholde" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-thansen-500 focus:outline-none"><p class="text-[10px] text-slate-400 mt-1">Setter nytt passord og logger personen ut overalt (for glemt passord)</p></div>
+      <div><label for="coworker-color" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fargetema</label><div class="flex items-center gap-3"><input type="color" id="coworker-color" value="#004595" class="w-14 h-10 rounded-lg bg-transparent border border-slate-200 dark:border-slate-800 cursor-pointer p-0.5"><span class="text-xs text-slate-400">Velg farge i hjulet</span></div></div>
+      <div id="coworker-pw-wrap" class="hidden"><label for="coworker-newpw" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Nullstill passord</label><input type="text" id="coworker-newpw" autocomplete="off" placeholder="La stå tom for å beholde" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-thansen-500 focus:outline-none"><p class="text-[10px] text-slate-400 mt-1">Setter nytt passord og logger personen ut overalt (for glemt passord)</p></div>
       <div class="pt-2 flex items-center justify-end space-x-2"><button type="button" onclick="closeCoworkerModal()" class="px-4 py-2 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 font-medium rounded-xl">Avbryt</button><button type="submit" class="px-4 py-2 text-xs bg-thansen-500 hover:bg-thansen-600 text-white font-bold rounded-xl shadow-md">Registrer</button></div>
     </form>
   </div>
@@ -250,7 +250,7 @@
   <div><p class="text-xs font-bold">Fjern fra oppgave</p><p class="text-[10px] opacity-90">Slipp ansatt-kortet her.</p></div>
 </div>
 
-<script src="shared.js?v=12"></script>
+<script src="shared.js?v=13"></script>
 <script>
 const T = window.THelper;
 const BUILD = '2026-06-10a';   // bumped on each deploy so a stale cache is easy to spot
@@ -753,7 +753,7 @@ function timelineRow(t, now){
   const asg=people.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="w-5 h-5 rounded text-[8px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`;}).join('')
     || `<span class="text-[9px] text-slate-400 italic">${isAdmin?'+ sett opp ansvarlig':'Ingen tildelt'}</span>`;
   const fr={once:'Engang',daily:'Daglig',weekly:'Ukentlig',monthly:'Månedlig'}[t.frequency]||'';
-  return `<div class="tl-row${done?' tl-done':''}" onclick="openTaskDetailModal('${e(t.id)}')">
+  return `<div class="tl-row${done?' tl-done':''}" role="button" tabindex="0" onclick="openTaskDetailModal('${e(t.id)}')">
     <div class="tl-time">${e(time)}</div>
     <div class="tl-dot"><span class="w-2.5 h-2.5 rounded-full ${dot} inline-block"></span></div>
     <div class="tl-card">
@@ -818,6 +818,7 @@ function createTaskCard(task, weekly=false){
   const card=document.createElement('div');
   const overdue = task.due && new Date(task.due)<new Date() && task.status!=='done';
   card.id=`card-${task.id}`;
+  card.setAttribute('role','button'); card.tabIndex=0;   // nåbar med Tab + Enter/Space
   card.addEventListener('click',e=>{
     if(e.target.tagName==='INPUT'||e.target.tagName==='A'||e.target.closest('button')) return;
     const dg=e.target.closest('[draggable="true"]');
@@ -1038,7 +1039,7 @@ function agendaTaskRow(t, dateObj, now){
   const ppl=assigneesFor(t, dateObj);
   let pills=ppl.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="w-5 h-5 rounded text-[8px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`;}).join('');
   if(!ppl.length) pills=`<span class="text-[9px] text-slate-400 italic">${isAdmin?'+ sett opp ansvarlig':'Ingen tildelt'}</span>`;
-  return `<div class="flex items-start gap-2 p-2 rounded-xl bg-white dark:bg-slate-950 border ${overdue?'border-red-300 dark:border-red-900':'border-slate-200 dark:border-slate-800/80'}" onclick="openTaskDetailModal('${e(t.id)}')">
+  return `<div class="flex items-start gap-2 p-2 rounded-xl bg-white dark:bg-slate-950 border ${overdue?'border-red-300 dark:border-red-900':'border-slate-200 dark:border-slate-800/80'}" role="button" tabindex="0" onclick="openTaskDetailModal('${e(t.id)}')">
     <div class="text-[11px] font-bold text-slate-400 w-9 shrink-0 pt-0.5">${e(time)}</div>
     <span class="w-1.5 h-1.5 rounded-full ${dot} mt-1.5 shrink-0"></span>
     <div class="min-w-0 flex-1">
@@ -1288,7 +1289,10 @@ function recalculateAlerts(){
   });
   if(a.length>state.alerts.length) playSound(a.some(x=>x.type==='critical')?'critical':'info');
   state.alerts=a;
-  document.getElementById('alert-badge').classList.toggle('hidden', a.length===0);
+  const badge=document.getElementById('alert-badge');
+  badge.classList.toggle('hidden', a.length===0);
+  badge.textContent=a.length||'';
+  badge.setAttribute('aria-label', a.length+' varsler');
 }
 function renderAlertsList(){
   const l=document.getElementById('alerts-list'); l.innerHTML='';
@@ -1313,6 +1317,7 @@ function esc(s){ return T.esc(s); }
 function col(s, d='#004595'){ s=String(s==null?'':s).trim(); return /^#[0-9a-fA-F]{3,8}$/.test(s)?s:d; }
 function showToast(message, color='#004595'){
   const t=document.createElement('div');
+  t.setAttribute('role','status');   // leses opp av skjermlesere
   t.className="fixed bottom-5 left-5 z-50 glass border border-slate-200/80 dark:border-slate-800 shadow-2xl p-4 rounded-xl flex items-center space-x-3 transition-all duration-300 transform translate-y-20 opacity-0";
   t.style.borderLeft=`4px solid ${color}`;
   t.innerHTML=`<div class="w-2 h-2 rounded-full" style="background-color:${col(color)}"></div><p class="text-xs font-bold text-slate-700 dark:text-slate-200">${esc(message)}</p>`;
@@ -1320,6 +1325,22 @@ function showToast(message, color='#004595'){
   setTimeout(()=>t.classList.remove('translate-y-20','opacity-0'),50);
   setTimeout(()=>{ t.classList.add('translate-y-20','opacity-0'); setTimeout(()=>t.remove(),300); },3500);
 }
+/* ---------- tilgjengelighet: Escape lukker øverste lag; Enter/Space aktiverer rad-«knapper» ---------- */
+document.addEventListener('keydown', e => {
+  if(e.key==='Escape'){
+    const picker=document.getElementById('assignee-picker'); if(picker){ closeAssigneePicker(); return; }
+    const menu=document.getElementById('status-menu'); if(menu){ menu.remove(); return; }
+    const sm=document.getElementById('status-modal'); if(sm){ closeStatusModal(); return; }
+    const dm=document.getElementById('task-detail-modal'); if(dm && !dm.classList.contains('hidden')){ closeTaskDetailModal(); return; }
+    const tm=document.getElementById('task-modal'); if(tm && !tm.classList.contains('hidden')){ closeTaskModal(); return; }
+    const cm=document.getElementById('coworker-modal'); if(cm && !cm.classList.contains('hidden')){ closeCoworkerModal(); return; }
+    const ap=document.getElementById('alerts-panel'); if(ap && !ap.classList.contains('translate-x-full')) ap.classList.add('translate-x-full');
+  } else if((e.key==='Enter'||e.key===' ') && e.target instanceof HTMLElement
+            && e.target.getAttribute('role')==='button' && e.target.tagName!=='BUTTON'){
+    e.preventDefault(); e.target.click();
+  }
+});
+
 function playSound(type='info'){
   try{ const ctx=new (window.AudioContext||window.webkitAudioContext)(); const o=ctx.createOscillator(), g=ctx.createGain(); o.connect(g); g.connect(ctx.destination);
     if(type==='critical'){ o.type='triangle'; o.frequency.setValueAtTime(800,ctx.currentTime); o.frequency.exponentialRampToValueAtTime(350,ctx.currentTime+0.35); g.gain.setValueAtTime(0.1,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+0.35); o.start(); o.stop(ctx.currentTime+0.4); }
