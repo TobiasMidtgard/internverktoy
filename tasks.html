@@ -382,11 +382,22 @@ window.onload = function () {
   }
 };
 
+/* PostgREST kutter stille på 1000 rader — hent i sider så ingenting forsvinner (v24) */
+async function fetchAllRows(table){
+  const out=[], page=1000;
+  for(let from=0;;from+=page){
+    const {data,error}=await T.sb.from(table).select('*').range(from, from+page-1);
+    if(error) return {error};
+    out.push(...(data||[]));
+    if(!data || data.length<page) break;
+  }
+  return {data:out};
+}
 async function loadAll(){
   if(!T.sb){ showToast('Supabase utilgjengelig','#e30613'); return; }
   const [tk, nt] = await Promise.all([
-    T.sb.from('tasks').select('*'),
-    T.sb.from('planner_notes').select('*')
+    fetchAllRows('tasks'),
+    fetchAllRows('planner_notes')
   ]);
   if(tk.error){
     const msg=tk.error.message||'';
