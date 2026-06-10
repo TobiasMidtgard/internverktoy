@@ -270,18 +270,22 @@ async function setDayAssignees(taskId, dateObj, tags, okMsg, okColor){
   try{ await T.rpcAuth('set_day_assignees',{p_id:taskId,p_day:ymd(dateObj),p_tags:tags}); await loadAll(); if(okMsg) showToast(okMsg, okColor||'#004595'); }
   catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
 }
-function addAssigneeOn(taskId, dateObj, tag){
+/* legg-til/fjern går via atomiske delta-RPC-er (v23) så to samtidige endringer ikke
+   overskriver hverandre; «velg flere»-pickeren setter fortsatt hele dagslista bevisst */
+async function addAssigneeOn(taskId, dateObj, tag){
   if(!isAdmin){ showToast('Kun Butikksjef kan tildele.','#e30613'); return; }
   const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
-  const cur=assigneesFor(t, dateObj);
-  if(cur.includes(tag)){ showToast(`${tag} er allerede satt opp denne dagen.`,'#f59e0b'); return; }
+  if(assigneesFor(t, dateObj).includes(tag)){ showToast(`${tag} er allerede satt opp denne dagen.`,'#f59e0b'); return; }
   const ab=absenceOn(tag, dateObj);
-  setDayAssignees(taskId, dateObj, [...cur, tag], ab?`Satte opp ${tag} — obs: ${STATUS_DEF[ab].label.toLowerCase()} denne dagen`:`Satte opp ${tag}`, ab?'#f59e0b':'#004595');
+  try{ await T.rpcAuth('add_day_assignee',{p_id:taskId,p_day:ymd(dateObj),p_tag:tag}); await loadAll();
+    showToast(ab?`Satte opp ${tag} — obs: ${STATUS_DEF[ab].label.toLowerCase()} denne dagen`:`Satte opp ${tag}`, ab?'#f59e0b':'#004595'); }
+  catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
 }
-function removeAssigneeOn(taskId, dateObj, tag){
+async function removeAssigneeOn(taskId, dateObj, tag){
   if(!isAdmin){ showToast('Kun Butikksjef kan endre ansvar.','#e30613'); return; }
-  const t=state.tasks.find(x=>x.id===taskId); if(!t) return;
-  setDayAssignees(taskId, dateObj, assigneesFor(t, dateObj).filter(a=>a!==tag), `Fjernet ${tag}`, '#e30613');
+  try{ await T.rpcAuth('remove_day_assignee',{p_id:taskId,p_day:ymd(dateObj),p_tag:tag}); await loadAll();
+    showToast(`Fjernet ${tag}`,'#e30613'); }
+  catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
 }
 // filter on a coworker (only that day's occurrence), float the logged-in user's tasks to the top
 function passFilterOn(t, dateObj){ return !filterTag || isAssignedOn(t, dateObj, filterTag); }
@@ -1123,9 +1127,12 @@ function openTaskDetailModal(taskId){
   document.getElementById('detail-task-frequency').innerText=(({once:'Én gang',daily:'Daglig',weekly:'Ukentlig',monthly:'Månedlig'}[t.frequency])||t.frequency)+' · '+fmtDur(t.duration||30);
   document.getElementById('detail-task-parsed-desc').innerHTML=parseDescriptionToHTML(t.id,t.desc,false);
   const ac=document.getElementById('detail-task-assignees'); ac.innerHTML='';
-  const todayAsg=assigneesFor(t, new Date());
-  if(todayAsg.length) todayAsg.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{name:tag,color:'#64748b'}; const b=document.createElement('div'); b.className="px-3 py-1.5 rounded-lg text-white text-xs font-bold flex items-center space-x-1.5 shadow-sm"; b.style.backgroundColor=c.color; b.innerHTML=`<span>${esc(tag)}</span><span class="text-[10px] opacity-80">(${esc(c.name.split(' ')[0])})</span>`; ac.appendChild(b); });
-  else ac.innerHTML=`<span class="text-xs text-slate-400 italic">Ingen satt opp i dag.</span>`;
+  // engangsoppgaver viser ansvarlige for SIN dato (boardDateFor), ikke dagens (v23)
+  const bd=boardDateFor(t);
+  const bdAsg=assigneesFor(t, bd);
+  const bdLabel = ymd(bd)===ymd(new Date()) ? 'i dag' : bd.toLocaleDateString('nb-NO',{day:'numeric',month:'short'});
+  if(bdAsg.length) bdAsg.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{name:tag,color:'#64748b'}; const b=document.createElement('div'); b.className="px-3 py-1.5 rounded-lg text-white text-xs font-bold flex items-center space-x-1.5 shadow-sm"; b.style.backgroundColor=col(c.color); b.innerHTML=`<span>${esc(tag)}</span><span class="text-[10px] opacity-80">(${esc((c.name||tag).split(' ')[0])})</span>`; ac.appendChild(b); });
+  else ac.innerHTML=`<span class="text-xs text-slate-400 italic">Ingen satt opp ${esc(bdLabel)}.</span>`;
   document.getElementById('detail-assignee-hint').textContent =
     (t.frequency==='once') ? 'Velg ansvarlige på tavla eller i ukesplanen.' : 'Ansvarlige settes per dag — endre i ukesplanen eller på tavla.';
   document.getElementById('detail-task-status-select').value=t.status;
