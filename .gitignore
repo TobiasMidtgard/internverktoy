@@ -9,3 +9,6 @@ node_modules/
 
 # Local one-time data backup (pre per-day-assignment wipe) — not for the public repo
 db/assignees-backup.json
+
+# Local DB backups (contain employee data) — never commit to the public repo
+db/backups/
