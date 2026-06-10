@@ -43,6 +43,10 @@ window.THelper = (function () {
     if (document.getElementById('th-shared-css')) return;
     const st = document.createElement('style'); st.id = 'th-shared-css';
     st.textContent = `
+      /* Felles designtokens for hele suiten — nye sider/komponenter bør bruke disse
+         i stedet for å hardkode farger (kanonisk kilde for merkevarefargene). */
+      :root{ --th-brand:#004595; --th-brand-2:#2684e6; --th-yellow:#ffd400; --th-red:#e30613;
+             --th-bg:#0f1318; --th-panel:#161b22; --th-line:#2a323d; --th-text:#f1f4f8; --th-muted:#97a3b2; }
       .th-toast-wrap{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:99999;align-items:center;pointer-events:none;}
       .th-toast{background:#11151b;color:#f1f4f8;border:1px solid #2a323d;border-left:3px solid #2684e6;border-radius:12px;padding:10px 14px;font:500 14px/1.3 system-ui;box-shadow:0 10px 34px rgba(0,0,0,.5);display:flex;align-items:center;gap:12px;pointer-events:auto;max-width:90vw;}
       .th-ov{position:fixed;inset:0;background:rgba(6,9,13,.66);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:100000;padding:16px;}

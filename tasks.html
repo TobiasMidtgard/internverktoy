@@ -3,16 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
 <meta name="theme-color" content="#004595">
 <title>ButikkPlanlegger · Thansen Verktøykasse</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = { darkMode:'class', theme:{ extend:{ colors:{ thansen:{
-    50:'#f0f6fc',100:'#e1edf9',400:'#5b9bd5',500:'#004595',600:'#003573',700:'#002552',
-    yellow:'#ffcc00', red:'#e30613' } }, fontFamily:{ sans:['Inter','sans-serif'] } } } }
-</script>
+<!-- Statisk Tailwind-bygg (tailwind.config.js + tw-input.css -> tailwind.css).
+     Bruker du NYE utility-klasser: kjør npx-kommandoen i tailwind.config.js og bump ?v= -->
+<link rel="stylesheet" href="tailwind.css?v=1">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -253,7 +248,7 @@
 <script src="shared.js?v=13"></script>
 <script>
 const T = window.THelper;
-const BUILD = '2026-06-10a';   // bumped on each deploy so a stale cache is easy to spot
+const BUILD = '2026-06-10b';   // bumped on each deploy so a stale cache is easy to spot
 let isAdmin = false, isDev = false, me = null, filterTag = '', weekOffset = 0;
 let state = { activeViewTab:'board', coworkers:[], tasks:[], alerts:[], notes:[], staffStatus:[],
               loadState:'loading', loadError:'' };   // loading | ready | error — skiller «laster» fra «tomt» og «feil»

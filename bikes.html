@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="no">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Velodex — Showroom Registry</title>
+<title>Velodex — Sykkelregister · Thansen Verktøykasse</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#0e1116;
@@ -31,7 +32,7 @@
     color:var(--ink);
     overflow:hidden;
   }
-  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+  /* (fontene lastes via <link> i <head> — en @import her midt i stilarket ble ignorert av nettlesere) */
   .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;}
 
   /* ---------- Top bar ---------- */
@@ -144,7 +145,7 @@
   /* off-display / hidden / discontinued bikes live in the Bikes menu, not on the canvas */
   .card.is-hidden{display:none;}
 
-  /* ---------- Additional items list ---------- */
+  /* ---------- Tilleggsutstyr list ---------- */
   .items-title{font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;}
   .items{display:flex;flex-direction:column;gap:5px;margin-top:-4px;}
   .items .item{display:flex;justify-content:space-between;gap:10px;align-items:baseline;
@@ -406,18 +407,18 @@
 <body class="locked">
 
 <header>
-  <div class="logo"><a href="index.html" title="Til Thansen Verktøykasse" style="text-decoration:none;color:inherit;opacity:.7;margin-right:10px;font-weight:600;">‹ Hjem</a><span class="dot" id="liveDot" title="Connecting…"></span>VELODEX<span>· showroom registry</span></div>
+  <div class="logo"><a href="index.html" title="Til Thansen Verktøykasse" style="text-decoration:none;color:inherit;opacity:.7;margin-right:10px;font-weight:600;">‹ Hjem</a><span class="dot" id="liveDot" title="Kobler til…"></span>VELODEX<span>· sykkelregister</span></div>
   <div class="controls">
-    <button class="btn" id="bikesBtn">Bikes</button>
-    <button class="btn" id="lockBtn">🔒 View only</button>
-    <button class="btn" id="snapToggle" aria-pressed="false">Snap: Off</button>
-    <select id="snapSize" title="Snap grid size">
-      <option value="20">Grid 20</option>
-      <option value="40" selected>Grid 40</option>
-      <option value="80">Grid 80</option>
-      <option value="160">Grid 160</option>
+    <button class="btn" id="bikesBtn">Sykler</button>
+    <button class="btn" id="lockBtn">🔒 Kun visning</button>
+    <button class="btn" id="snapToggle" aria-pressed="false">Snapp: Av</button>
+    <select id="snapSize" title="Rutenettstørrelse">
+      <option value="20">Rutenett 20</option>
+      <option value="40" selected>Rutenett 40</option>
+      <option value="80">Rutenett 80</option>
+      <option value="160">Rutenett 160</option>
     </select>
-    <button class="btn" id="resetView">Reset view</button>
+    <button class="btn" id="resetView">Nullstill visning</button>
   </div>
 </header>
 
@@ -425,7 +426,7 @@
   <div id="canvas"></div>
 </div>
 
-<div class="hint">Drag to pan · double-tap a card for details · tap a barcode to enlarge · 🔒 unlock to edit</div>
+<div class="hint">Dra for å panorere · dobbelttrykk et kort for detaljer · trykk en strekkode for å forstørre · 🔒 lås opp for å redigere</div>
 
 <div id="overlay">
   <div class="fs-name" id="fsName"></div>
@@ -433,27 +434,27 @@
     <svg id="fsBarcode"></svg>
     <div class="fs-frame" id="fsFrame"></div>
   </div>
-  <button class="fs-close" id="fsClose">Close</button>
+  <button class="fs-close" id="fsClose">Lukk</button>
 </div>
 
 <div id="editor">
   <div class="editor-card">
-    <h2 id="editorTitle">Edit bike</h2>
-    <div class="field"><label>Name</label><input id="f-name" placeholder="e.g. Falcon RS Carbon"></div>
+    <h2 id="editorTitle">Rediger sykkel</h2>
+    <div class="field"><label>Navn</label><input id="f-name" placeholder="f.eks. Falcon RS Carbon"></div>
     <div class="frow">
-      <div class="field"><label>Wheel size</label><input id="f-size" placeholder='e.g. 29&quot;'></div>
-      <div class="field"><label>Price (kr)</label><input id="f-price" type="number" min="0" step="1" placeholder="0"></div>
+      <div class="field"><label>Hjulstørrelse</label><input id="f-size" placeholder='f.eks. 29&quot;'></div>
+      <div class="field"><label>Pris (kr)</label><input id="f-price" type="number" min="0" step="1" placeholder="0"></div>
     </div>
     <div class="frow">
-      <div class="field color-field"><label>Colour</label><input id="f-color" type="color" value="#f4b942"></div>
-      <div class="field"><label>Colour name</label><input id="f-colorName" placeholder="e.g. Amber"></div>
+      <div class="field color-field"><label>Farge</label><input id="f-color" type="color" value="#f4b942"></div>
+      <div class="field"><label>Fargenavn</label><input id="f-colorName" placeholder="f.eks. Rav"></div>
     </div>
-    <div class="field"><label>Frame number</label><input id="f-frame" placeholder="FRX..."></div>
-    <div class="field"><label>Description</label><textarea id="f-desc" placeholder="Short description shown on the card"></textarea></div>
+    <div class="field"><label>Rammenummer</label><input id="f-frame" placeholder="FRX..."></div>
+    <div class="field"><label>Beskrivelse</label><textarea id="f-desc" placeholder="Kort beskrivelse som vises på kortet"></textarea></div>
     <div class="field">
-      <label>Additional items</label>
+      <label>Tilleggsutstyr</label>
       <div class="items-editor" id="f-items"></div>
-      <button type="button" class="add-item" id="f-addItem">+ Add item</button>
+      <button type="button" class="add-item" id="f-addItem">+ Legg til utstyr</button>
     </div>
     <div class="field">
       <label>Utstillingsstatus</label>
@@ -466,27 +467,27 @@
       <input type="checkbox" id="f-hidden" style="width:auto;"> Skjul (outlet / utgått)
     </label>
     <div class="field" id="f-synced-note" style="display:none;font-size:12px;color:var(--muted);">
-      Synced from Thansen — name, price &amp; availability update automatically. Frame number is yours to edit.
+      Synkronisert fra Thansen — navn, pris og lagerstatus oppdateres automatisk. Rammenummeret redigerer du selv.
     </div>
     <div class="err" id="f-err"></div>
     <div class="editor-actions">
-      <button class="btn danger" id="f-delete">Delete</button>
+      <button class="btn danger" id="f-delete">Slett</button>
       <span class="spc"></span>
-      <button class="btn" id="f-cancel">Cancel</button>
-      <button class="btn primary" id="f-save">Save</button>
+      <button class="btn" id="f-cancel">Avbryt</button>
+      <button class="btn primary" id="f-save">Lagre</button>
     </div>
   </div>
 </div>
 
 <div id="passModal">
   <div class="editor-card" style="max-width:380px;">
-    <h2>Unlock editing</h2>
-    <div class="field"><label>Passcode</label><input id="p-input" type="password" placeholder="Enter edit passcode" autocomplete="off"></div>
+    <h2>Lås opp redigering</h2>
+    <div class="field"><label>Kode</label><input id="p-input" type="password" placeholder="Skriv inn redigeringskoden" autocomplete="off"></div>
     <div class="err" id="p-err"></div>
     <div class="editor-actions">
       <span class="spc"></span>
-      <button class="btn" id="p-cancel">Cancel</button>
-      <button class="btn primary" id="p-ok">Unlock</button>
+      <button class="btn" id="p-cancel">Avbryt</button>
+      <button class="btn primary" id="p-ok">Lås opp</button>
     </div>
   </div>
 </div>
@@ -494,11 +495,11 @@
 <div id="libraryPanel">
   <div class="lib-sheet">
     <div class="lib-header">
-      <div class="lib-title" id="libTitle">Bikes</div>
-      <button class="lib-close" id="libClose" title="Close">✕</button>
+      <div class="lib-title" id="libTitle">Sykler</div>
+      <button class="lib-close" id="libClose" title="Lukk">✕</button>
     </div>
-    <button class="lib-create" id="libCreate" type="button">＋ Create new custom bike</button>
-    <div class="lib-search"><input type="search" id="libSearch" placeholder="Search bikes…" autocomplete="off"></div>
+    <button class="lib-create" id="libCreate" type="button">＋ Opprett ny egen sykkel</button>
+    <div class="lib-search"><input type="search" id="libSearch" placeholder="Søk etter sykler…" autocomplete="off"></div>
     <div class="lib-list" id="libList"></div>
   </div>
 </div>
@@ -519,18 +520,17 @@
 
 <div id="detailModal">
   <div class="detail-card">
-    <button class="detail-close" id="detailClose" title="Close">✕</button>
+    <button class="detail-close" id="detailClose" title="Lukk">✕</button>
     <div id="detailBody"></div>
   </div>
 </div>
 
 <div id="toast"></div>
 
+<script src="shared.js?v=13"></script>
 <script>
-/* ================= Supabase config ================= */
-const SB_URL = 'https://tfjvgvrqngevsiuueixf.supabase.co';
-const SB_KEY = 'sb_publishable_O-gjCbc7E1pX-I0o9DawbQ_xbnV6uJY';
-const sb = window.supabase.createClient(SB_URL, SB_KEY);
+/* ================= Supabase config (delt med resten av suiten via shared.js) ================= */
+const sb = window.THelper.sb;
 
 const CACHE_KEY = 'velodex.cache.v3';   // fast first-paint only; server is the source of truth
 const PASS_KEY  = 'velodex.pass';       // per-tab edit session
@@ -593,9 +593,9 @@ function isPasscodeError(err){return !!err && (err.code==='28000' || /passcode/i
 function handleWriteError(err,where){
   if(isPasscodeError(err)){
     EDIT_PASS=null;sessionStorage.removeItem(PASS_KEY);updateLockUI();
-    toast('Editing locked — passcode is no longer valid.');
+    toast('Redigering låst — koden er ikke lenger gyldig.');
   } else {
-    toast((where||'Save')+' failed: '+((err&&err.message)||'error'));
+    toast((where||'Lagring')+' feilet: '+((err&&err.message)||'ukjent feil'));
   }
 }
 
@@ -605,7 +605,7 @@ function itemsHtml(items){
   const rows=items.map(it=>
     `<div class="item"><span class="iname">${esc(it.name)}</span><span class="iprice">${nok(it.price)}</span></div>`
   ).join('');
-  return `<div class="items-title">Additional items</div><div class="items">${rows}</div>`;
+  return `<div class="items-title">Tilleggsutstyr</div><div class="items">${rows}</div>`;
 }
 function specsHtml(specs){
   if(!specs||!Object.keys(specs).length) return '';
@@ -636,8 +636,8 @@ function makeCard(b){
   el.style.left=b.x+'px';
   el.style.top =b.y+'px';
   el.dataset.uid=b.uid;
-  const avail = b.availability==='InStock' ? '<span class="badge instock">In stock</span>'
-              : b.availability==='OutOfStock' ? '<span class="badge oos">Out of stock</span>' : '';
+  const avail = b.availability==='InStock' ? '<span class="badge instock">På lager</span>'
+              : b.availability==='OutOfStock' ? '<span class="badge oos">Utsolgt</span>' : '';
   const flags = (b.source==='thansen'?'<span class="badge synced">⟳ Thansen</span>':'')
               + (b.outlet?'<span class="badge flag">Outlet</span>':'')
               + (b.discontinued?'<span class="badge flag">Discontinued</span>':'');
@@ -647,8 +647,8 @@ function makeCard(b){
       <div class="grip"><i></i><i></i><i></i></div>
       <div class="card-title">${esc(b.name)}</div>
       <div class="swatch" style="background:${esc(b.color)}"></div>
-      <button class="edit-btn" data-edit title="Edit bike">✎</button>
-      <button class="remove-btn" data-remove title="Remove from display">✕</button>
+      <button class="edit-btn" data-edit title="Rediger sykkel">✎</button>
+      <button class="remove-btn" data-remove title="Fjern fra utstilling">✕</button>
     </div>
     <div class="card-body">
       <div class="price">${nok(b.price)}</div>
@@ -718,7 +718,7 @@ function bootFromCache(){
 }
 async function loadFromServer(){
   const {data,error}=await sb.from('bikes').select('*').order('name');
-  if(error){toast('Could not reach server — showing last cached copy.');return;}
+  if(error){toast('Fikk ikke kontakt med serveren — viser siste lagrede kopi.');return;}
   applyList(data.map(fromRow));
 }
 
@@ -798,7 +798,7 @@ async function softRemove(uid){
   cacheSave();refreshLibrary();
   try{
     await rpcUpdate(uid,{display_status:'non_display'});
-    toast('Removed from display.',true,{label:'Undo',fn:()=>addToDisplay(uid)});
+    toast('Fjernet fra utstilling.',true,{label:'Angre',fn:()=>addToDisplay(uid)});
   }catch(err){
     b.displayStatus=prev;if(cardEl(uid))rebuildCard(b);cacheSave();refreshLibrary();
     handleWriteError(err,'Remove');
@@ -815,7 +815,7 @@ async function addToDisplay(uid){
     await rpcUpdate(uid,{display_status:'on_display'});
   }catch(err){
     b.displayStatus=prev;if(cardEl(uid))rebuildCard(b);cacheSave();refreshLibrary();
-    handleWriteError(err,'Add');
+    handleWriteError(err,'Innlegging');
   }
 }
 async function doDelete(uid){
@@ -826,10 +826,10 @@ async function doDelete(uid){
     if(selectedUid===uid)clearSelection();
     if(editingUid===uid)closeEditor();
     refreshLibrary();cacheSave();
-    toast('Bike deleted.',true);
+    toast('Sykkelen er slettet.',true);
   }catch(err){
     if(isPasscodeError(err)){handleWriteError(err);if(editingUid===uid)closeEditor();}
-    else toast('Delete failed: '+((err&&err.message)||'error'));
+    else toast('Sletting feilet: '+((err&&err.message)||'error'));
   }
 }
 
@@ -854,7 +854,7 @@ function refreshLibrary(){
   libCreate.style.display = editing ? '' : 'none';
   const list=libVisible();
   if(!list.length){
-    libList.innerHTML=`<div class="lib-empty">${_libQuery?'No matches.':'No bikes yet.'}</div>`;
+    libList.innerHTML=`<div class="lib-empty">${_libQuery?'Ingen treff.':'Ingen sykler ennå.'}</div>`;
     return;
   }
   libList.innerHTML=list.map(b=>{
@@ -866,7 +866,7 @@ function refreshLibrary(){
     const sub=`${b.wheel_size?esc(b.wheel_size)+' · ':''}${nok(b.price)}${editing?status:''}`;
     const right = !editing ? ''
       : offCanvas ? `<button class="lib-add" data-lib-add="${esc(b.uid)}">+ Add</button>`
-      : `<span class="lib-chip">On display</span>`;
+      : `<span class="lib-chip">På utstilling</span>`;
     const action = offCanvas ? 'add' : 'jump';
     return `<div class="lib-item" data-action="${action}" data-lib-uid="${esc(b.uid)}">
       <div class="lib-main"><div class="lib-name">${esc(b.name)}${syn}</div><div class="lib-sub">${sub}</div></div>
@@ -884,7 +884,7 @@ function refreshLibrary(){
 }
 function openLibrary(){
   _libQuery='';libSearch.value='';
-  document.getElementById('libTitle').textContent=isEditing()?'Add bike':'Bikes';
+  document.getElementById('libTitle').textContent=isEditing()?'Legg til sykkel':'Sykler';
   refreshLibrary();
   libraryPanel.classList.add('show');
   setTimeout(()=>libSearch.focus(),120);
@@ -994,7 +994,7 @@ function onUp(){
       b.x=parseFloat(draggingCard.style.left);
       b.y=parseFloat(draggingCard.style.top);
       cacheSave();
-      rpcUpdate(u,{x:b.x,y:b.y}).catch(err=>{handleWriteError(err,'Move');loadFromServer();});
+      rpcUpdate(u,{x:b.x,y:b.y}).catch(err=>{handleWriteError(err,'Flytting');loadFromServer();});
     } else if(b && !moved){
       selectCard(u);   // a click without a drag selects the card
     }
@@ -1031,7 +1031,7 @@ document.addEventListener('keydown',e=>{
   const b=bikes.find(x=>x.uid===selectedUid);if(!b)return;
   if(!kbdDelArm){
     kbdDelArm=true;
-    toast('Press Delete again to permanently remove “'+b.name+'”.');
+    toast('Trykk Slett igjen for å fjerne “'+b.name+'”.');
     kbdDelTimer=setTimeout(resetKbdDelete,2600);
     return;
   }
@@ -1119,8 +1119,8 @@ function detailSpecsHtml(specs){
   return rows?`<dl class="detail-specs">${rows}</dl>`:'';
 }
 function openDetail(b){
-  const avail = b.availability==='InStock' ? '<span class="badge instock">In stock</span>'
-              : b.availability==='OutOfStock' ? '<span class="badge oos">Out of stock</span>' : '';
+  const avail = b.availability==='InStock' ? '<span class="badge instock">På lager</span>'
+              : b.availability==='OutOfStock' ? '<span class="badge oos">Utsolgt</span>' : '';
   const flags = (b.source==='thansen'?'<span class="badge synced">⟳ Thansen</span>':'')
               + (b.outlet?'<span class="badge flag">Outlet</span>':'')
               + (b.discontinued?'<span class="badge flag">Discontinued</span>':'');
@@ -1137,7 +1137,7 @@ function openDetail(b){
       <div class="detail-actions">
         ${b.source_url?`<a class="btn" href="${esc(b.source_url)}" target="_blank" rel="noopener">↗ Open on Thansen</a>`:''}
         ${b.source_url?`<button class="btn" data-d-parts>🔧 Spare parts</button>`:''}
-        ${isEditing()?`<button class="btn" data-d-edit>✎ Edit</button>`:''}
+        ${isEditing()?`<button class="btn" data-d-edit>✎ Rediger</button>`:''}
       </div>
     </div>`;
   const cur=()=>bikes.find(x=>x.uid===b.uid)||b;
@@ -1218,12 +1218,12 @@ function snapAllCards(){
   cacheSave();
   if(isEditing()){
     Promise.all(bikes.map(b=>rpcUpdate(b.uid,{x:b.x,y:b.y}).then(()=>true).catch(()=>false)))
-      .then(res=>{if(res.some(ok=>!ok))toast('Some positions did not save.');});
+      .then(res=>{if(res.some(ok=>!ok))toast('Noen posisjoner ble ikke lagret.');});
   }
 }
 snapToggle.onclick=()=>{
   snapOn=!snapOn;
-  snapToggle.textContent='Snap: '+(snapOn?'On':'Off');
+  snapToggle.textContent='Snapp: '+(snapOn?'På':'Av');
   snapToggle.classList.toggle('active',snapOn);
   snapToggle.setAttribute('aria-pressed',snapOn);
   updateGridCue();
@@ -1240,7 +1240,7 @@ const lockBtn=document.getElementById('lockBtn');
 function updateLockUI(){
   const editing=isEditing();
   document.body.classList.toggle('locked',!editing);
-  lockBtn.textContent=editing?'🔓 Editing':'🔒 View only';
+  lockBtn.textContent=editing?'🔓 Redigering':'🔒 Kun visning';
   lockBtn.classList.toggle('active',editing);
   bikesBtn.textContent=editing?'+ Add bike':'Bikes';
   bikesBtn.classList.toggle('primary',editing);
@@ -1254,19 +1254,19 @@ function openPass(){pErr.textContent='';pInput.value='';passModal.classList.add(
 function closePass(){passModal.classList.remove('show');}
 lockBtn.onclick=()=>{
   if(isEditing()){
-    EDIT_PASS=null;sessionStorage.removeItem(PASS_KEY);updateLockUI();toast('Locked — view only.',true);
+    EDIT_PASS=null;sessionStorage.removeItem(PASS_KEY);updateLockUI();toast('Låst — kun visning.',true);
   } else {
     openPass();
   }
 };
 async function tryUnlock(){
   const code=pInput.value;
-  if(!code){pErr.textContent='Enter the passcode.';return;}
+  if(!code){pErr.textContent='Skriv inn koden.';return;}
   pErr.textContent='Checking…';
   const {data,error}=await sb.rpc('verify_passcode',{p_passcode:code});
   if(error){pErr.textContent='Network error — try again.';return;}
   if(data===true){
-    EDIT_PASS=code;sessionStorage.setItem(PASS_KEY,code);updateLockUI();closePass();toast('Editing unlocked.',true);
+    EDIT_PASS=code;sessionStorage.setItem(PASS_KEY,code);updateLockUI();closePass();toast('Redigering låst opp.',true);
   } else {
     pErr.textContent='Wrong passcode.';
   }
@@ -1302,7 +1302,7 @@ const itemsBox=document.getElementById('f-items');
 function addItemRow(name,price){
   const row=document.createElement('div');
   row.className='item-row';
-  row.innerHTML=`<input class="iname-in" placeholder="Item name"><input class="iprice-in" type="number" min="0" step="1" placeholder="kr"><button type="button" class="rm" title="Remove">✕</button>`;
+  row.innerHTML=`<input class="iname-in" placeholder="Utstyrsnavn"><input class="iprice-in" type="number" min="0" step="1" placeholder="kr"><button type="button" class="rm" title="Fjern">✕</button>`;
   row.querySelector('.iname-in').value=name||'';
   row.querySelector('.iprice-in').value=(price!=null&&price!=='')?price:'';
   row.querySelector('.rm').onclick=()=>row.remove();
@@ -1319,7 +1319,7 @@ document.getElementById('f-addItem').onclick=()=>addItemRow('','');
 
 let editingUid=null, delArm=false, delTimer=null;
 const delBtn=document.getElementById('f-delete');
-function resetDelete(){delArm=false;delBtn.textContent='Delete';if(delTimer){clearTimeout(delTimer);delTimer=null;}}
+function resetDelete(){delArm=false;delBtn.textContent='Slett';if(delTimer){clearTimeout(delTimer);delTimer=null;}}
 
 function openEditor(b){
   editingUid=b?b.uid:null;
@@ -1366,7 +1366,7 @@ editor.addEventListener('pointerup',e=>{
 
 const saveBtn=document.getElementById('f-save');
 saveBtn.onclick=async ()=>{
-  if(!isEditing()){F.err.textContent='Editing is locked.';return;}
+  if(!isEditing()){F.err.textContent='Redigering er låst.';return;}
   const name=F.name.value.trim();
   const frame=F.frame.value.trim();
   if(!name){F.err.textContent='Please enter a name.';return;}
@@ -1381,7 +1381,7 @@ saveBtn.onclick=async ()=>{
     desc:F.desc.value.trim()||'No description provided.',
     items:readItems()
   };
-  saveBtn.disabled=true;saveBtn.textContent='Saving…';F.err.textContent='';
+  saveBtn.disabled=true;saveBtn.textContent='Lagrer…';F.err.textContent='';
   try{
     if(editingUid){
       const payload = dbPayload(data);
@@ -1400,17 +1400,17 @@ saveBtn.onclick=async ()=>{
     }
   }catch(err){
     if(isPasscodeError(err)){handleWriteError(err);closeEditor();}
-    else F.err.textContent='Save failed: '+((err&&err.message)||'error');
+    else F.err.textContent='Lagring feilet: '+((err&&err.message)||'ukjent feil');
   }finally{
-    saveBtn.disabled=false;saveBtn.textContent='Save';
+    saveBtn.disabled=false;saveBtn.textContent='Lagre';
   }
 };
 
 delBtn.onclick=async ()=>{
   if(!editingUid)return;
-  if(!isEditing()){F.err.textContent='Editing is locked.';return;}
+  if(!isEditing()){F.err.textContent='Redigering er låst.';return;}
   if(!delArm){
-    delArm=true;delBtn.textContent='Tap again to delete';
+    delArm=true;delBtn.textContent='Trykk igjen for å slette';
     delTimer=setTimeout(resetDelete,2600);
     return;
   }
