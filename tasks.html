@@ -247,9 +247,10 @@
 <script src="shared.js?v=11"></script>
 <script>
 const T = window.THelper;
-const BUILD = '2026-06-09c';   // bumped on each deploy so a stale cache is easy to spot
+const BUILD = '2026-06-10a';   // bumped on each deploy so a stale cache is easy to spot
 let isAdmin = false, isDev = false, me = null, filterTag = '', weekOffset = 0;
-let state = { activeViewTab:'board', coworkers:[], tasks:[], alerts:[], notes:[], staffStatus:[] };
+let state = { activeViewTab:'board', coworkers:[], tasks:[], alerts:[], notes:[], staffStatus:[],
+              loadState:'loading', loadError:'' };   // loading | ready | error — skiller «laster» fra «tomt» og «feil»
 const F2U = { once:'none', daily:'day', weekly:'week', monthly:'month' };
 const U2F = { none:'once', day:'daily', week:'weekly', month:'monthly', hour:'daily' };
 const PALETTE = ['#004595','#e30613','#10b981','#f59e0b','#3b82f6','#ec4899'];
@@ -394,16 +395,21 @@ async function fetchAllRows(table){
   return {data:out};
 }
 async function loadAll(){
-  if(!T.sb){ showToast('Supabase utilgjengelig','#e30613'); return; }
+  if(!T.sb){ state.loadState='error'; state.loadError='Supabase utilgjengelig'; renderScheduler(); showToast('Supabase utilgjengelig','#e30613'); return; }
+  if(state.loadState!=='ready'){ state.loadState='loading'; renderScheduler(); }
   const [tk, nt] = await Promise.all([
     fetchAllRows('tasks'),
     fetchAllRows('planner_notes')
   ]);
   if(tk.error){
     const msg=tk.error.message||'';
+    state.loadState = state.tasks.length ? state.loadState : 'error';   // har vi data fra før, behold dem
+    state.loadError = msg;
+    renderScheduler();
     showToast(/relation|does not exist|column|schema cache/i.test(msg) ? 'Kjør migreringene (tasks.sql … tasks_v8.sql)' : 'Lastefeil: '+msg,'#e30613');
     return;
   }
+  state.loadState='ready'; state.loadError='';
   // ansatte + status krever innlogging (v19); tavla vises uansett
   let people=null;
   if(T.getUser()){
@@ -669,6 +675,20 @@ function setViewTab(tab){
   renderScheduler();
 }
 function renderScheduler(){
+  // Før første vellykkede lasting skal brukeren se «laster»/«feil» — ikke et falskt
+  // «Ingen oppgaver» som er umulig å skille fra en genuint tom dag.
+  if(state.loadState!=='ready' && !state.tasks.length){
+    const el=document.getElementById(state.activeViewTab==='board'?'view-kanban':state.activeViewTab==='weekly'?'view-weekly':'view-timeline');
+    if(el){
+      el.innerHTML = state.loadState==='loading'
+        ? `<div class="w-full p-4 space-y-3 animate-pulse" role="status" aria-label="Laster oppgaver">${'<div class="h-24 rounded-xl bg-slate-200/60 dark:bg-slate-800/60"></div>'.repeat(3)}</div>`
+        : `<div class="w-full p-8 text-center"><i class="fa-solid fa-triangle-exclamation text-2xl text-thansen-red mb-2"></i>
+             <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Fikk ikke lastet oppgavene</p>
+             <p class="text-xs text-slate-400 mt-1">${esc(state.loadError||'Ukjent feil')}</p>
+             <button onclick="loadAll()" class="mt-3 px-4 py-2 text-xs font-bold rounded-xl bg-thansen-500 hover:bg-thansen-600 text-white">Prøv igjen</button></div>`;
+    }
+    return;
+  }
   if(state.activeViewTab==='board') renderKanbanView();
   else if(state.activeViewTab==='weekly') renderWeeklyPlannerView();
   else renderTimelineView();
