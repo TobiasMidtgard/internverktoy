@@ -233,6 +233,7 @@
           <option value="dev">IT / Dev</option>
         </select></div>
       <div><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fargetema</label><div class="flex items-center gap-3"><input type="color" id="coworker-color" value="#004595" class="w-14 h-10 rounded-lg bg-transparent border border-slate-200 dark:border-slate-800 cursor-pointer p-0.5"><span class="text-xs text-slate-400">Velg farge i hjulet</span></div></div>
+      <div id="coworker-pw-wrap" class="hidden"><label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Nullstill passord</label><input type="text" id="coworker-newpw" autocomplete="off" placeholder="La stå tom for å beholde" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-thansen-500 focus:outline-none"><p class="text-[10px] text-slate-400 mt-1">Setter nytt passord og logger personen ut overalt (for glemt passord)</p></div>
       <div class="pt-2 flex items-center justify-end space-x-2"><button type="button" onclick="closeCoworkerModal()" class="px-4 py-2 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 font-medium rounded-xl">Avbryt</button><button type="submit" class="px-4 py-2 text-xs bg-thansen-500 hover:bg-thansen-600 text-white font-bold rounded-xl shadow-md">Registrer</button></div>
     </form>
   </div>
@@ -244,7 +245,7 @@
   <div><p class="text-xs font-bold">Fjern fra oppgave</p><p class="text-[10px] opacity-90">Slipp ansatt-kortet her.</p></div>
 </div>
 
-<script src="shared.js?v=11"></script>
+<script src="shared.js?v=12"></script>
 <script>
 const T = window.THelper;
 const BUILD = '2026-06-10a';   // bumped on each deploy so a stale cache is easy to spot
@@ -621,7 +622,9 @@ function openCoworkerModal(tag){
     document.getElementById('coworker-title').value=c.title||'Butikkmedarbeider';
     if(isDev){ roleWrap.classList.remove('hidden'); document.getElementById('coworker-role').value=c.role||'coworker'; }
     else roleWrap.classList.add('hidden');
+    document.getElementById('coworker-pw-wrap').classList.remove('hidden');
   } else {
+    document.getElementById('coworker-pw-wrap').classList.add('hidden');
     document.getElementById('coworker-modal-title').innerHTML='<i class="fa-solid fa-user-plus text-thansen-500"></i> <span>Registrer Ansatt</span>';
     tagInput.disabled=false;
     document.getElementById('coworker-color').value='#004595';
@@ -649,6 +652,8 @@ async function handleCoworkerSubmit(e){
     if(editingCoworkerTag){
       await T.rpcAuth('update_coworker',{p_tag:tag,p_name:name,p_color:color,p_title:title});
       if(isDev && roleSel){ try{ await T.rpcAuth('set_role',{p_target:tag,p_role:roleSel.value}); }catch(e){} }
+      const newpw=document.getElementById('coworker-newpw').value.trim();
+      if(newpw){ await T.rpcAuth('reset_password',{p_target:tag,p_new:newpw}); showToast(`Nytt passord satt for ${tag}`,'#10b981'); }
       showToast(`${tag} oppdatert`,color);
     } else {
       if(state.coworkers.some(c=>c.tag===tag)){ showToast('Koden finnes allerede.','#e30613'); return; }

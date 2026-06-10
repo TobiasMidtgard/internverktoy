@@ -86,7 +86,7 @@ window.THelper = (function () {
       const ov = document.createElement('div'); ov.className = 'th-ov';
       ov.innerHTML = `
         <div class="th-dialog" role="dialog" aria-modal="true">
-          <div class="th-tabs"><button data-t="login">Logg inn</button><button data-t="reg">Ny konto</button></div>
+          <div class="th-tabs"><button data-t="login">Logg inn</button><button data-t="reg">Ny konto</button><button data-t="pw">Bytt passord</button></div>
           <div data-pane="login">
             <div class="th-f"><label>Ansattkode (4 bokstaver)</label><input class="thi-tag" maxlength="4" autocomplete="username" placeholder="MORT" style="text-transform:uppercase"></div>
             <div class="th-f"><label>Passord</label><input class="thi-pw" type="password" autocomplete="current-password" placeholder="••••"></div>
@@ -97,6 +97,11 @@ window.THelper = (function () {
             <div class="th-f"><label>Stillingstittel</label><select class="thr-title">${TITLES.map(t=>`<option ${t==='Butikkmedarbeider'?'selected':''}>${t}</option>`).join('')}</select></div>
             <div class="th-f"><label>Passord (min. 4 tegn)</label><input class="thr-pw" type="password" autocomplete="new-password" placeholder="••••"></div>
             <div class="th-f"><label>Invitasjonskode (spør butikksjefen)</label><input class="thr-inv" autocomplete="off" placeholder="····"></div>
+          </div>
+          <div data-pane="pw" hidden>
+            <div class="th-f"><label>Ansattkode (4 bokstaver)</label><input class="thp-tag" maxlength="4" autocomplete="username" placeholder="MORT" style="text-transform:uppercase"></div>
+            <div class="th-f"><label>Nåværende passord</label><input class="thp-old" type="password" autocomplete="current-password" placeholder="••••"></div>
+            <div class="th-f"><label>Nytt passord (min. 4 tegn)</label><input class="thp-new" type="password" autocomplete="new-password" placeholder="••••"></div>
           </div>
           <div class="th-err"></div>
           <div class="th-row"><button class="th-btn ghost" data-x="cancel">Avbryt</button><button class="th-btn" data-x="ok">Logg inn</button></div>
@@ -110,8 +115,9 @@ window.THelper = (function () {
         ov.querySelectorAll('.th-tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === m));
         q('[data-pane="login"]').hidden = m !== 'login';
         q('[data-pane="reg"]').hidden = m !== 'reg';
-        okBtn.textContent = m === 'login' ? 'Logg inn' : 'Opprett konto';
-        setTimeout(() => (m === 'login' ? q('.thi-tag') : q('.thr-name')).focus(), 20);
+        q('[data-pane="pw"]').hidden = m !== 'pw';
+        okBtn.textContent = m === 'login' ? 'Logg inn' : m === 'reg' ? 'Opprett konto' : 'Bytt passord';
+        setTimeout(() => (m === 'login' ? q('.thi-tag') : m === 'reg' ? q('.thr-name') : q('.thp-tag')).focus(), 20);
       };
       ov.querySelectorAll('.th-tabs button').forEach(b => b.onclick = () => setMode(b.dataset.t));
       const close = v => { ov.remove(); document.removeEventListener('keydown', onKey); resolve(v); };
@@ -119,7 +125,15 @@ window.THelper = (function () {
         if (busy) return; busy = true; err.textContent = ''; okBtn.textContent = '…';
         try {
           let res;
-          if (mode === 'login'){
+          if (mode === 'pw'){
+            const tag = q('.thp-tag').value.trim().toUpperCase(), oldPw = q('.thp-old').value, newPw = q('.thp-new').value;
+            if (tag.length !== 4 || !oldPw) throw new Error('Fyll inn kode og nåværende passord');
+            if (newPw.length < 4) throw new Error('Nytt passord må ha minst 4 tegn');
+            const { error } = await sb.rpc('change_password', { p_tag: tag, p_old: oldPw, p_new: newPw });
+            if (error) throw error;
+            res = await callLogin(tag, newPw);   // passordbyttet drepte alle sesjoner — logg inn på nytt
+            toast('Passord byttet ✓');
+          } else if (mode === 'login'){
             const tag = q('.thi-tag').value.trim().toUpperCase(), pw = q('.thi-pw').value;
             if (tag.length !== 4 || !pw) throw new Error('Fyll inn kode og passord');
             res = await callLogin(tag, pw);
@@ -134,7 +148,8 @@ window.THelper = (function () {
           }
           setSession(res.user, res.token); close(res.user);
         } catch (e) {
-          err.textContent = (e && e.message) || 'Noe gikk galt'; okBtn.textContent = mode === 'login' ? 'Logg inn' : 'Opprett konto';
+          err.textContent = (e && e.message) || 'Noe gikk galt';
+          okBtn.textContent = mode === 'login' ? 'Logg inn' : mode === 'reg' ? 'Opprett konto' : 'Bytt passord';
         } finally { busy = false; }
       };
       okBtn.onclick = submit;
