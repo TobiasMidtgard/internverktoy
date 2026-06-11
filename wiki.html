@@ -32,8 +32,15 @@
   .cats{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 6px;}
   .cats .on{background:var(--primary);border-color:var(--primary);color:#fff;}
   .results{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
-  .res{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer;transition:.12s;}
-  .res:hover{background:var(--card-h);border-color:#3a4656;}
+  .res{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer;
+    transition:background .12s,border-color .12s,transform .18s cubic-bezier(.16,1,.3,1);}
+  .res:hover{background:var(--card-h);border-color:#3a4656;transform:translateY(-1px);}
+  /* nye treff fader inn — tilstandsskifte, kort og avgrenset */
+  .results .res{animation:th-fade-up .18s cubic-bezier(.16,1,.3,1) backwards;}
+  .results .res:nth-child(2){animation-delay:25ms}.results .res:nth-child(3){animation-delay:50ms}
+  .results .res:nth-child(4){animation-delay:75ms}.results .res:nth-child(5){animation-delay:100ms}
+  .results .res:nth-child(6){animation-delay:125ms}.results .res:nth-child(7){animation-delay:150ms}
+  .results .res:nth-child(n+8){animation:none;}
   .res h3{margin:0 0 4px;font-size:16px;}
   .res .cat{font-size:11px;color:#9ecbff;border:1px solid #1f3a5c;border-radius:999px;padding:1px 8px;}
   .res .snip{color:var(--muted);font-size:13px;margin-top:6px;}
@@ -41,7 +48,10 @@
   .empty{color:var(--muted);text-align:center;padding:40px 10px;}
   /* article + markdown */
   .modal{position:fixed;inset:0;background:rgba(6,9,13,.72);display:none;align-items:center;justify-content:center;z-index:50;padding:14px;}
-  .modal.show{display:flex;}
+  .modal.show{display:flex;animation:th-fade-in .18s ease-out;}
+  .modal.show .sheet{animation:th-scale-in .24s cubic-bezier(.16,1,.3,1);}
+  button:not(:disabled){transition:background .12s,border-color .12s,color .12s,transform .12s;}
+  button:not(:disabled):active{transform:scale(.97);}
   .sheet{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--primary);border-radius:18px;
     width:100%;max-width:680px;max-height:92vh;overflow:auto;}
   .sheet .hd{display:flex;align-items:flex-start;gap:10px;padding:18px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);}
@@ -75,7 +85,11 @@
   .sc-cats{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 2px;}
   .sc-cats .on{background:var(--primary);border-color:var(--primary);color:#fff;}
   .sc-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));margin-top:10px;}
-  .sc-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;}
+  .sc-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;
+    transition:border-color .12s,transform .18s cubic-bezier(.16,1,.3,1);}
+  .sc-card:hover{border-color:#3a4656;transform:translateY(-1px);}
+  .sc-cmd.sc-ok{border-color:#1aa64d;color:#7ce0a3;}
+  .sc-cmd.sc-ok code{color:#7ce0a3;}
   .sc-top{display:flex;align-items:center;gap:8px;}
   .sc-title{font-weight:700;font-size:14px;flex:1;min-width:0;}
   .sc-kind{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:1px 8px;border:1px solid #1f3a5c;color:#9ecbff;flex-shrink:0;}
@@ -258,15 +272,21 @@ function renderLinks(){
       <div class="sc-top"><span class="sc-title">${esc(l.title)}</span><span class="sc-kind">${l.kind==='xal'?'XAL':'Lenke'}</span>${canManage?`<button class="sc-edit" aria-label="Rediger snarvei" onclick="openLinkEditor('${l.id}')">${T.icon('pencil')}</button>`:''}</div>
       ${l.description?`<div class="sc-desc">${esc(l.description)}</div>`:''}
       ${l.kind==='xal'
-        ? `<button class="sc-cmd" onclick="copyCmd('${l.id}')" aria-label="Kopier kommando: ${esc(l.command||'')}"><code>${esc(l.command||'')}</code>${T.icon('copy')}</button>`
+        ? `<button class="sc-cmd" onclick="copyCmd('${l.id}', this)" aria-label="Kopier kommando: ${esc(l.command||'')}"><code>${esc(l.command||'')}</code>${T.icon('copy')}</button>`
         : `<a class="sc-open" href="${esc(l.url||'')}" target="_blank" rel="noopener">${T.icon('external')} Åpne</a>`}
     </div>`).join('') : `<div class="empty" style="grid-column:1/-1;padding:16px">Ingen snarveier${q?' matcher søket':' ennå'}.</div>`;
 }
 function setLinkCatIdx(i){ linkCat = i<0 ? '' : (linkCats()[i]||''); renderLinks(); }
-async function copyCmd(id){
+async function copyCmd(id, btn){
   const l=links.find(x=>x.id===id); if(!l||!l.command) return;
   try{ await navigator.clipboard.writeText(l.command); }
   catch(e){ const ta=document.createElement('textarea'); ta.value=l.command; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+  // gledespunkt: knappen kvitterer med grønn hake et øyeblikk
+  if(btn && !btn.dataset.flash){
+    const orig=btn.innerHTML; btn.dataset.flash='1'; btn.classList.add('sc-ok');
+    btn.innerHTML=`<code>${esc(l.command)}</code><svg class="th-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>`;
+    setTimeout(()=>{ btn.classList.remove('sc-ok'); btn.innerHTML=orig; delete btn.dataset.flash; },1200);
+  }
   T.toast('Kopiert: '+l.command);
 }
 function linkKindChange(){ const xal=$('lkKind').value==='xal'; $('lkUrlRow').style.display=xal?'none':''; $('lkCmdRow').style.display=xal?'':'none'; }
