@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#00529c">
+<meta name="theme-color" content="#004595">
 <title>Kunnskapsbase · Thansen Verktøykasse</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{ --bg:#0f1318; --panel:#161b22; --card:#1b212a; --card-h:#222a35; --line:#2a323d;
-    --text:#f1f4f8; --muted:#97a3b2; --primary:#2684e6; --primary-700:#00529c; --cta:#1aa64d; --yellow:#ffd400; }
+    --text:#f1f4f8; --muted:#97a3b2; --primary:#2684e6; --primary-700:#004595; --cta:#1aa64d; --yellow:#ffd400; }
   *{box-sizing:border-box;} html,body{margin:0;}
-  body{background:radial-gradient(1100px 560px at 50% -8%,#13243a 0%,var(--bg) 58%);color:var(--text);
+  body{background:var(--bg);color:var(--text);
     font:400 16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh;}
-  .topbar{height:4px;background:linear-gradient(90deg,var(--primary-700),var(--primary) 60%,var(--yellow));position:sticky;top:0;z-index:11;}
+  .topbar{height:4px;background:var(--primary-700);position:sticky;top:0;z-index:11;}
   header{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);
-    position:sticky;top:4px;background:rgba(15,19,24,.9);backdrop-filter:blur(8px);z-index:10;}
+    position:sticky;top:4px;background:var(--bg);z-index:10;}
   .hub{color:var(--muted);text-decoration:none;font-weight:600;}.hub:hover{color:var(--text);}
   .brand{font-weight:800;letter-spacing:.12em;}
   .sp{margin-left:auto;}
@@ -40,7 +40,7 @@
   .res .snip mark{background:rgba(255,212,0,.22);color:var(--yellow);border-radius:3px;padding:0 2px;}
   .empty{color:var(--muted);text-align:center;padding:40px 10px;}
   /* article + markdown */
-  .modal{position:fixed;inset:0;background:rgba(6,9,13,.66);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:50;padding:14px;}
+  .modal{position:fixed;inset:0;background:rgba(6,9,13,.72);display:none;align-items:center;justify-content:center;z-index:50;padding:14px;}
   .modal.show{display:flex;}
   .sheet{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--primary);border-radius:18px;
     width:100%;max-width:680px;max-height:92vh;overflow:auto;}
@@ -138,7 +138,7 @@
   </div>
 </div>
 
-<script src="shared.js?v=13"></script>
+<script src="shared.js?v=14"></script>
 <script>
 const T=window.THelper, $=id=>document.getElementById(id), esc=s=>T.esc(s);
 const CATS=['Bildeler','Dekk','Sykkel','Bilvask','Barneseter','Takbokser','Takstativ','Vindusviskere','Verktøy','MC','Generelt'];
@@ -210,7 +210,7 @@ async function openArticle(id){
   $('aMeta').innerHTML=`<span class="cat">${esc(a.category)}</span> · Sist endret ${new Date(a.updated_at).toLocaleDateString('nb-NO',{day:'numeric',month:'short',year:'numeric'})}${a.updated_by?' av '+esc(a.updated_by):''}`;
   $('aBody').innerHTML=md(a.body);
   const src=Array.isArray(a.sources)?a.sources:[];
-  $('aSources').innerHTML = src.length ? `<h4>Gode kilder</h4>`+src.map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener">🔗 ${esc(s.label||s.url)}</a>`).join('') : '';
+  $('aSources').innerHTML = src.length ? `<h4>Gode kilder</h4>`+src.map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener">${T.icon('external')} ${esc(s.label||s.url)}</a>`).join('') : '';
   $('aActions').innerHTML = canManage
     ? `<button class="btn ghost" onclick="delArticle('${a.id}')" style="color:#ff9b9b">Slett</button><button class="btn" onclick="openEditor('${a.id}')">Rediger</button>`
     : `<button class="btn cta" onclick="openSuggest('${a.id}')">Foreslå endring</button>`;
