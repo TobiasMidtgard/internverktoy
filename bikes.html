@@ -665,7 +665,7 @@ function makeCard(b){
       <div class="barcode-box" data-bc>
         <svg class="bc-svg"></svg>
         <div class="barcode-label">${b.frame?'FRAME':'VARENR'} · ${esc(b.frame||b.itemNumber||'—')}</div>
-        ${b.frame&&b.itemNumber?`<div class="barcode-label">VARENR · ${esc(b.itemNumber)}</div>`:''}
+        ${b.frame&&b.itemNumber&&b.itemNumber!==b.frame?`<div class="barcode-label">VARENR · ${esc(b.itemNumber)}</div>`:''}
       </div>
       <div class="tap-note">↑ TAP BARCODE FOR FULLSCREEN ↑</div>
     </div>`;
@@ -762,11 +762,11 @@ function startRealtime(){
     .subscribe((status)=>{
       const d=document.getElementById('liveDot');
       if(status==='SUBSCRIBED'){
-        if(d){d.style.background='var(--accent-2)';d.style.boxShadow='0 0 14px var(--accent-2)';d.title='Live sync on';}
+        if(d){d.style.background='var(--accent-2)';d.title='Live sync on';}
         // catch up on anything missed before/while (re)connecting — unless mid-interaction
         if(!draggingCard && !editingUid) loadFromServer();
       } else if(d && (status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED')){
-        d.style.background='var(--accent)';d.style.boxShadow='0 0 14px var(--accent)';d.title='Reconnecting…';
+        d.style.background='var(--accent)';d.title='Reconnecting…';
       }
     });
 }
@@ -1137,7 +1137,7 @@ function openDetail(b){
       ${detailSpecsHtml(b.specs)}
       ${b.desc?`<div class="detail-desc">${esc(b.desc)}</div>`:''}
       ${itemsHtml(b.items)}
-      ${(b.frame||b.itemNumber)?`<div class="barcode-box" data-d-bc><svg class="d-bc-svg"></svg><div class="barcode-label">${b.frame?'FRAME':'VARENR'} · ${esc(b.frame||b.itemNumber)}</div>${b.frame&&b.itemNumber?`<div class="barcode-label">VARENR · ${esc(b.itemNumber)}</div>`:''}</div>`:''}
+      ${(b.frame||b.itemNumber)?`<div class="barcode-box" data-d-bc><svg class="d-bc-svg"></svg><div class="barcode-label">${b.frame?'FRAME':'VARENR'} · ${esc(b.frame||b.itemNumber)}</div>${b.frame&&b.itemNumber&&b.itemNumber!==b.frame?`<div class="barcode-label">VARENR · ${esc(b.itemNumber)}</div>`:''}</div>`:''}
       <div class="detail-actions">
         ${b.source_url?`<a class="btn" href="${esc(b.source_url)}" target="_blank" rel="noopener">↗ Open on Thansen</a>`:''}
         ${b.source_url?`<button class="btn" data-d-parts>${window.THelper.icon('wrench')} Reservedeler</button>`:''}
