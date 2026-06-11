@@ -7,7 +7,7 @@
 <title>ButikkPlanlegger · Thansen Verktøykasse</title>
 <!-- Statisk Tailwind-bygg (tailwind.config.js + tw-input.css -> tailwind.css).
      Bruker du NYE utility-klasser: kjør npx-kommandoen i tailwind.config.js og bump ?v= -->
-<link rel="stylesheet" href="tailwind.css?v=2">
+<link rel="stylesheet" href="tailwind.css?v=3">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -35,6 +35,18 @@
   .empty{color:#94a3b8;text-align:center;padding:36px 10px;}
   .wk-resize{position:absolute;left:0;right:0;bottom:0;height:9px;cursor:ns-resize;background:rgba(38,132,230,.25);touch-action:none;}
   .wk-resize:hover{background:rgba(38,132,230,.5);}
+  /* bevegelse: kort, modaler, fullføring (tokens/keyframes i shared.js) */
+  .tk-card:hover{transform:translateY(-2px);}
+  .sheet-in{animation:th-scale-in 240ms cubic-bezier(.16,1,.3,1);}
+  .view-in{animation:th-fade-in 160ms ease-out;}
+  button:not(:disabled){transition-property:transform,background-color,border-color,color,box-shadow,opacity;transition-duration:.12s;}
+  button:not(:disabled):active{transform:scale(.97);}
+  .done-pop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(16,185,129,.14);border-radius:inherit;pointer-events:none;animation:th-fade-in 150ms ease-out;}
+  .done-pop svg{width:34px;height:34px;}
+  .done-pop path{stroke:#10b981;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round;
+    stroke-dasharray:30;stroke-dashoffset:30;animation:done-draw 350ms cubic-bezier(.16,1,.3,1) 80ms forwards;}
+  @keyframes done-draw{to{stroke-dashoffset:0}}
   /* horisont-seksjoner i Gjøremål-kolonnen */
   .hz-head{display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:6px 10px;
     border:1px dashed #cbd5e1;border-radius:10px;background:transparent;color:#94a3b8;
@@ -167,7 +179,7 @@
 
 <!-- Detail modal -->
 <div id="task-detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-task-title" class="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 hidden">
-  <div class="bg-white dark:bg-slate-950 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
+  <div class="sheet-in bg-white dark:bg-slate-950 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
     <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/20">
       <div class="flex items-center space-x-2 text-thansen-500"><i class="fa-solid fa-circle-info text-xl text-thansen-yellow bg-thansen-500 p-1.5 rounded-lg"></i><h3 class="font-bold text-base sm:text-lg">Oppgavedetaljer</h3></div>
       <button onclick="closeTaskDetailModal()" aria-label="Lukk" class="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
@@ -197,7 +209,7 @@
 
 <!-- Task create/edit modal -->
 <div id="task-modal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title" class="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 hidden">
-  <div class="bg-white dark:bg-slate-950 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
+  <div class="sheet-in bg-white dark:bg-slate-950 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
     <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/20">
       <h3 id="task-modal-title" class="font-bold text-base sm:text-lg flex items-center space-x-2"><i class="fa-solid fa-circle-plus text-thansen-500"></i><span>Opprett Gjøremål</span></h3>
       <button onclick="closeTaskModal()" aria-label="Lukk" class="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
@@ -229,7 +241,7 @@
 
 <!-- Coworker modal -->
 <div id="coworker-modal" role="dialog" aria-modal="true" aria-labelledby="coworker-modal-title" class="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 hidden">
-  <div class="bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
+  <div class="sheet-in bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
     <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between"><h3 id="coworker-modal-title" class="font-bold flex items-center space-x-2"><i class="fa-solid fa-user-plus text-thansen-500"></i><span>Registrer Ansatt</span></h3><button onclick="closeCoworkerModal()" aria-label="Lukk" class="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"><i class="fa-solid fa-times" aria-hidden="true"></i></button></div>
     <form id="coworker-form" onsubmit="handleCoworkerSubmit(event)" class="p-5 space-y-4">
       <div><label for="coworker-name" class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fullt Navn</label><input type="text" id="coworker-name" required placeholder="F.eks. Alexander Thomsen" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-thansen-500 focus:outline-none"></div>
@@ -263,7 +275,7 @@
 <script src="shared.js?v=15"></script>
 <script>
 const T = window.THelper;
-const BUILD = '2026-06-11c';   // bumped on each deploy so a stale cache is easy to spot
+const BUILD = '2026-06-12a';   // bumped on each deploy so a stale cache is easy to spot
 let isAdmin = false, isDev = false, me = null, filterTag = '', weekOffset = 0;
 let state = { activeViewTab:'board', coworkers:[], tasks:[], alerts:[], notes:[], staffStatus:[],
               loadState:'loading', loadError:'' };   // loading | ready | error — skiller «laster» fra «tomt» og «feil»
@@ -539,7 +551,7 @@ function openAssigneePicker(taskId, dateObj){
   if(!ov){ ov=document.createElement('div'); ov.id='assignee-picker'; document.body.appendChild(ov); }
   ov.className='fixed inset-0 bg-slate-900/70 z-[60] flex items-center justify-center p-4';
   ov.innerHTML=`
-    <div class="bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
+    <div class="sheet-in bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
       <div class="p-4 border-b border-slate-200 dark:border-slate-800">
         <h3 class="font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-user-check text-thansen-500"></i><span>Hvem gjør dette?</span></h3>
         <p class="text-[11px] text-slate-400 mt-0.5 truncate">${esc(t.title)} · <span class="capitalize">${esc(dstr)}</span></p>
@@ -573,7 +585,7 @@ function openStatusMenu(tag){
   let ov=document.getElementById('status-menu'); if(!ov){ ov=document.createElement('div'); ov.id='status-menu'; document.body.appendChild(ov); }
   ov.className='fixed inset-0 bg-slate-900/70 z-[60] flex items-center justify-center p-4';
   ov.innerHTML=`
-    <div class="bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
+    <div class="sheet-in bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
       <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
         <span class="w-7 h-7 rounded-lg inline-flex items-center justify-center font-bold text-white text-[10px]" style="background:${col(c.color)}">${esc(tag)}</span>
         <div><h3 class="font-bold text-sm">${esc(c.name)}</h3><p class="text-[11px] text-slate-400">Status nå · ${cur?esc(STATUS_DEF[cur.kind].label):'Tilgjengelig'}</p></div>
@@ -606,7 +618,7 @@ function openStatusModal(ymdStr){
   let ov=document.getElementById('status-modal'); if(!ov){ ov=document.createElement('div'); ov.id='status-modal'; document.body.appendChild(ov); }
   ov.className='fixed inset-0 bg-slate-900/70 z-[60] flex items-center justify-center p-4';
   ov.innerHTML=`
-   <div class="bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+   <div class="sheet-in bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
      <div class="p-4 border-b border-slate-200 dark:border-slate-800"><h3 class="font-bold text-sm flex items-center gap-2"><i class="fa-regular fa-clock text-thansen-500"></i>Registrer status</h3><p class="text-[11px] text-slate-400 capitalize">${esc(dstr)}</p></div>
      <div class="p-4 space-y-3 text-xs">
        <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Ansatt</label><select id="sm-tag" ${isAdmin?'':'disabled'} class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2">${persons}</select></div>
@@ -721,6 +733,8 @@ function setViewTab(tab){
   document.getElementById('view-kanban').classList.toggle('hidden', tab!=='board');
   document.getElementById('view-weekly').classList.toggle('hidden', tab!=='weekly');
   document.getElementById('view-timeline').classList.toggle('hidden', tab!=='timeline');
+  const act=document.getElementById(tab==='board'?'view-kanban':tab==='weekly'?'view-weekly':'view-timeline');
+  if(act){ act.classList.remove('view-in'); void act.offsetWidth; act.classList.add('view-in'); }
   document.getElementById('mobile-snap-notif').style.display = (tab==='timeline') ? 'none' : '';
   document.getElementById('current-board-title').innerText =
     tab==='board' ? 'Gjøremålstavle for butikk' : tab==='weekly' ? 'Vaktskjema & Ukesplan' : 'Dagslinje — i dag';
@@ -837,6 +851,12 @@ function renderKanbanView(){
   });
   if(keep.h) c.scrollLeft=keep.h;
   ['todo','progress','done'].forEach(s=>{ const el=document.getElementById('kanban-col-'+s); if(el && keep[s]) el.scrollTop=keep[s]; });
+  // kort fade-up KUN ved første datainnlasting (lasting → innhold), aldri ved re-render
+  if(!window._boardEntranced && state.tasks.length){
+    window._boardEntranced=true;
+    let i=0;
+    c.querySelectorAll('[id^="card-"]').forEach(el=>{ if(i>8) return; el.style.animation=`th-fade-up 200ms cubic-bezier(.16,1,.3,1) ${i*25}ms backwards`; i++; });
+  }
 }
 
 /* ---------- horisonter (Gjøremål-kolonnen) ---------- */
@@ -906,7 +926,7 @@ function createTaskCard(task, weekly=false){
 
   const dot = task.priority==='high'?'bg-red-500':task.priority==='medium'?'bg-amber-500':'bg-emerald-500';
   if(weekly){
-    card.className=`p-2 rounded-lg border bg-white dark:bg-slate-950 shadow-sm hover:shadow-md transition-all cursor-pointer ${overdue?'border-red-300 dark:border-red-900':'border-slate-200 dark:border-slate-800/80 hover:border-thansen-500/50'}`;
+    card.className=`tk-card p-2 rounded-lg border bg-white dark:bg-slate-950 shadow-sm hover:shadow-md transition-all cursor-pointer ${overdue?'border-red-300 dark:border-red-900':'border-slate-200 dark:border-slate-800/80 hover:border-thansen-500/50'}`;
     const time = task.due ? new Date(task.due).toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'}) : '';
     let w=''; assigneesFor(task, task.due?new Date(task.due):new Date()).forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-6 h-5 rounded text-[9px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${esc(tag)}">${esc(tag)}</span>`; });
     const dur = task.duration ? `<span class="text-[9px] text-slate-400">${fmtDur(task.duration)}</span>` : '';
@@ -917,7 +937,7 @@ function createTaskCard(task, weekly=false){
     return card;
   }
 
-  card.className=`p-4 rounded-xl border bg-white dark:bg-slate-950 shadow-sm hover:shadow-md transition-all cursor-pointer ${overdue?'border-red-300 dark:border-red-900 bg-red-50/10':'border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700'}`;
+  card.className=`tk-card relative p-4 rounded-xl border bg-white dark:bg-slate-950 shadow-sm hover:shadow-md transition-all cursor-pointer ${overdue?'border-red-300 dark:border-red-900 bg-red-50/10':'border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700'}`;
   card.addEventListener('dragover',e=>{ e.preventDefault(); if(isAdmin) card.classList.add('ring-2','ring-thansen-500'); });
   card.addEventListener('dragleave',()=>card.classList.remove('ring-2','ring-thansen-500'));
   card.addEventListener('drop',e=>{ e.preventDefault(); card.classList.remove('ring-2','ring-thansen-500'); const d=e.dataTransfer.getData('text/plain'); if(d.startsWith('coworker:')) addAssigneeOn(task.id, boardDateFor(task), d.slice(9)); });
@@ -1070,7 +1090,7 @@ function renderWeeklyPlannerView(){
     const box=grid.querySelector(`.th-notes[data-day="${i}"]`); if(!box) return;
     state.notes.filter(n=>n.weekday===i).forEach(n=>{
       const canDel=me&&(n.author===me.tag||isAdmin);
-      const el=document.createElement('div'); el.className='rounded p-1 text-[10px] relative'; el.style.background=(n.color||'#ffd400')+'22'; el.style.borderLeft=`2px solid ${n.color||'#ffd400'}`;
+      const el=document.createElement('div'); el.className='rounded p-1 text-[10px] relative'; el.style.background=(n.color||'#ffd400')+'22'; el.style.border=`1px solid ${(n.color||'#ffd400')}55`;
       el.innerHTML=`<div class="text-slate-700 dark:text-slate-200 pr-3 whitespace-pre-wrap">${esc(n.body)}</div>${canDel?`<button onclick="deletePlannerNote('${n.id}')" aria-label="Slett notat" class="tap-x absolute top-0 right-0.5 text-slate-400 text-[10px]">✕</button>`:''}`;
       box.appendChild(el);
     });
@@ -1187,7 +1207,7 @@ function createWeeklyBlock(t, span, cellDate){
   const prio=t.priority==='high'?'#ef4444':t.priority==='medium'?'#f59e0b':'#10b981';
   const blk=document.createElement('div');
   blk.className='relative overflow-hidden rounded-lg border bg-white dark:bg-slate-950 shadow-sm cursor-pointer';
-  blk.style.borderLeft='3px solid '+prio; blk.style.borderColor=(t.priority==='high'?'#ef4444':'');
+  if(t.priority==='high') blk.style.borderColor='#ef4444';   // prioritet vises ellers med prikken i headeren
   const people=assigneesFor(t, cellDate);
   let w=''; people.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-6 h-5 rounded text-[9px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`; });
   if(!people.length && isAdmin) w='<span class="text-[10px] text-slate-400 italic">+ sett opp</span>';
@@ -1219,8 +1239,8 @@ function createStatusChip(s){
   const c=state.coworkers.find(x=>x.tag===s.tag)||{name:s.tag,color:'#64748b'};
   const can=canEditStatus(s.tag);
   const el=document.createElement('div');
-  el.className='relative overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm';
-  el.style.borderLeft='3px solid '+d.color;
+  el.className='relative overflow-hidden rounded-lg border shadow-sm';
+  el.style.borderColor=d.color+'66';
   el.style.background=`repeating-linear-gradient(45deg, ${d.color}14, ${d.color}14 6px, ${d.color}26 6px, ${d.color}26 12px)`;
   el.innerHTML=`<div class="p-1.5">
     <div class="flex items-center gap-1 text-[9px] font-bold" style="color:${d.color}"><i class="fa-solid ${d.icon}"></i>${e(fmtMin(s.startMin))}</div>
@@ -1288,7 +1308,15 @@ function triggerDeleteFromDetail(){ const id=currentTaskId; closeTaskDetailModal
 function triggerEditFromDetail(){ const id=currentTaskId; closeTaskDetailModal(); editTask(id); }
 
 /* ---------- mutations ---------- */
+// gledespunkt: hake-sveip over kortet i det oppgaven fullføres (fjernes av re-render)
+function celebrateDone(taskId){
+  const card=document.getElementById('card-'+taskId); if(!card) return;
+  const o=document.createElement('div'); o.className='done-pop';
+  o.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>';
+  card.appendChild(o); setTimeout(()=>o.remove(),700);
+}
 async function moveTaskStatus(taskId, target){
+  if(target==='done') celebrateDone(taskId);
   try{
     await T.rpcAuth('set_status',{p_id:taskId,p_status:target});
     await loadAll();
@@ -1395,8 +1423,7 @@ function showToast(message, color='#004595'){
   const t=document.createElement('div');
   t.setAttribute('role','status');   // leses opp av skjermlesere
   t.className="fixed bottom-5 left-5 z-50 glass border border-slate-200/80 dark:border-slate-800 shadow-2xl p-4 rounded-xl flex items-center space-x-3 transition-all duration-300 transform translate-y-20 opacity-0";
-  t.style.borderLeft=`4px solid ${color}`;
-  t.innerHTML=`<div class="w-2 h-2 rounded-full" style="background-color:${col(color)}"></div><p class="text-xs font-bold text-slate-700 dark:text-slate-200">${esc(message)}</p>`;
+  t.innerHTML=`<div class="w-2 h-2 rounded-full shrink-0" style="background-color:${col(color)}"></div><p class="text-xs font-bold text-slate-700 dark:text-slate-200">${esc(message)}</p>`;
   document.body.appendChild(t);
   setTimeout(()=>t.classList.remove('translate-y-20','opacity-0'),50);
   setTimeout(()=>{ t.classList.add('translate-y-20','opacity-0'); setTimeout(()=>t.remove(),300); },3500);
