@@ -51,10 +51,11 @@ test('mapHitToBike uses formatted title and populates specs', () => {
   assert.equal(b.specs.tyre, '26 x 2,00');
   assert.equal(b.specs.weight_kg, '13,5');
 });
-test('mapHitToBike price, frame, source_id unchanged', () => {
+test('mapHitToBike price, item_number, source_id unchanged', () => {
   const b = mapHitToBike(mtb);
   assert.equal(b.price,        3999);
-  assert.equal(b.frame,        '112642217');
+  assert.equal(b.item_number,  '112642217');
+  assert.equal(b.frame,        undefined);   // rammenummer er brukerens eget felt
   assert.equal(b.source_id,    '1356895');
   assert.equal(b.availability, 'InStock');
 });

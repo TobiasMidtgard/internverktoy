@@ -449,7 +449,10 @@
       <div class="field color-field"><label>Farge</label><input id="f-color" type="color" value="#f4b942"></div>
       <div class="field"><label>Fargenavn</label><input id="f-colorName" placeholder="f.eks. Rav"></div>
     </div>
-    <div class="field"><label>Rammenummer</label><input id="f-frame" placeholder="FRX..."></div>
+    <div class="frow">
+      <div class="field"><label>Rammenummer</label><input id="f-frame" placeholder="FRX..."></div>
+      <div class="field"><label>Varenummer</label><input id="f-itemNumber" placeholder="f.eks. 112642217"></div>
+    </div>
     <div class="field"><label>Beskrivelse</label><textarea id="f-desc" placeholder="Kort beskrivelse som vises på kortet"></textarea></div>
     <div class="field">
       <label>Tilleggsutstyr</label>
@@ -532,7 +535,7 @@
 /* ================= Supabase config (delt med resten av suiten via shared.js) ================= */
 const sb = window.THelper.sb;
 
-const CACHE_KEY = 'velodex.cache.v3';   // fast first-paint only; server is the source of truth
+const CACHE_KEY = 'velodex.cache.v4';   // fast first-paint only; server is the source of truth
 const PASS_KEY  = 'velodex.pass';       // per-tab edit session
 
 let bikes = [];
@@ -550,7 +553,7 @@ function nok(n){return (Number(n)||0).toLocaleString('nb-NO')+' kr';}
 function fromRow(r){
   return {
     uid:r.uid, name:r.name||'', wheel_size:r.wheel_size||'', color:r.color||'#f4b942',
-    colorName:r.color_name||'—', price:r.price||0, frame:r.frame||'',
+    colorName:r.color_name||'—', price:r.price||0, frame:r.frame||'', itemNumber:r.item_number||'',
     desc:r.descr||'', items:Array.isArray(r.items)?r.items:[],
     x:Number(r.x)||0, y:Number(r.y)||0,
     source:r.source||null, source_url:r.source_url||'', image_url:r.image_url||'',
@@ -564,7 +567,7 @@ function fromRow(r){
 function dbPayload(d){
   const p={
     name:d.name, wheel_size:d.wheel_size, color:d.color, color_name:d.colorName,
-    price:d.price, frame:d.frame, descr:d.desc, items:d.items,
+    price:d.price, frame:d.frame, item_number:d.itemNumber, descr:d.desc, items:d.items,
     display_status:d.displayStatus,
   };
   if(d.x!=null) p.x=d.x;
@@ -663,14 +666,16 @@ function makeCard(b){
       ${partsButtonHtml(b)}
       <div class="barcode-box" data-bc>
         <svg class="bc-svg"></svg>
-        <div class="barcode-label">FRAME · ${esc(b.frame)}</div>
+        <div class="barcode-label">${b.frame?'FRAME':'VARENR'} · ${esc(b.frame||b.itemNumber||'—')}</div>
+        ${b.frame&&b.itemNumber?`<div class="barcode-label">VARENR · ${esc(b.itemNumber)}</div>`:''}
       </div>
       <div class="tap-note">↑ TAP BARCODE FOR FULLSCREEN ↑</div>
     </div>`;
   canvas.appendChild(el);
 
-  if(b.frame){
-    JsBarcode(el.querySelector('.bc-svg'), b.frame, {
+  const bcVal = b.frame || b.itemNumber;
+  if(bcVal){
+    JsBarcode(el.querySelector('.bc-svg'), bcVal, {
       format:"CODE128", lineColor:"#111", width:2, height:46, displayValue:false, margin:0
     });
   }
@@ -846,7 +851,7 @@ function libVisible(){
   let list=bikes.slice();
   if(!editing) list=list.filter(b=>!(b.hidden||b.discontinued||b.displayStatus==='non_display'));
   const q=_libQuery.toLowerCase().trim();
-  if(q) list=list.filter(b=>(b.name+' '+(b.wheel_size||'')+' '+(b.colorName||'')).toLowerCase().includes(q));
+  if(q) list=list.filter(b=>(b.name+' '+(b.wheel_size||'')+' '+(b.colorName||'')+' '+(b.itemNumber||'')+' '+(b.frame||'')).toLowerCase().includes(q));
   return list.sort((a,b)=>a.name.localeCompare(b.name));
 }
 function refreshLibrary(){
@@ -1088,9 +1093,10 @@ document.getElementById('resetView').onclick=()=>{tx=0;ty=0;scale=1;applyTransfo
 /* ---------------- Fullscreen barcode ---------------- */
 const overlay=document.getElementById('overlay');
 function openFullscreen(b){
+  const bc=b.frame||b.itemNumber;
   document.getElementById('fsName').textContent=b.name+(b.wheel_size?(" · "+b.wheel_size):"");
-  document.getElementById('fsFrame').textContent=b.frame;
-  JsBarcode("#fsBarcode", b.frame, {format:"CODE128",lineColor:"#111",width:3,height:120,displayValue:false,margin:0});
+  document.getElementById('fsFrame').textContent=bc||'';
+  if(bc) JsBarcode("#fsBarcode", bc, {format:"CODE128",lineColor:"#111",width:3,height:120,displayValue:false,margin:0});
   overlay.classList.add('show');
 }
 document.getElementById('fsClose').onclick=()=>overlay.classList.remove('show');
@@ -1133,7 +1139,7 @@ function openDetail(b){
       ${detailSpecsHtml(b.specs)}
       ${b.desc?`<div class="detail-desc">${esc(b.desc)}</div>`:''}
       ${itemsHtml(b.items)}
-      ${b.frame?`<div class="barcode-box" data-d-bc><svg class="d-bc-svg"></svg><div class="barcode-label">FRAME · ${esc(b.frame)}</div></div>`:''}
+      ${(b.frame||b.itemNumber)?`<div class="barcode-box" data-d-bc><svg class="d-bc-svg"></svg><div class="barcode-label">${b.frame?'FRAME':'VARENR'} · ${esc(b.frame||b.itemNumber)}</div>${b.frame&&b.itemNumber?`<div class="barcode-label">VARENR · ${esc(b.itemNumber)}</div>`:''}</div>`:''}
       <div class="detail-actions">
         ${b.source_url?`<a class="btn" href="${esc(b.source_url)}" target="_blank" rel="noopener">↗ Open on Thansen</a>`:''}
         ${b.source_url?`<button class="btn" data-d-parts>🔧 Spare parts</button>`:''}
@@ -1141,8 +1147,9 @@ function openDetail(b){
       </div>
     </div>`;
   const cur=()=>bikes.find(x=>x.uid===b.uid)||b;
-  if(b.frame){
-    JsBarcode(detailModal.querySelector('.d-bc-svg'), b.frame, {format:"CODE128",lineColor:"#111",width:2,height:60,displayValue:false,margin:0});
+  const dBc=b.frame||b.itemNumber;
+  if(dBc){
+    JsBarcode(detailModal.querySelector('.d-bc-svg'), dBc, {format:"CODE128",lineColor:"#111",width:2,height:60,displayValue:false,margin:0});
     const bcBox=detailModal.querySelector('[data-d-bc]');
     if(bcBox) bcBox.onclick=()=>openFullscreen(cur()); // fullscreen opens ABOVE the modal; closing it returns here
   }
@@ -1295,6 +1302,7 @@ const F={
   color:document.getElementById('f-color'),
   colorName:document.getElementById('f-colorName'),
   frame:document.getElementById('f-frame'),
+  itemNumber:document.getElementById('f-itemNumber'),
   desc:document.getElementById('f-desc'),
   err:document.getElementById('f-err')
 };
@@ -1330,13 +1338,14 @@ function openEditor(b){
   F.color.value=b?b.color:'#f4b942';
   F.colorName.value=b?b.colorName:'';
   F.frame.value=b?b.frame:'';
+  F.itemNumber.value=b?b.itemNumber:'';
   F.desc.value=b?b.desc:'';
   setDisplayStatus(b ? (b.displayStatus||'on_display') : 'on_display');
   const synced = !!(b && b.source==='thansen');
   document.getElementById('f-hidden').checked = !!(b && b.hidden);
   document.getElementById('f-synced-note').style.display = synced ? '' : 'none';
   // Thansen-owned fields are read-only for synced bikes; frame (serial) is always editable
-  [F.name, F.price].forEach(el => { el.readOnly = synced; el.style.opacity = synced?0.6:1; });
+  [F.name, F.price, F.itemNumber].forEach(el => { el.readOnly = synced; el.style.opacity = synced?0.6:1; });
   F.frame.readOnly = false; F.frame.style.opacity = 1;
   // Delete is available for any existing bike (incl. synced — note a still-listed
   // Thansen bike will reappear on the next import; use Hide to suppress permanently).
@@ -1369,8 +1378,9 @@ saveBtn.onclick=async ()=>{
   if(!isEditing()){F.err.textContent='Redigering er låst.';return;}
   const name=F.name.value.trim();
   const frame=F.frame.value.trim();
-  if(!name){F.err.textContent='Please enter a name.';return;}
-  if(!frame){F.err.textContent='Frame number is required — it generates the barcode.';return;}
+  const itemNumber=F.itemNumber.value.trim();
+  if(!name){F.err.textContent='Skriv inn et navn.';return;}
+  if(!frame&&!itemNumber){F.err.textContent='Ramme- eller varenummer kreves — det genererer strekkoden.';return;}
   const data={
     name,
     wheel_size:F.size.value.trim()||'',
@@ -1378,6 +1388,7 @@ saveBtn.onclick=async ()=>{
     color:F.color.value,
     colorName:F.colorName.value.trim()||'—',
     frame,
+    itemNumber,
     desc:F.desc.value.trim()||'No description provided.',
     items:readItems()
   };

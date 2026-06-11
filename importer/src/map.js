@@ -38,7 +38,7 @@ export function mapHitToBike(hit, { x = 0, y = 0 } = {}){
     name:              formatTitle(brand, specs.type, specs.model) || String(hit.title || '').trim(),
     descr:             String(hit.title || '').trim(),
     price:             Math.round(Number(hit.price) || 0),
-    frame:             String(hit.item_number || hit.item_number_thg || '').trim(),
+    item_number:       String(hit.item_number || hit.item_number_thg || '').trim(),
     availability:      hit.in_stock ? 'InStock' : 'OutOfStock',
     image_url:         hit.image || null,
     source_url:        abs,

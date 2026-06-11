@@ -13,7 +13,7 @@ async function main(){
   const hits = await fetchBikeHits(defaultFetchJson);
   console.log(`Algolia returned ${hits.length} complete-bike products`);
 
-  const bikes = hits.map(h => mapHitToBike(h)).filter(b => b.source_id && b.name && b.frame);
+  const bikes = hits.map(h => mapHitToBike(h)).filter(b => b.source_id && b.name && b.item_number);
 
   // Safety: if mapping yielded nothing (API change / blocked key), abort WITHOUT writing.
   if (bikes.length === 0){
@@ -50,7 +50,7 @@ async function main(){
   for (const b of bikes){
     seen.push(b.source_id);
     if (dryRun){
-      console.log(`[dry-run] ${b.outlet ? '(outlet) ' : ''}${b.name} — ${b.price} kr — ${b.availability} — #${b.frame} — specs:${b.specs?.gears || '?'}gir parts:${b.spare_parts.length}`);
+      console.log(`[dry-run] ${b.outlet ? '(outlet) ' : ''}${b.name} — ${b.price} kr — ${b.availability} — #${b.item_number} — specs:${b.specs?.gears || '?'}gir parts:${b.spare_parts.length}`);
     } else {
       const { spare_parts_count, ...payload } = b; // spare_parts_count is not a DB column
       await upsertBike(client, payload);
