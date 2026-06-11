@@ -12,6 +12,36 @@ window.THelper = (function () {
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+  /* ---------- delt SVG-ikonbibliotek (erstatter emoji-ikoner i UI-et) ----------
+     Strek-ikoner i Lucide/Feather-stil, 24x24, arver currentColor og skaleres med
+     font-size via .th-ic. Dekorativt: aria-hidden — knapper trenger egen aria-label. */
+  const ICONS = {
+    lock:    '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+    unlock:  '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
+    bike:    '<circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>',
+    board:   '<path d="M6 5v11"/><path d="M12 5v6"/><path d="M18 5v14"/>',
+    book:    '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+    external:'<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
+    link:    '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+    wrench:  '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+    gear:    '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+    disc:    '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/>',
+    weight:  '<circle cx="12" cy="5" r="3"/><path d="M6.5 8a2 2 0 0 0-1.9 1.46L2.1 18.5A2 2 0 0 0 4 21h16a2 2 0 0 0 1.93-2.54L19.4 9.5A2 2 0 0 0 17.48 8Z"/>',
+    bolt:    '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    battery: '<rect x="1" y="6" width="18" height="12" rx="2"/><line x1="23" y1="13" x2="23" y2="11"/>',
+    star:    '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+    pencil:  '<path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
+    x:       '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+    plus:    '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    'chevron-right': '<polyline points="9 18 15 12 9 6"/>',
+    copy:    '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+    terminal:'<polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>',
+    sync:    '<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>',
+  };
+  function icon(name, cls = ''){
+    return `<svg class="th-ic${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${ICONS[name] || ''}</svg>`;
+  }
+
   /* ---------- session (lagrer KUN sesjonstoken, aldri passord) ----------
      localStorage så innloggingen overlever fane-/nettleserlukking (tokenet
      utløper server-side etter 30 dager, og kan trekkes tilbake med logg ut). */
@@ -47,9 +77,10 @@ window.THelper = (function () {
          i stedet for å hardkode farger (kanonisk kilde for merkevarefargene). */
       :root{ --th-brand:#004595; --th-brand-2:#2684e6; --th-yellow:#ffd400; --th-red:#e30613;
              --th-bg:#0f1318; --th-panel:#161b22; --th-line:#2a323d; --th-text:#f1f4f8; --th-muted:#97a3b2; }
+      .th-ic{width:1em;height:1em;vertical-align:-0.125em;display:inline-block;flex:none;}
       .th-toast-wrap{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:99999;align-items:center;pointer-events:none;}
       .th-toast{background:#11151b;color:#f1f4f8;border:1px solid #2a323d;border-left:3px solid #2684e6;border-radius:12px;padding:10px 14px;font:500 14px/1.3 system-ui;box-shadow:0 10px 34px rgba(0,0,0,.5);display:flex;align-items:center;gap:12px;pointer-events:auto;max-width:90vw;}
-      .th-ov{position:fixed;inset:0;background:rgba(6,9,13,.66);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:100000;padding:16px;}
+      .th-ov{position:fixed;inset:0;background:rgba(6,9,13,.72);display:flex;align-items:center;justify-content:center;z-index:100000;padding:16px;}
       .th-dialog{background:#161b22;border:1px solid #2a323d;border-top:3px solid #2684e6;border-radius:18px;padding:20px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.55);color:#f1f4f8;font:400 15px/1.5 system-ui;}
       .th-tabs{display:flex;gap:6px;margin-bottom:14px;background:#0f1318;border:1px solid #2a323d;border-radius:10px;padding:3px;}
       .th-tabs button{flex:1;background:transparent;color:#97a3b2;border:0;border-radius:8px;padding:8px;font:600 13px system-ui;cursor:pointer;}
@@ -176,7 +207,9 @@ window.THelper = (function () {
     return data;
   }
 
-  return { SB_URL, SB_KEY, sb, esc, toast, TITLES,
+  injectCss();   // tokens + .th-ic må finnes før sidene rendrer ikoner (før første toast/modal)
+
+  return { SB_URL, SB_KEY, sb, esc, toast, TITLES, icon,
            getUser, role, level, canManage, isDev, clearSession,
            authModal, ensureUser, rpcAuth };
 })();
