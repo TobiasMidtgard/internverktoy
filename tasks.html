@@ -248,7 +248,7 @@
 <script src="shared.js?v=13"></script>
 <script>
 const T = window.THelper;
-const BUILD = '2026-06-11a';   // bumped on each deploy so a stale cache is easy to spot
+const BUILD = '2026-06-11b';   // bumped on each deploy so a stale cache is easy to spot
 let isAdmin = false, isDev = false, me = null, filterTag = '', weekOffset = 0;
 let state = { activeViewTab:'board', coworkers:[], tasks:[], alerts:[], notes:[], staffStatus:[],
               loadState:'loading', loadError:'' };   // loading | ready | error — skiller «laster» fra «tomt» og «feil»
@@ -330,6 +330,15 @@ async function setStaffStatus(tag, dateObj, kind, startMin, durMin, okMsg){
   try{
     await T.rpcAuth('set_staff_status',{p_tag:tag,p_kind:kind,p_day:ymd(dateObj),p_start_min:startMin==null?null:startMin,p_dur_min:durMin==null?null:durMin});
     await loadAll(); if(okMsg!==false) showToast(okMsg||(STATUS_DEF[kind].label+' satt'), STATUS_DEF[kind].color);
+  }catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
+}
+async function setStaffStatusRange(tag, kind, fromYmd, toYmd){
+  try{
+    await T.rpcAuth('set_staff_status_range',{p_tag:tag,p_kind:kind,p_from:fromYmd,p_to:toYmd});
+    const days=Math.round((parseYmd(toYmd)-parseYmd(fromYmd))/86400000)+1;
+    const fmt=s=>parseYmd(s).toLocaleDateString('nb-NO',{day:'numeric',month:'short'});
+    await loadAll();
+    showToast(STATUS_DEF[kind].label+' '+(days===1?fmt(fromYmd):fmt(fromYmd)+' – '+fmt(toYmd)+' ('+days+' dager)'), STATUS_DEF[kind].color);
   }catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
 }
 async function deleteStaffStatus(id, okMsg){
@@ -591,6 +600,10 @@ function openStatusModal(ymdStr){
          <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Fra kl.</label><input id="sm-start" type="time" value="09:00" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2"></div>
          <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Varighet (min)</label><input id="sm-dur" type="number" min="5" step="5" value="15" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2"></div>
        </div>
+       <div id="sm-range" class="grid grid-cols-2 gap-3" style="display:none">
+         <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Fra dato</label><input id="sm-from" type="date" value="${esc(ymdStr)}" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2"></div>
+         <div><label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Til dato</label><input id="sm-to" type="date" value="${esc(ymdStr)}" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2"></div>
+       </div>
      </div>
      <div class="p-3 border-t border-slate-100 dark:border-slate-900 flex items-center justify-end gap-2">
        <button onclick="closeStatusModal()" class="px-4 py-2 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 font-bold rounded-xl">Avbryt</button>
@@ -603,13 +616,18 @@ function openStatusModal(ymdStr){
 function statusModalKindChange(){
   const d=STATUS_DEF[document.getElementById('sm-kind').value];
   document.getElementById('sm-timed').style.display = d.allDay?'none':'';
+  document.getElementById('sm-range').style.display = d.allDay?'':'none';
   if(!d.allDay) document.getElementById('sm-dur').value = d.dur;
 }
 function closeStatusModal(){ const ov=document.getElementById('status-modal'); if(ov) ov.remove(); _statusModalDay=null; }
 function submitStatusModal(){
   const tag=document.getElementById('sm-tag').value, kind=document.getElementById('sm-kind').value, d=STATUS_DEF[kind];
   const dateObj=parseYmd(_statusModalDay);
-  if(d.allDay){ setStaffStatus(tag, dateObj, kind, null, null); }
+  if(d.allDay){
+    const from=document.getElementById('sm-from').value, to=document.getElementById('sm-to').value;
+    if(!from||!to||to<from){ showToast('Til-dato må være lik eller etter fra-dato','#e30613'); return; }
+    setStaffStatusRange(tag, kind, from, to);
+  }
   else { const [hh,mm]=(document.getElementById('sm-start').value||'09:00').split(':').map(Number);
     setStaffStatus(tag, dateObj, kind, hh*60+mm, parseInt(document.getElementById('sm-dur').value)||d.dur); }
   closeStatusModal();
