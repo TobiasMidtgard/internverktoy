@@ -46,6 +46,7 @@ create table if not exists public.bikes (
   specs jsonb,
   spare_parts jsonb not null default '[]'::jsonb,
   display_status text not null default 'on_display'::text,
+  item_number text not null default ''::text,
   constraint bikes_pkey PRIMARY KEY (uid)
 );
 alter table public.bikes enable row level security;
@@ -145,6 +146,25 @@ create table if not exists public.wiki_articles (
   constraint wiki_articles_pkey PRIMARY KEY (id)
 );
 alter table public.wiki_articles enable row level security;
+
+create table if not exists public.wiki_links (
+  id uuid not null default gen_random_uuid(),
+  title text not null,
+  kind text not null default 'url'::text,
+  url text,
+  command text,
+  description text not null default ''::text,
+  category text not null default 'Generelt'::text,
+  sort_order integer not null default 0,
+  updated_by text,
+  updated_at timestamp with time zone not null default now(),
+  created_at timestamp with time zone not null default now(),
+  constraint wiki_links_pkey PRIMARY KEY (id),
+  constraint wiki_links_check CHECK (((kind <> 'url'::text) OR (url IS NOT NULL))),
+  constraint wiki_links_check1 CHECK (((kind <> 'xal'::text) OR (command IS NOT NULL))),
+  constraint wiki_links_kind_check CHECK ((kind = ANY (ARRAY['url'::text, 'xal'::text])))
+);
+alter table public.wiki_links enable row level security;
 
 create table if not exists public.wiki_suggestions (
   id uuid not null default gen_random_uuid(),
@@ -263,7 +283,7 @@ begin
   if not public.verify_passcode(p_passcode) then
     raise exception 'invalid passcode' using errcode = '28000';
   end if;
-  insert into public.bikes (name,wheel_size,color,color_name,price,frame,descr,items,x,y)
+  insert into public.bikes (name,wheel_size,color,color_name,price,frame,item_number,descr,items,x,y)
   values (
     coalesce(p_data->>'name',''),
     coalesce(p_data->>'wheel_size',''),
@@ -271,6 +291,7 @@ begin
     coalesce(p_data->>'color_name','—'),
     coalesce((p_data->>'price')::int,0),
     coalesce(p_data->>'frame',''),
+    coalesce(p_data->>'item_number',''),
     coalesce(p_data->>'descr','No description provided.'),
     coalesce(p_data->'items','[]'::jsonb),
     coalesce((p_data->>'x')::double precision,0),
@@ -325,6 +346,28 @@ begin
   returning * into r;
   if not found then raise exception 'Task not found'; end if;
   return r;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.add_link(p_auth_tag text, p_auth_pw text, p_link jsonb)
+ RETURNS wiki_links
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare r public.wiki_links;
+begin
+  perform public._require_manager(p_auth_tag,p_auth_pw);
+  insert into public.wiki_links (title, kind, url, command, description, category, sort_order, updated_by)
+  values (coalesce(nullif(trim(p_link->>'title'),''),'Uten tittel'),
+          coalesce(nullif(p_link->>'kind',''),'url'),
+          nullif(trim(coalesce(p_link->>'url','')),''),
+          nullif(trim(coalesce(p_link->>'command','')),''),
+          coalesce(p_link->>'description',''),
+          coalesce(nullif(p_link->>'category',''),'Generelt'),
+          coalesce((p_link->>'sort_order')::int,0),
+          upper(p_auth_tag))
+  returning * into r; return r;
 end $function$
 ;
 
@@ -428,6 +471,15 @@ AS $function$
 begin perform public._require_manager(p_auth_tag,p_auth_pw); delete from public.coworkers where tag=upper(p_tag); end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.delete_link(p_auth_tag text, p_auth_pw text, p_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+begin perform public._require_manager(p_auth_tag,p_auth_pw); delete from public.wiki_links where id = p_id; end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.delete_planner_note(p_auth_tag text, p_auth_pw text, p_id uuid)
  RETURNS void
  LANGUAGE plpgsql
@@ -487,6 +539,18 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.get_links(p_auth_tag text, p_auth_pw text)
+ RETURNS SETOF wiki_links
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+begin
+  if public.account_role(p_auth_tag,p_auth_pw) is null then raise exception 'Logg inn for å se snarveier'; end if;
+  return query select * from public.wiki_links order by category, sort_order, title;
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.get_people(p_auth_tag text, p_auth_pw text)
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -525,13 +589,14 @@ CREATE OR REPLACE FUNCTION public.import_thansen_bike(p jsonb)
 AS $function$
 begin
   insert into public.bikes (
-    source, source_id, name, price, frame, availability, image_url, source_url, outlet,
+    source, source_id, name, price, frame, item_number, availability, image_url, source_url, outlet,
     specs, spare_parts,
     wheel_size, color, color_name, descr, items,
     display_status, x, y, hidden, discontinued, last_synced
   ) values (
     'thansen', p->>'source_id', coalesce(p->>'name',''), coalesce((p->>'price')::int,0),
-    coalesce(p->>'frame',''), p->>'availability', p->>'image_url', p->>'source_url',
+    coalesce(p->>'frame',''), coalesce(p->>'item_number',''),
+    p->>'availability', p->>'image_url', p->>'source_url',
     coalesce((p->>'outlet')::boolean,false),
     coalesce(p->'specs','{}'::jsonb), coalesce(p->'spare_parts','[]'::jsonb),
     coalesce(p->>'wheel_size',''), coalesce(p->>'color','#3fb6a8'), coalesce(p->>'color_name','—'),
@@ -539,8 +604,9 @@ begin
     coalesce((p->>'x')::double precision,0), coalesce((p->>'y')::double precision,0),
     coalesce((p->>'outlet')::boolean,false), false, now()
   )
+  -- frame er bevisst IKKE med i upserten lenger: rammenummeret redigeres av bruker
   on conflict (source, source_id) where source is not null do update set
-    name=excluded.name, price=excluded.price, frame=excluded.frame,
+    name=excluded.name, price=excluded.price, item_number=excluded.item_number,
     availability=excluded.availability, image_url=excluded.image_url,
     source_url=excluded.source_url, outlet=excluded.outlet,
     specs=excluded.specs, spare_parts=excluded.spare_parts,
@@ -872,6 +938,31 @@ begin
 end $function$
 ;
 
+CREATE OR REPLACE FUNCTION public.set_staff_status_range(p_auth_tag text, p_auth_pw text, p_tag text, p_kind text, p_from date, p_to date)
+ RETURNS SETOF staff_status
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare role text; d date;
+begin
+  role := public.account_role(p_auth_tag, p_auth_pw);
+  if role is null then raise exception 'Logg inn for å sette status'; end if;
+  if upper(p_tag) <> upper(p_auth_tag) and role not in ('manager','dev') then
+    raise exception 'Kun Butikksjef kan sette status for andre'; end if;
+  if p_kind not in ('syk','ferie','fri') then
+    raise exception 'Kun heldagsfravær (syk/ferie/fri) kan registreres over flere dager'; end if;
+  if p_from is null or p_to is null or p_to < p_from then raise exception 'Ugyldig datoperiode'; end if;
+  if p_to - p_from + 1 > 60 then raise exception 'Maks 60 dager om gangen'; end if;
+  for d in select generate_series(p_from, p_to, interval '1 day')::date loop
+    -- samme erstatningsregel som set_staff_status: heldagsstatus rydder dagen
+    delete from public.staff_status where tag = upper(p_tag) and day = d;
+    return query insert into public.staff_status (tag, kind, day, all_day, author)
+      values (upper(p_tag), p_kind, d, true, upper(p_auth_tag)) returning *;
+  end loop;
+end $function$
+;
+
 CREATE OR REPLACE FUNCTION public.set_status(p_auth_tag text, p_auth_pw text, p_id uuid, p_status text)
  RETURNS tasks
  LANGUAGE plpgsql
@@ -957,6 +1048,7 @@ begin
     name=coalesce(p_data->>'name',name), wheel_size=coalesce(p_data->>'wheel_size',wheel_size),
     color=coalesce(p_data->>'color',color), color_name=coalesce(p_data->>'color_name',color_name),
     price=coalesce((p_data->>'price')::int,price), frame=coalesce(p_data->>'frame',frame),
+    item_number=coalesce(p_data->>'item_number',item_number),
     descr=coalesce(p_data->>'descr',descr), items=coalesce(p_data->'items',items),
     hidden=coalesce((p_data->>'hidden')::boolean,hidden),
     display_status=coalesce(p_data->>'display_status',display_status),
@@ -982,6 +1074,29 @@ begin
   where tag=upper(p_tag);
   if not found then raise exception 'Coworker not found'; end if;
   select * into r from public.coworkers_public where tag=upper(p_tag); return r;
+end $function$
+;
+
+CREATE OR REPLACE FUNCTION public.update_link(p_auth_tag text, p_auth_pw text, p_id uuid, p_link jsonb)
+ RETURNS wiki_links
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare r public.wiki_links;
+begin
+  perform public._require_manager(p_auth_tag,p_auth_pw);
+  update public.wiki_links set
+    title       = coalesce(nullif(trim(p_link->>'title'),''), title),
+    kind        = coalesce(nullif(p_link->>'kind',''), kind),
+    url         = case when p_link ? 'url'         then nullif(trim(coalesce(p_link->>'url','')),'') else url end,
+    command     = case when p_link ? 'command'     then nullif(trim(coalesce(p_link->>'command','')),'') else command end,
+    description = case when p_link ? 'description' then coalesce(p_link->>'description','') else description end,
+    category    = coalesce(nullif(p_link->>'category',''), category),
+    sort_order  = coalesce((p_link->>'sort_order')::int, sort_order),
+    updated_by  = upper(p_auth_tag), updated_at = now()
+  where id = p_id returning * into r;
+  if not found then raise exception 'Snarvei ikke funnet'; end if; return r;
 end $function$
 ;
 
@@ -1106,6 +1221,9 @@ grant delete, insert, references, select, trigger, truncate, update on public.ta
 grant delete, insert, references, trigger, truncate, update on public.wiki_articles to anon;
 grant delete, insert, references, trigger, truncate, update on public.wiki_articles to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.wiki_articles to service_role;
+grant delete, insert, references, select, trigger, truncate, update on public.wiki_links to anon;
+grant delete, insert, references, select, trigger, truncate, update on public.wiki_links to authenticated;
+grant delete, insert, references, select, trigger, truncate, update on public.wiki_links to service_role;
 grant delete, insert, references, trigger, truncate, update on public.wiki_suggestions to anon;
 grant delete, insert, references, trigger, truncate, update on public.wiki_suggestions to authenticated;
 grant delete, insert, references, select, trigger, truncate, update on public.wiki_suggestions to service_role;
@@ -1119,6 +1237,7 @@ grant execute on function public.add_article(p_auth_tag text, p_auth_pw text, p_
 grant execute on function public.add_bike(p_passcode text, p_data jsonb) to anon, authenticated;
 grant execute on function public.add_coworker(p_auth_tag text, p_auth_pw text, p_tag text, p_name text, p_color text, p_title text) to anon, authenticated;
 grant execute on function public.add_day_assignee(p_auth_tag text, p_auth_pw text, p_id uuid, p_day date, p_tag text) to anon, authenticated;
+grant execute on function public.add_link(p_auth_tag text, p_auth_pw text, p_link jsonb) to anon, authenticated;
 grant execute on function public.add_planner_note(p_auth_tag text, p_auth_pw text, p_weekday integer, p_body text, p_color text) to anon, authenticated;
 grant execute on function public.add_suggestion(p_auth_tag text, p_auth_pw text, p_article_id uuid, p_article_title text, p_body text) to anon, authenticated;
 grant execute on function public.add_task(p_auth_tag text, p_auth_pw text, p_task jsonb) to anon, authenticated;
@@ -1126,10 +1245,12 @@ grant execute on function public.change_password(p_tag text, p_old text, p_new t
 grant execute on function public.delete_article(p_auth_tag text, p_auth_pw text, p_id uuid) to anon, authenticated;
 grant execute on function public.delete_bike(p_passcode text, p_uid uuid) to anon, authenticated;
 grant execute on function public.delete_coworker(p_auth_tag text, p_auth_pw text, p_tag text) to anon, authenticated;
+grant execute on function public.delete_link(p_auth_tag text, p_auth_pw text, p_id uuid) to anon, authenticated;
 grant execute on function public.delete_planner_note(p_auth_tag text, p_auth_pw text, p_id uuid) to anon, authenticated;
 grant execute on function public.delete_staff_status(p_auth_tag text, p_auth_pw text, p_id uuid) to anon, authenticated;
 grant execute on function public.delete_task(p_auth_tag text, p_auth_pw text, p_id uuid) to anon, authenticated;
 grant execute on function public.get_article(p_auth_tag text, p_auth_pw text, p_id uuid) to anon, authenticated;
+grant execute on function public.get_links(p_auth_tag text, p_auth_pw text) to anon, authenticated;
 grant execute on function public.get_people(p_auth_tag text, p_auth_pw text) to anon, authenticated;
 grant execute on function public.get_suggestions(p_auth_tag text, p_auth_pw text, p_status text) to anon, authenticated;
 grant execute on function public.login_account(p_tag text, p_password text) to anon, authenticated;
@@ -1144,11 +1265,13 @@ grant execute on function public.set_day_assignees(p_auth_tag text, p_auth_pw te
 grant execute on function public.set_invite_code(p_auth_tag text, p_auth_pw text, p_new text) to anon, authenticated;
 grant execute on function public.set_role(p_auth_tag text, p_auth_pw text, p_target text, p_role text) to anon, authenticated;
 grant execute on function public.set_staff_status(p_auth_tag text, p_auth_pw text, p_tag text, p_kind text, p_day date, p_start_min integer, p_dur_min integer) to anon, authenticated;
+grant execute on function public.set_staff_status_range(p_auth_tag text, p_auth_pw text, p_tag text, p_kind text, p_from date, p_to date) to anon, authenticated;
 grant execute on function public.set_status(p_auth_tag text, p_auth_pw text, p_id uuid, p_status text) to anon, authenticated;
 grant execute on function public.toggle_check(p_auth_tag text, p_auth_pw text, p_id uuid, p_ci integer) to anon, authenticated;
 grant execute on function public.update_article(p_auth_tag text, p_auth_pw text, p_id uuid, p_article jsonb) to anon, authenticated;
 grant execute on function public.update_bike(p_passcode text, p_uid uuid, p_data jsonb) to anon, authenticated;
 grant execute on function public.update_coworker(p_auth_tag text, p_auth_pw text, p_tag text, p_name text, p_color text, p_title text) to anon, authenticated;
+grant execute on function public.update_link(p_auth_tag text, p_auth_pw text, p_id uuid, p_link jsonb) to anon, authenticated;
 grant execute on function public.update_task(p_auth_tag text, p_auth_pw text, p_id uuid, p_task jsonb) to anon, authenticated;
 grant execute on function public.verify_passcode(p_passcode text) to anon, authenticated;
 grant execute on function public.wiki_search(p_auth_tag text, p_auth_pw text, p_q text, p_category text) to anon, authenticated;
