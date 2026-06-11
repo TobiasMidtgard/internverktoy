@@ -98,9 +98,10 @@
     border:1px solid var(--line);border-radius:var(--radius);
     box-shadow:var(--shadow);
     overflow:hidden;cursor:grab;
-    transition:border-color .15s, box-shadow .15s;
+    transition:border-color .15s, box-shadow .15s, transform .18s cubic-bezier(.16,1,.3,1);
   }
-  .card.dragging{cursor:grabbing;box-shadow:0 10px 24px -8px rgba(0,0,0,.6);z-index:50!important;border-color:var(--accent);}
+  .card:hover{transform:translateY(-2px);box-shadow:0 10px 24px -8px rgba(0,0,0,.55);}
+  .card.dragging{cursor:grabbing;box-shadow:0 10px 24px -8px rgba(0,0,0,.6);z-index:50!important;border-color:var(--accent);transform:none;}
   .card-head{
     display:flex;align-items:center;gap:10px;
     padding:14px 16px;border-bottom:1px solid var(--line);
@@ -169,6 +170,17 @@
   }
   #overlay.show{display:flex;animation:fade .2s ease;}
   @keyframes fade{from{opacity:0}to{opacity:1}}
+  /* bevegelse: paneler glir inn fra kanten, modaler skalerer inn (keyframes i shared.js) */
+  @keyframes sheet-up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+  @keyframes sheet-right{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+  #libraryPanel.show .lib-sheet,#partsPanel.show .parts-sheet{animation:sheet-up .24s cubic-bezier(.16,1,.3,1);}
+  @media (min-width:641px){
+    #libraryPanel.show .lib-sheet,#partsPanel.show .parts-sheet{animation:sheet-right .24s cubic-bezier(.16,1,.3,1);}
+  }
+  #editor.show .editor-card,#passModal.show .editor-card,#detailModal.show .detail-card{animation:th-scale-in .24s cubic-bezier(.16,1,.3,1);}
+  #overlay.show .fs-card{animation:th-scale-in .24s cubic-bezier(.16,1,.3,1);}
+  button:not(:disabled):active{transform:scale(.97);}
+  .card-enter{animation:th-fade-up .22s cubic-bezier(.16,1,.3,1) backwards;}
   .fs-card{
     background:#fff;border-radius:18px;padding:36px 32px 24px;
     width:min(680px,92vw);box-shadow:0 30px 80px rgba(0,0,0,.6);
@@ -710,7 +722,14 @@ function cardEl(u){return [...canvas.children].find(c=>c.dataset.uid===u);}
 function rebuildCard(b){const old=cardEl(b.uid);if(old)old.remove();makeCard(b);}
 function clearCards(){[...canvas.querySelectorAll('.card')].forEach(c=>c.remove());}
 function cacheSave(){try{localStorage.setItem(CACHE_KEY,JSON.stringify(bikes));}catch(e){}}
-function renderAll(){clearCards();bikes.forEach(makeCard);refreshLibrary();}
+function renderAll(){
+  clearCards();bikes.forEach(makeCard);refreshLibrary();
+  // kort fade-up KUN ved første innlasting (cache/server → innhold), aldri ved re-render
+  if(!window._cardsEntranced && bikes.length){
+    window._cardsEntranced=true;
+    [...canvas.querySelectorAll('.card')].slice(0,9).forEach((el,i)=>{ el.classList.add('card-enter'); el.style.animationDelay=(i*25)+'ms'; });
+  }
+}
 function applyList(list){bikes=list;renderAll();cacheSave();}
 
 function bootFromCache(){
