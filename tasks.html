@@ -7,7 +7,7 @@
 <title>ButikkPlanlegger · Thansen Verktøykasse</title>
 <!-- Statisk Tailwind-bygg (tailwind.config.js + tw-input.css -> tailwind.css).
      Bruker du NYE utility-klasser: kjør npx-kommandoen i tailwind.config.js og bump ?v= -->
-<link rel="stylesheet" href="tailwind.css?v=3">
+<link rel="stylesheet" href="tailwind.css?v=4">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -226,6 +226,18 @@
         <div><label for="task-priority" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Prioritet</label><select id="task-priority" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"><option value="low">Lav</option><option value="medium">Middels</option><option value="high">Kritisk</option></select></div>
       </div>
       <div id="smart-recurring-info" class="hidden p-3 rounded-xl border border-thansen-100 dark:border-thansen-500/30 bg-thansen-50/50 dark:bg-thansen-500/10 text-[10px] text-thansen-600 dark:text-thansen-400 leading-relaxed"><p class="font-bold flex items-center mb-1"><i class="fa-solid fa-circle-nodes mr-1 text-thansen-yellow"></i> Intelligent rotasjon aktiv</p>Fullføres oppgaven i tide, settes neste frist nøyaktig 1 syklus frem. Ved forsinkelse hoppes det til neste kommende intervall for å unngå opphopning.</div>
+      <div id="task-daytimes" class="hidden">
+        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Annen tid enkelte dager <span class="normal-case font-medium tracking-normal">(tomt = fristens klokkeslett — f.eks. lørdag 10:00 når butikken åpner senere)</span></label>
+        <div class="grid grid-cols-4 sm:grid-cols-7 gap-2">
+          <div><div class="text-[9px] font-bold text-slate-400 text-center mb-1">Man</div><input type="time" id="dt-1" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-1 py-1.5 text-[11px] text-center"></div>
+          <div><div class="text-[9px] font-bold text-slate-400 text-center mb-1">Tir</div><input type="time" id="dt-2" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-1 py-1.5 text-[11px] text-center"></div>
+          <div><div class="text-[9px] font-bold text-slate-400 text-center mb-1">Ons</div><input type="time" id="dt-3" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-1 py-1.5 text-[11px] text-center"></div>
+          <div><div class="text-[9px] font-bold text-slate-400 text-center mb-1">Tor</div><input type="time" id="dt-4" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-1 py-1.5 text-[11px] text-center"></div>
+          <div><div class="text-[9px] font-bold text-slate-400 text-center mb-1">Fre</div><input type="time" id="dt-5" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-1 py-1.5 text-[11px] text-center"></div>
+          <div><div class="text-[9px] font-bold text-slate-400 text-center mb-1">Lør</div><input type="time" id="dt-6" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-1 py-1.5 text-[11px] text-center"></div>
+          <div><div class="text-[9px] font-bold text-slate-400 text-center mb-1">Søn</div><input type="time" id="dt-7" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-1 py-1.5 text-[11px] text-center"></div>
+        </div>
+      </div>
       <div class="grid grid-cols-2 gap-4">
         <div><label for="task-due-date" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Frist (dato & tid)</label><input type="datetime-local" id="task-due-date" step="1" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"></div>
         <div><label for="task-status" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status</label><select id="task-status" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"><option value="todo">Gjøremål</option><option value="progress">Pågår</option><option value="done">Fullført</option></select></div>
@@ -275,7 +287,7 @@
 <script src="shared.js?v=15"></script>
 <script>
 const T = window.THelper;
-const BUILD = '2026-06-12a';   // bumped on each deploy so a stale cache is easy to spot
+const BUILD = '2026-06-12b';   // bumped on each deploy so a stale cache is easy to spot
 let isAdmin = false, isDev = false, me = null, filterTag = '', weekOffset = 0;
 let state = { activeViewTab:'board', coworkers:[], tasks:[], alerts:[], notes:[], staffStatus:[],
               loadState:'loading', loadError:'' };   // loading | ready | error — skiller «laster» fra «tomt» og «feil»
@@ -295,6 +307,15 @@ function assigneesFor(t, dateObj){ return (t.dayAssignees && t.dayAssignees[ymd(
 function isAssignedOn(t, dateObj, tag){ return assigneesFor(t, dateObj).includes(tag); }
 // which date drives a task on the board: recurring → today, one-off → its due date
 function boardDateFor(t){ return (t.frequency!=='once' || !t.due) ? new Date() : new Date(t.due); }
+// effektivt klokkeslett («HH:MM») for en oppgave på en gitt dato: ukedagsavvik → standard («d») → fristens tid
+function timeStrOn(t, dateObj){
+  const dt=t.dayTimes||{}; const iso=(dateObj.getDay()===0)?7:dateObj.getDay();
+  const v=dt[String(iso)]||dt.d;
+  if(v) return v;
+  if(!t.due) return null;
+  const d=new Date(t.due);
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
 // engangsoppgaver ligger kun i Fullført den dagen de ble gjort (gjentakende nullstilles av rollover)
 function doneVisibleOn(t, dateObj){
   if(t.status!=='done' || t.frequency!=='once') return true;
@@ -475,7 +496,7 @@ async function loadAll(){
     id:r.id, title:r.title||'', desc:r.notes||'', dayAssignees:r.day_assignees||{},
     frequency:U2F[r.recur_unit]||'once', due:r.due_at, priority:r.priority||'medium', status:r.status||'todo',
     duration:r.duration_min||30, createdAt:r.created_at||'', done:(r.status||'todo')==='done',
-    lastDoneAt:r.last_done_at||null
+    lastDoneAt:r.last_done_at||null, dayTimes:(r.day_times&&typeof r.day_times==='object')?r.day_times:{}
   })).sort(stableOrder);
   recalculateAlerts(); renderFilterOptions(); renderCoworkerList(); renderScheduler(); renderStats(); renderAlertsList();
 }
@@ -1012,20 +1033,24 @@ function renderWeeklyPlannerView(){
 
   renderWeeklyMobile(root, D, dates);   // mobile (< lg): weekday chips + one-day-at-a-time swipe agenda
 
-  // projiser gjentakelser → grupper per (dag, start-time)
+  // projiser gjentakelser → grupper per (dag, start-time); klokkeslett kan avvike per ukedag (day_times)
   const groups={};
   state.tasks.forEach(t=>{
     if(t.status==='done') return;
     const due=t.due?new Date(t.due):null;
-    const startH=Math.min(21,Math.max(7, due?due.getHours():9));
-    const startIdx=startH-7;
-    const span=Math.max(1, Math.min(HOURS.length-startIdx, Math.ceil((t.duration||30)/60)));
     const placeDays=[];
     if(t.frequency==='daily'){ for(let i=0;i<6;i++) placeDays.push(i); }
     else if(t.frequency==='weekly'){ if(due){ const wd=(due.getDay()===0)?6:due.getDay()-1; if(wd<6) placeDays.push(wd); } }
     else if(t.frequency==='monthly'){ if(due) dates.forEach((d,i)=>{ if(d.getDate()===due.getDate()) placeDays.push(i); }); }
     else { if(due) dates.forEach((d,i)=>{ if(d.toDateString()===due.toDateString()) placeDays.push(i); }); }
-    placeDays.forEach(i=>{ if(!passFilterOn(t, dates[i])) return; const k=i+'_'+startIdx; (groups[k]=groups[k]||[]).push({t,span}); });
+    placeDays.forEach(i=>{
+      if(!passFilterOn(t, dates[i])) return;
+      const ts=timeStrOn(t, dates[i]);
+      const startH=Math.min(21,Math.max(7, ts?parseInt(ts.slice(0,2),10):9));
+      const startIdx=startH-7;
+      const span=Math.max(1, Math.min(HOURS.length-startIdx, Math.ceil((t.duration||30)/60)));
+      const k=i+'_'+startIdx; (groups[k]=groups[k]||[]).push({t,span});
+    });
   });
   // project timed staff statuses (pause/lunsj/ærend/kurs) into the same (day, hour) groups
   state.staffStatus.forEach(s=>{
@@ -1122,13 +1147,15 @@ function weekTasksForDay(dateObj){
     return !!due && due.toDateString()===dateObj.toDateString();   // once
   });
 }
-function weekItemTime(it){
+function weekItemTime(it, dateObj){
   if(it.status) return it.status.startMin!=null?it.status.startMin:24*60;
-  if(!it.t.due) return 9*60; const d=new Date(it.t.due); return d.getHours()*60+d.getMinutes();
+  const ts=timeStrOn(it.t, dateObj||new Date());
+  if(!ts) return 9*60;
+  return parseInt(ts.slice(0,2),10)*60+parseInt(ts.slice(3,5),10);
 }
 function agendaTaskRow(t, dateObj, now){
   const e=T.esc;
-  const time=t.due?new Date(t.due).toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'}):'—';
+  const time=timeStrOn(t, dateObj)||'—';
   const dot=t.priority==='high'?'bg-red-500':t.priority==='medium'?'bg-amber-500':'bg-emerald-500';
   const overdue=t.due && new Date(t.due)<now && t.status!=='done';
   const ppl=assigneesFor(t, dateObj);
@@ -1145,7 +1172,7 @@ function agendaTaskRow(t, dateObj, now){
 }
 function agendaStatusRow(s){
   const e=T.esc, d=STATUS_DEF[s.kind], c=state.coworkers.find(x=>x.tag===s.tag)||{name:s.tag,color:'#64748b'}, can=canEditStatus(s.tag);
-  return `<div class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 dark:border-slate-800" style="border-left:3px solid ${d.color};background:repeating-linear-gradient(45deg, ${d.color}10, ${d.color}10 6px, ${d.color}1f 6px, ${d.color}1f 12px)">
+  return `<div class="flex items-center gap-2 p-2 rounded-xl border" style="border-color:${d.color}66;background:repeating-linear-gradient(45deg, ${d.color}10, ${d.color}10 6px, ${d.color}1f 6px, ${d.color}1f 12px)">
     <div class="text-[11px] font-bold w-9 shrink-0" style="color:${d.color}">${e(fmtMin(s.startMin))}</div>
     <i class="fa-solid ${d.icon}" style="color:${d.color}"></i>
     <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">${e(d.label)}</span>
@@ -1158,8 +1185,8 @@ function buildDayPage(dateObj, i, D){
   const page=document.createElement('section'); page.setAttribute('data-daypage', String(i));
   page.className='snap-center shrink-0 w-[85vw] max-w-sm bg-slate-100/40 dark:bg-slate-950/40 rounded-2xl p-3 border border-slate-200/60 dark:border-slate-800/50';
   const pills=statusesOn(dateObj).filter(s=>s.allDay && (!filterTag||s.tag===filterTag)).map(s=>{ const d=STATUS_DEF[s.kind], can=canEditStatus(s.tag); return `<span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded" style="color:${d.color};background:${d.color}1a"><i class="fa-solid ${d.icon} text-[8px]"></i>${esc(s.tag)} · ${esc(d.label.toLowerCase())}${can?` <button onclick="deleteStaffStatus('${s.id}')" aria-label="Fjern status" class="tap-x hover:text-thansen-red">✕</button>`:''}</span>`; }).join('');
-  const noteEls=state.notes.filter(n=>n.weekday===i).map(n=>{ const canDel=me&&(n.author===me.tag||isAdmin); return `<span class="inline-flex items-start gap-1 text-[10px] px-1.5 py-0.5 rounded" style="background:${col(n.color,'#ffd400')+'22'};border-left:2px solid ${col(n.color,'#ffd400')}"><span class="whitespace-pre-wrap">${esc(n.body)}</span>${canDel?`<button onclick="deletePlannerNote('${n.id}')" aria-label="Slett notat" class="tap-x text-slate-400">✕</button>`:''}</span>`; }).join('');
-  const items=[ ...weekTasksForDay(dateObj).map(t=>({t})), ...statusesOn(dateObj).filter(s=>!s.allDay && (!filterTag||s.tag===filterTag)).map(s=>({status:s})) ].sort((a,b)=>weekItemTime(a)-weekItemTime(b));
+  const noteEls=state.notes.filter(n=>n.weekday===i).map(n=>{ const canDel=me&&(n.author===me.tag||isAdmin); return `<span class="inline-flex items-start gap-1 text-[10px] px-1.5 py-0.5 rounded" style="background:${col(n.color,'#ffd400')+'22'};border:1px solid ${col(n.color,'#ffd400')}55"><span class="whitespace-pre-wrap">${esc(n.body)}</span>${canDel?`<button onclick="deletePlannerNote('${n.id}')" aria-label="Slett notat" class="tap-x text-slate-400">✕</button>`:''}</span>`; }).join('');
+  const items=[ ...weekTasksForDay(dateObj).map(t=>({t})), ...statusesOn(dateObj).filter(s=>!s.allDay && (!filterTag||s.tag===filterTag)).map(s=>({status:s})) ].sort((a,b)=>weekItemTime(a,dateObj)-weekItemTime(b,dateObj));
   const body = items.length
     ? items.map(it=> it.status ? agendaStatusRow(it.status) : agendaTaskRow(it.t, dateObj, now)).join('')
     : `<div class="text-center text-slate-400 text-xs py-8"><i class="fa-regular fa-calendar-check text-2xl mb-1.5 block opacity-50"></i>Ingenting planlagt</div>`;
@@ -1200,8 +1227,8 @@ function weekGotoDay(i){
 function openAssigneePickerYmd(id, s){ openAssigneePicker(id, parseYmd(s)); }
 function createWeeklyBlock(t, span, cellDate){
   const e=T.esc;
-  const due=t.due?new Date(t.due):null;
-  const startH=due?Math.min(21,Math.max(7,due.getHours())):9;
+  const ts=timeStrOn(t, cellDate);   // kan avvike per ukedag (day_times)
+  const startH=ts?Math.min(21,Math.max(7,parseInt(ts.slice(0,2),10))):9;
   const endH=Math.min(22, startH+span);
   // NB: ikke kall denne 'col' — det skygger for den globale col()-fargevaskeren (krasjet ukesvisningen)
   const prio=t.priority==='high'?'#ef4444':t.priority==='medium'?'#f59e0b':'#10b981';
@@ -1286,7 +1313,9 @@ function openTaskDetailModal(taskId){
   if(t.priority==='high'){ pb.innerText='Kritisk'; pb.classList.add('bg-red-100','text-red-700'); }
   else if(t.priority==='medium'){ pb.innerText='Middels'; pb.classList.add('bg-amber-100','text-amber-700'); }
   else { pb.innerText='Lav'; pb.classList.add('bg-emerald-100','text-emerald-700'); }
-  document.getElementById('detail-task-frequency').innerText=(({once:'Én gang',daily:'Daglig',weekly:'Ukentlig',monthly:'Månedlig'}[t.frequency])||t.frequency)+' · '+fmtDur(t.duration||30);
+  const devDays=['','man','tir','ons','tor','fre','lør','søn'];
+  const devs=Object.keys(t.dayTimes||{}).filter(k=>k!=='d').sort().map(k=>devDays[+k]+' '+t.dayTimes[k]).join(', ');
+  document.getElementById('detail-task-frequency').innerText=(({once:'Én gang',daily:'Daglig',weekly:'Ukentlig',monthly:'Månedlig'}[t.frequency])||t.frequency)+' · '+fmtDur(t.duration||30)+(devs?' · '+devs:'');
   document.getElementById('detail-task-parsed-desc').innerHTML=parseDescriptionToHTML(t.id,t.desc,false);
   const ac=document.getElementById('detail-task-assignees'); ac.innerHTML='';
   // engangsoppgaver viser ansvarlige for SIN dato (boardDateFor), ikke dagens (v23)
@@ -1333,7 +1362,11 @@ async function rescheduleTaskToSlot(taskId, dateObj, hour){
 }
 
 /* ---------- create / edit ---------- */
-function toggleFrequencyNotice(){ document.getElementById('smart-recurring-info').classList.toggle('hidden', document.getElementById('task-frequency').value==='once'); }
+function toggleFrequencyNotice(){
+  const once=document.getElementById('task-frequency').value==='once';
+  document.getElementById('smart-recurring-info').classList.toggle('hidden', once);
+  document.getElementById('task-daytimes').classList.toggle('hidden', once);
+}
 function openTaskModal(){
   if(!isAdmin){ showToast('Kun Butikksjef kan opprette oppgaver.','#e30613'); return; }
   document.getElementById('task-modal-title').innerHTML=`<i class="fa-solid fa-circle-plus text-thansen-500"></i> <span>Opprett Gjøremål</span>`;
@@ -1356,6 +1389,7 @@ function editTask(taskId){
   document.getElementById('task-priority').value=t.priority;
   document.getElementById('task-status').value=t.status;
   document.getElementById('task-duration').value=t.duration||30;
+  for(let i=1;i<=7;i++) document.getElementById('dt-'+i).value=(t.dayTimes&&t.dayTimes[String(i)])||'';
   toggleFrequencyNotice();
   document.getElementById('task-modal-title').innerHTML=`<i class="fa-solid fa-pen text-thansen-500"></i> <span>Rediger Oppgave</span>`;
   document.getElementById('task-form-submit-btn').innerText='Lagre Endringer';
@@ -1366,10 +1400,17 @@ async function handleTaskSubmit(e){
   if(!isAdmin){ showToast('Kun Butikksjef kan lagre oppgaver.','#e30613'); return; }
   const id=document.getElementById('form-task-id').value;
   const due=document.getElementById('task-due-date').value;
+  // ukedagsavvik (kun gjentakende): {"6":"10:00",...} + "d" = fristens klokkeslett som standard
+  const dayTimes={};
+  if(document.getElementById('task-frequency').value!=='once'){
+    for(let i=1;i<=7;i++){ const v=document.getElementById('dt-'+i).value; if(v) dayTimes[String(i)]=v; }
+    if(Object.keys(dayTimes).length && due) dayTimes.d=due.slice(11,16);
+  }
   const payload={ title:document.getElementById('task-title').value.trim(), notes:document.getElementById('task-desc').value.trim()||null,
     recur_unit:F2U[document.getElementById('task-frequency').value], recur_n:1,
     due_at:due?new Date(due).toISOString():null, status:document.getElementById('task-status').value, priority:document.getElementById('task-priority').value,
-    duration_min: parseInt(document.getElementById('task-duration').value)||30 };
+    duration_min: parseInt(document.getElementById('task-duration').value)||30,
+    day_times: dayTimes };
   try{
     if(id) await T.rpcAuth('update_task',{p_id:id,p_task:payload}); else await T.rpcAuth('add_task',{p_task:payload});
     closeTaskModal(); await loadAll(); showToast(id?'Oppgave oppdatert!':'Ny oppgave opprettet!','#004595');
