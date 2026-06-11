@@ -15,11 +15,11 @@ const throws = async (n, fn)=>{
   catch(e){ ok(n, true); await c.query('rollback to savepoint sp'); }
 };
 
-// throwaway accounts: ZZT1 (manager), ZZT2 (coworker)
-await c.query(`select register_account('ZZT1','Tester En','Butikksjef','#004595','pass1234')`);
-await c.query(`select register_account('ZZT2','Tester To','Butikkmedarbeider','#004595','pass1234')`);
-await c.query(`update public.coworkers set role='manager' where tag='ZZT1'`);
-await c.query(`update public.coworkers set role='coworker' where tag='ZZT2'`);
+// throwaway accounts: ZZT1 (manager), ZZT2 (coworker) — inserted directly so the
+// test doesn't depend on the invite code that register_account now requires
+await c.query(`insert into public.coworkers (tag,name,title,color,role,pass_hash) values
+  ('ZZT1','Tester En','Butikksjef','#004595','manager', extensions.crypt('pass1234', extensions.gen_salt('bf'))),
+  ('ZZT2','Tester To','Butikkmedarbeider','#004595','coworker', extensions.crypt('pass1234', extensions.gen_salt('bf')))`);
 
 // 1. self timed (pause 08:00, 15m)
 const r1=(await c.query(`select * from set_staff_status('ZZT1','pass1234','ZZT1','pause',current_date,480,15)`)).rows[0];
