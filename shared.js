@@ -76,12 +76,26 @@ window.THelper = (function () {
       /* Felles designtokens for hele suiten — nye sider/komponenter bør bruke disse
          i stedet for å hardkode farger (kanonisk kilde for merkevarefargene). */
       :root{ --th-brand:#004595; --th-brand-2:#2684e6; --th-yellow:#ffd400; --th-red:#e30613;
-             --th-bg:#0f1318; --th-panel:#161b22; --th-line:#2a323d; --th-text:#f1f4f8; --th-muted:#97a3b2; }
+             --th-bg:#0f1318; --th-panel:#161b22; --th-line:#2a323d; --th-text:#f1f4f8; --th-muted:#97a3b2;
+             --th-dur:180ms; --th-dur-slow:240ms; --th-ease:cubic-bezier(0.16,1,0.3,1); }
       .th-ic{width:1em;height:1em;vertical-align:-0.125em;display:inline-block;flex:none;}
+      /* Delte bevegelsesbyggesteiner — tilstand, ikke pynt (DESIGN.md) */
+      @keyframes th-fade-up{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+      @keyframes th-scale-in{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+      @keyframes th-fade-in{from{opacity:0}to{opacity:1}}
+      @keyframes th-slide-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+      @keyframes th-shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+      .th-skel{border-radius:10px;background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.09) 50%,rgba(255,255,255,.04) 75%);
+        background-size:200% 100%;animation:th-shimmer 1.4s linear infinite;}
+      @media (prefers-reduced-motion: reduce){
+        *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important;}
+      }
       .th-toast-wrap{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:99999;align-items:center;pointer-events:none;}
-      .th-toast{background:#11151b;color:#f1f4f8;border:1px solid #2a323d;border-left:3px solid #2684e6;border-radius:12px;padding:10px 14px;font:500 14px/1.3 system-ui;box-shadow:0 10px 34px rgba(0,0,0,.5);display:flex;align-items:center;gap:12px;pointer-events:auto;max-width:90vw;}
-      .th-ov{position:fixed;inset:0;background:rgba(6,9,13,.72);display:flex;align-items:center;justify-content:center;z-index:100000;padding:16px;}
-      .th-dialog{background:#161b22;border:1px solid #2a323d;border-top:3px solid #2684e6;border-radius:18px;padding:20px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.55);color:#f1f4f8;font:400 15px/1.5 system-ui;}
+      .th-toast{background:#11151b;color:#f1f4f8;border:1px solid #2a323d;border-radius:12px;padding:10px 14px;font:500 14px/1.3 system-ui;box-shadow:0 10px 34px rgba(0,0,0,.5);display:flex;align-items:center;gap:10px;pointer-events:auto;max-width:90vw;animation:th-slide-up var(--th-dur-slow) var(--th-ease);transition:opacity var(--th-dur),transform var(--th-dur);}
+      .th-toast.th-out{opacity:0;transform:translateY(8px);}
+      .th-toast::before{content:"";width:8px;height:8px;border-radius:50%;background:#2684e6;flex:none;}
+      .th-ov{position:fixed;inset:0;background:rgba(6,9,13,.72);display:flex;align-items:center;justify-content:center;z-index:100000;padding:16px;animation:th-fade-in var(--th-dur) var(--th-ease);}
+      .th-dialog{background:#161b22;border:1px solid #2a323d;border-top:3px solid #2684e6;border-radius:18px;padding:20px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.55);color:#f1f4f8;font:400 15px/1.5 system-ui;animation:th-scale-in var(--th-dur-slow) var(--th-ease);}
       .th-tabs{display:flex;gap:6px;margin-bottom:14px;background:#0f1318;border:1px solid #2a323d;border-radius:10px;padding:3px;}
       .th-tabs button{flex:1;background:transparent;color:#97a3b2;border:0;border-radius:8px;padding:8px;font:600 13px system-ui;cursor:pointer;}
       .th-tabs button.on{background:#2684e6;color:#fff;}
@@ -91,8 +105,11 @@ window.THelper = (function () {
       .th-f input:focus,.th-f select:focus{outline:none;border-color:#2684e6;}
       .th-err{color:#ff9b9b;font-size:13px;min-height:16px;margin:2px 0 8px;}
       .th-row{display:flex;gap:10px;justify-content:flex-end;}
-      .th-btn{background:#2684e6;color:#fff;border:0;border-radius:10px;padding:10px 16px;font:600 15px system-ui;cursor:pointer;}
-      .th-btn.ghost{background:transparent;border:1px solid #2a323d;color:#f1f4f8;}`;
+      .th-btn{background:#2684e6;color:#fff;border:0;border-radius:10px;padding:10px 16px;font:600 15px system-ui;cursor:pointer;transition:filter var(--th-dur),transform var(--th-dur);}
+      .th-btn:hover{filter:brightness(1.08);}
+      .th-btn:active{transform:scale(.97);}
+      .th-btn.ghost{background:transparent;border:1px solid #2a323d;color:#f1f4f8;}
+      .th-btn.ghost:hover{filter:none;border-color:#2684e6;}`;
     document.head.appendChild(st);
   }
 
@@ -102,7 +119,10 @@ window.THelper = (function () {
     injectCss();
     if (!toastWrap){ toastWrap = document.createElement('div'); toastWrap.className = 'th-toast-wrap'; toastWrap.setAttribute('aria-live','polite'); document.body.appendChild(toastWrap); }
     const t = document.createElement('div'); t.className = 'th-toast'; t.setAttribute('role','status'); t.append(msg);
-    toastWrap.appendChild(t); setTimeout(() => t.remove(), opts.ms || 3500); return t;
+    toastWrap.appendChild(t);
+    const ms = opts.ms || 3500;
+    setTimeout(() => t.classList.add('th-out'), ms - 200);   // gli ut før fjerning
+    setTimeout(() => t.remove(), ms); return t;
   }
 
   /* ---------- auth (login/register returnerer {user, token}) ---------- */

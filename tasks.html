@@ -35,6 +35,21 @@
   .empty{color:#94a3b8;text-align:center;padding:36px 10px;}
   .wk-resize{position:absolute;left:0;right:0;bottom:0;height:9px;cursor:ns-resize;background:rgba(38,132,230,.25);touch-action:none;}
   .wk-resize:hover{background:rgba(38,132,230,.5);}
+  /* horisont-seksjoner i Gjøremål-kolonnen */
+  .hz-head{display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:6px 10px;
+    border:1px dashed #cbd5e1;border-radius:10px;background:transparent;color:#94a3b8;
+    font:inherit;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;
+    transition:border-color 180ms,color 180ms;}
+  .dark .hz-head{border-color:#2a323d;}
+  .hz-head:hover{border-color:#2684e6;color:#64748b;} .dark .hz-head:hover{color:#cbd5e1;}
+  .hz-chev{font-size:10px;transition:transform 240ms cubic-bezier(.16,1,.3,1);}
+  .hz-head[aria-expanded="true"] .hz-chev{transform:rotate(90deg);}
+  .hz-count{margin-left:auto;background:rgba(38,132,230,.15);color:#2684e6;border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;}
+  .dark .hz-count{color:#7db8f0;}
+  .hz-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows 240ms cubic-bezier(.16,1,.3,1);}
+  .hz-body.open{grid-template-rows:1fr;}
+  .hz-inner{overflow:hidden;min-height:0;}
+  .hz-body.open .hz-inner{padding-top:12px;}
   /* Touch-enheter har ingen hover: vis fjern-knappen alltid, og gi de små ✕-ene 44px-ish trykkflate */
   @media (hover: none){
     .pill-x{ display:flex !important; width:20px !important; height:20px !important; top:-8px !important; right:-8px !important; font-size:11px !important; }
@@ -245,7 +260,7 @@
   <div><p class="text-xs font-bold">Fjern fra oppgave</p><p class="text-[10px] opacity-90">Slipp ansatt-kortet her.</p></div>
 </div>
 
-<script src="shared.js?v=14"></script>
+<script src="shared.js?v=15"></script>
 <script>
 const T = window.THelper;
 const BUILD = '2026-06-11c';   // bumped on each deploy so a stale cache is easy to spot
@@ -803,14 +818,53 @@ function renderKanbanView(){
     el.addEventListener('dragleave',()=>el.classList.remove('border-thansen-500'));
     el.addEventListener('drop',e=>{ el.classList.remove('border-thansen-500'); const d=e.dataTransfer.getData('text/plain'); if(d.startsWith('task:')) moveTaskStatus(d.slice(5), col.id); });
     const colTasks=state.tasks.filter(t=>t.status===col.id && doneVisibleOn(t, new Date()) && passFilterOn(t, boardDateFor(t))).sort((a,b)=>floatMine(a,b,boardDateFor(a),boardDateFor(b)));
-    el.innerHTML=`<div class="flex items-center justify-between mb-4 shrink-0"><div class="flex items-center space-x-2"><span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300">${col.title}</span><span class="text-xs text-slate-400 font-medium">${colTasks.length}</span></div></div><div class="flex-1 overflow-y-auto space-y-3 pb-4" id="kanban-col-${col.id}"></div>`;
+    // Gjøremål deles i horisonter: «I dag» alltid synlig, uke/måned foldes bort (telleren viser dagens)
+    const buckets = col.id==='todo' ? {today:[],week:[],month:[],later:[]} : null;
+    if(buckets) colTasks.forEach(t=>buckets[horizonOf(t)].push(t));
+    const headCount = buckets ? buckets.today.length : colTasks.length;
+    el.innerHTML=`<div class="flex items-center justify-between mb-4 shrink-0"><div class="flex items-center space-x-2"><span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300">${col.title}</span><span class="text-xs text-slate-400 font-medium">${headCount}</span></div></div><div class="flex-1 overflow-y-auto space-y-3 pb-4" id="kanban-col-${col.id}"></div>`;
     c.appendChild(el);
     const cl=document.getElementById(`kanban-col-${col.id}`);
     if(!colTasks.length){ cl.innerHTML=`<div class="h-28 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center text-slate-400 text-xs"><i class="fa-solid fa-clipboard-list mb-1.5"></i><span>Ingen oppgaver</span></div>`; }
-    else colTasks.forEach(t=>cl.appendChild(createTaskCard(t,false)));
+    else if(!buckets) colTasks.forEach(t=>cl.appendChild(createTaskCard(t,false)));
+    else {
+      buckets.today.forEach(t=>cl.appendChild(createTaskCard(t,false)));
+      if(!buckets.today.length){ const n=document.createElement('div'); n.className='text-xs text-slate-400 text-center py-3'; n.textContent='Ingen oppgaver i dag'; cl.appendChild(n); }
+      [['week','Senere denne uken'],['month','Denne måneden'],['later','Senere']].forEach(([k,label])=>{
+        if(buckets[k].length) cl.appendChild(horizonSection(k,label,buckets[k]));
+      });
+    }
   });
   if(keep.h) c.scrollLeft=keep.h;
   ['todo','progress','done'].forEach(s=>{ const el=document.getElementById('kanban-col-'+s); if(el && keep[s]) el.scrollTop=keep[s]; });
+}
+
+/* ---------- horisonter (Gjøremål-kolonnen) ---------- */
+// daglige + forfalt + dagens = 'today'; resten sorteres etter frist: denne uken / denne måneden / senere
+function horizonOf(t){
+  if(t.frequency==='daily' || !t.due) return 'today';
+  const due=new Date(t.due);
+  const endToday=new Date(); endToday.setHours(23,59,59,999);
+  if(due<=endToday) return 'today';
+  const sun=mondayOf(0); sun.setDate(sun.getDate()+6); sun.setHours(23,59,59,999);
+  if(due<=sun) return 'week';
+  const eom=new Date(); eom.setMonth(eom.getMonth()+1,0); eom.setHours(23,59,59,999);
+  if(due<=eom) return 'month';
+  return 'later';
+}
+function horizonSection(key,label,tasks){
+  const open=localStorage.getItem('thz.'+key)==='1';
+  const sec=document.createElement('div');
+  const head=document.createElement('button');
+  head.type='button'; head.className='hz-head'; head.setAttribute('aria-expanded',open?'true':'false');
+  head.innerHTML=`<i class="fa-solid fa-chevron-right hz-chev" aria-hidden="true"></i><span>${label}</span><span class="hz-count">${tasks.length}</span>`;
+  const body=document.createElement('div'); body.className='hz-body'+(open?' open':'');
+  const inner=document.createElement('div'); inner.className='hz-inner space-y-3';
+  tasks.forEach(t=>inner.appendChild(createTaskCard(t,false)));
+  body.appendChild(inner);
+  head.onclick=()=>{ const o=body.classList.toggle('open'); head.setAttribute('aria-expanded',o?'true':'false'); localStorage.setItem('thz.'+key,o?'1':'0'); };
+  sec.appendChild(head); sec.appendChild(body);
+  return sec;
 }
 
 /* ---------- rich text ---------- */
