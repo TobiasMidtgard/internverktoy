@@ -67,6 +67,27 @@
   .sug{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;}
   .sug .who{color:var(--muted);font-size:11px;margin-top:6px;}
   .badge{background:var(--cta);color:#fff;border-radius:999px;font-size:11px;font-weight:700;padding:1px 7px;}
+  /* ---------- snarveier (interne verktøy: lenker + XAL-kommandoer) ---------- */
+  #shortcuts{margin:18px 0 6px;}
+  .sc-head{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+  .sc-head h2,.arts-label{margin:0;font-size:13px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);}
+  .arts-label{display:block;margin-top:20px;}
+  .sc-cats{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 2px;}
+  .sc-cats .on{background:var(--primary);border-color:var(--primary);color:#fff;}
+  .sc-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));margin-top:10px;}
+  .sc-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;}
+  .sc-top{display:flex;align-items:center;gap:8px;}
+  .sc-title{font-weight:700;font-size:14px;flex:1;min-width:0;}
+  .sc-kind{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:1px 8px;border:1px solid #1f3a5c;color:#9ecbff;flex-shrink:0;}
+  .sc-desc{color:var(--muted);font-size:12.5px;line-height:1.45;flex:1;}
+  .sc-open{display:inline-flex;align-items:center;justify-content:center;gap:7px;color:var(--primary);text-decoration:none;font-size:13px;font-weight:600;border:1px solid var(--line);border-radius:9px;padding:9px 11px;min-height:40px;}
+  .sc-open:hover{border-color:var(--primary);}
+  .sc-cmd{display:flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--line);border-radius:9px;padding:9px 11px;color:var(--text);cursor:pointer;min-height:40px;text-align:left;font:inherit;font-size:13px;}
+  .sc-cmd:hover{border-color:var(--primary);}
+  .sc-cmd code{font-family:ui-monospace,monospace;font-size:12.5px;background:#0c1422;border-radius:4px;padding:2px 6px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sc-cmd .th-ic{color:var(--muted);flex-shrink:0;}
+  .sc-edit{background:transparent;border:1px solid var(--line);color:var(--muted);width:30px;height:30px;border-radius:8px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .sc-edit:hover{border-color:var(--primary);color:var(--text);}
 </style>
 </head>
 <body>
@@ -85,6 +106,16 @@
     <button class="btn" onclick="doSearch()">Søk</button>
     <button id="newBtn" class="btn cta" style="display:none" onclick="newEntry()">+ Ny</button>
   </div>
+  <section id="shortcuts" hidden>
+    <div class="sc-head">
+      <h2>Snarveier</h2>
+      <span class="sp"></span>
+      <button id="scNew" class="chipbtn" style="display:none" onclick="openLinkEditor(null)">+ Ny snarvei</button>
+    </div>
+    <div class="sc-cats" id="scCats"></div>
+    <div class="sc-grid" id="scGrid"></div>
+    <h2 class="arts-label">Artikler</h2>
+  </section>
   <div class="cats" id="cats"></div>
   <div class="results" id="results"></div>
 </main>
@@ -138,11 +169,29 @@
   </div>
 </div>
 
+<!-- Link editor (manager) -->
+<div class="modal" role="dialog" aria-modal="true" id="linkModal">
+  <div class="sheet" style="max-width:520px">
+    <div class="hd"><h2 id="lkTitle">Ny snarvei</h2><button class="x" aria-label="Lukk" onclick="closeModal('linkModal')">✕</button></div>
+    <div class="bd">
+      <div class="row"><label for="lkName">Tittel</label><input type="text" id="lkName" placeholder="f.eks. Lagerstatus i XAL"></div>
+      <div class="row"><label for="lkKind">Type</label><select id="lkKind" onchange="linkKindChange()"><option value="url">Lenke (nettside)</option><option value="xal">XAL-kommando</option></select></div>
+      <div class="row" id="lkUrlRow"><label for="lkUrl">URL</label><input type="url" id="lkUrl" placeholder="https://…"></div>
+      <div class="row" id="lkCmdRow" style="display:none"><label for="lkCmd">Kommando / snarvei</label><input type="text" id="lkCmd" placeholder="f.eks. Alt+F7 → Lager → Forespørsel"></div>
+      <div class="row"><label for="lkDesc">Beskrivelse</label><textarea id="lkDesc" rows="3" placeholder="Hva brukes den til?"></textarea></div>
+      <div class="row"><label for="lkCat">Kategori</label><input type="text" id="lkCat" list="lkCatList" placeholder="f.eks. XAL, Nettsider"><datalist id="lkCatList"></datalist></div>
+      <div class="row"><label for="lkSort">Sortering (lavest først)</label><input type="number" id="lkSort" value="0"></div>
+    </div>
+    <div class="ft"><button id="lkDelete" class="btn ghost" style="color:#ff9b9b;margin-right:auto;display:none" onclick="deleteLink()">Slett</button><button class="btn ghost" onclick="closeModal('linkModal')">Avbryt</button><button class="btn" onclick="saveLink()">Lagre</button></div>
+  </div>
+</div>
+
 <script src="shared.js?v=14"></script>
 <script>
 const T=window.THelper, $=id=>document.getElementById(id), esc=s=>T.esc(s);
-const CATS=['Bildeler','Dekk','Sykkel','Bilvask','Barneseter','Takbokser','Takstativ','Vindusviskere','Verktøy','MC','Generelt'];
+const CATS=['Bildeler','Dekk','Sykkel','Bilvask','Barneseter','Takbokser','Takstativ','Vindusviskere','Verktøy','MC','Internt','XAL','Generelt'];
 let me=null, canManage=false, cat='', articles={}, editId=null, suggestForId=null, suggestForTitle=null, sugMap={};
+let links=[], linkCat='', editLinkId=null;
 
 /* ---------- markdown ---------- */
 function md(src){
@@ -171,6 +220,7 @@ function refreshAuth(){
   $('newBtn').textContent = canManage ? '+ Ny artikkel' : '+ Foreslå artikkel';
   $('sugBtn').style.display = canManage ? 'inline-flex' : 'none';
   if(canManage) loadSuggestionCount();
+  loadLinks();
 }
 async function toggleAuth(){
   if(T.getUser()){ T.clearSession(); refreshAuth(); T.toast('Logget ut'); }
@@ -184,10 +234,80 @@ function renderCats(){
 }
 function setCat(c){ cat=c; renderCats(); doSearch(); }
 
+/* ---------- snarveier ---------- */
+async function loadLinks(){
+  if(!T.getUser()){ links=[]; renderLinks(); return; }
+  try{ links=(await T.rpcAuth('get_links'))||[]; }catch(e){ links=[]; }
+  renderLinks();
+}
+function linkCats(){ return [...new Set(links.map(l=>l.category))]; }
+function renderLinks(){
+  const sec=$('shortcuts');
+  if(!T.getUser() || (!links.length && !canManage)){ sec.hidden=true; return; }
+  sec.hidden=false;
+  $('scNew').style.display = canManage ? 'inline-block' : 'none';
+  const cats=linkCats();
+  $('scCats').innerHTML = cats.length>1
+    ? `<button class="chipbtn ${linkCat===''?'on':''}" onclick="setLinkCatIdx(-1)">Alle</button>`+
+      cats.map((c,i)=>`<button class="chipbtn ${linkCat===c?'on':''}" onclick="setLinkCatIdx(${i})">${esc(c)}</button>`).join('')
+    : '';
+  const q=$('q').value.toLowerCase().trim();
+  const list=links.filter(l=>(!linkCat||l.category===linkCat)
+    && (!q || (l.title+' '+l.description+' '+(l.command||'')+' '+l.category).toLowerCase().includes(q)));
+  $('scGrid').innerHTML = list.length ? list.map(l=>`<div class="sc-card">
+      <div class="sc-top"><span class="sc-title">${esc(l.title)}</span><span class="sc-kind">${l.kind==='xal'?'XAL':'Lenke'}</span>${canManage?`<button class="sc-edit" aria-label="Rediger snarvei" onclick="openLinkEditor('${l.id}')">${T.icon('pencil')}</button>`:''}</div>
+      ${l.description?`<div class="sc-desc">${esc(l.description)}</div>`:''}
+      ${l.kind==='xal'
+        ? `<button class="sc-cmd" onclick="copyCmd('${l.id}')" aria-label="Kopier kommando: ${esc(l.command||'')}"><code>${esc(l.command||'')}</code>${T.icon('copy')}</button>`
+        : `<a class="sc-open" href="${esc(l.url||'')}" target="_blank" rel="noopener">${T.icon('external')} Åpne</a>`}
+    </div>`).join('') : `<div class="empty" style="grid-column:1/-1;padding:16px">Ingen snarveier${q?' matcher søket':' ennå'}.</div>`;
+}
+function setLinkCatIdx(i){ linkCat = i<0 ? '' : (linkCats()[i]||''); renderLinks(); }
+async function copyCmd(id){
+  const l=links.find(x=>x.id===id); if(!l||!l.command) return;
+  try{ await navigator.clipboard.writeText(l.command); }
+  catch(e){ const ta=document.createElement('textarea'); ta.value=l.command; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+  T.toast('Kopiert: '+l.command);
+}
+function linkKindChange(){ const xal=$('lkKind').value==='xal'; $('lkUrlRow').style.display=xal?'none':''; $('lkCmdRow').style.display=xal?'':'none'; }
+function openLinkEditor(id){
+  editLinkId=id;
+  const l=id?links.find(x=>x.id===id):null;
+  $('lkTitle').textContent = l ? 'Rediger snarvei' : 'Ny snarvei';
+  $('lkName').value=l?l.title:''; $('lkKind').value=l?l.kind:'url';
+  $('lkUrl').value=l?(l.url||''):''; $('lkCmd').value=l?(l.command||''):'';
+  $('lkDesc').value=l?l.description:''; $('lkCat').value=l?l.category:(linkCat||'');
+  $('lkSort').value=l?l.sort_order:0;
+  $('lkCatList').innerHTML=linkCats().map(c=>`<option value="${esc(c)}">`).join('');
+  $('lkDelete').style.display = l ? 'inline-block' : 'none';
+  linkKindChange(); show('linkModal'); setTimeout(()=>$('lkName').focus(),30);
+}
+async function saveLink(){
+  const kind=$('lkKind').value;
+  const payload={ title:$('lkName').value.trim(), kind,
+    url:kind==='url'?$('lkUrl').value.trim():null,
+    command:kind==='xal'?$('lkCmd').value.trim():null,
+    description:$('lkDesc').value.trim(),
+    category:$('lkCat').value.trim()||'Generelt',
+    sort_order:parseInt($('lkSort').value,10)||0 };
+  if(!payload.title){ T.toast('Tittel mangler'); return; }
+  if(kind==='url' && !/^https?:\/\//.test(payload.url||'')){ T.toast('URL må starte med http(s)://'); return; }
+  if(kind==='xal' && !payload.command){ T.toast('Kommando mangler'); return; }
+  try{ if(editLinkId) await T.rpcAuth('update_link',{p_id:editLinkId,p_link:payload}); else await T.rpcAuth('add_link',{p_link:payload});
+    closeModal('linkModal'); T.toast('Lagret'); loadLinks(); }
+  catch(e){ if(e.message!=='no-auth') T.toast('Feil: '+e.message); }
+}
+async function deleteLink(){
+  if(!editLinkId || !confirm('Slette snarveien?')) return;
+  try{ await T.rpcAuth('delete_link',{p_id:editLinkId}); closeModal('linkModal'); T.toast('Slettet'); loadLinks(); }
+  catch(e){ if(e.message!=='no-auth') T.toast('Feil: '+e.message); }
+}
+
 /* ---------- search ---------- */
 let tmr;
 function debounce(){ clearTimeout(tmr); tmr=setTimeout(doSearch,250); }
 async function doSearch(){
+  renderLinks();   // snarveiene filtreres av samme søkefelt, klient-side
   if(!T.getUser()){
     $('results').innerHTML=`<div class="empty">Kunnskapsbasen er intern — <button class="btn" onclick="toggleAuth().then(doSearch)">Logg inn</button> for å lese.</div>`;
     return;
