@@ -7,7 +7,7 @@
 <title>ButikkPlanlegger · Thansen Verktøykasse</title>
 <!-- Statisk Tailwind-bygg (tailwind.config.js + tw-input.css -> tailwind.css).
      Bruker du NYE utility-klasser: kjør npx-kommandoen i tailwind.config.js og bump ?v= -->
-<link rel="stylesheet" href="tailwind.css?v=1">
+<link rel="stylesheet" href="tailwind.css?v=2">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -15,8 +15,8 @@
   body{font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent;}
   ::-webkit-scrollbar{width:6px;height:6px;} ::-webkit-scrollbar-track{background:transparent;}
   ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px;} .dark ::-webkit-scrollbar-thumb{background:#475569;}
-  .glass{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
-  .dark .glass{background:rgba(15,23,42,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
+  .glass{background:rgba(255,255,255,.97);}
+  .dark .glass{background:rgba(15,23,42,.97);}
   @keyframes subtle-pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.02);}}
   .pulse-alert{animation:subtle-pulse 2s infinite ease-in-out;}
   .snap-x-container{scroll-snap-type:x mandatory;} .snap-column{scroll-snap-align:center;}
@@ -33,8 +33,8 @@
   .tl-now{display:flex;align-items:center;gap:8px;margin:2px 0 2px 56px;color:#ffd400;font-size:10px;font-weight:800;letter-spacing:.08em;}
   .tl-now::after{content:"";height:2px;background:#ffd400;flex:1;opacity:.4;border-radius:2px;}
   .empty{color:#94a3b8;text-align:center;padding:36px 10px;}
-  .wk-resize{position:absolute;left:0;right:0;bottom:0;height:9px;cursor:ns-resize;background:linear-gradient(transparent,rgba(38,132,230,.25));touch-action:none;}
-  .wk-resize:hover{background:linear-gradient(transparent,rgba(38,132,230,.55));}
+  .wk-resize{position:absolute;left:0;right:0;bottom:0;height:9px;cursor:ns-resize;background:rgba(38,132,230,.25);touch-action:none;}
+  .wk-resize:hover{background:rgba(38,132,230,.5);}
   /* Touch-enheter har ingen hover: vis fjern-knappen alltid, og gi de små ✕-ene 44px-ish trykkflate */
   @media (hover: none){
     .pill-x{ display:flex !important; width:20px !important; height:20px !important; top:-8px !important; right:-8px !important; font-size:11px !important; }
@@ -48,7 +48,7 @@
   <header class="glass border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 flex items-center justify-between z-30 shrink-0">
     <div class="flex items-center space-x-3">
       <a href="index.html" title="Til Verktøykassen" class="text-slate-400 hover:text-thansen-500 mr-1"><i class="fa-solid fa-chevron-left"></i></a>
-      <div class="bg-gradient-to-tr from-thansen-500 to-thansen-600 p-2.5 rounded-xl shadow-lg shadow-thansen-500/20 text-white flex items-center justify-center">
+      <div class="bg-thansen-500 p-2.5 rounded-xl text-white flex items-center justify-center">
         <i class="fa-solid fa-store text-lg sm:text-xl text-thansen-yellow"></i>
       </div>
       <div>
@@ -123,7 +123,7 @@
             <button onclick="setViewTab('weekly')" id="tab-btn-weekly" class="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 text-slate-500 dark:text-slate-400"><i class="fa-solid fa-calendar-days"></i><span>Ukesplan</span></button>
             <button onclick="setViewTab('timeline')" id="tab-btn-timeline" class="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 text-slate-500 dark:text-slate-400"><i class="fa-regular fa-clock"></i><span>I dag</span></button>
           </div>
-          <button id="add-task-global-btn" onclick="openTaskModal()" class="hidden bg-thansen-500 hover:bg-thansen-600 text-white font-bold text-xs px-3 sm:px-4 py-2 rounded-xl shadow-lg shadow-thansen-500/20 flex items-center space-x-2"><i class="fa-solid fa-plus text-thansen-yellow"></i><span>Ny Oppgave</span></button>
+          <button id="add-task-global-btn" onclick="openTaskModal()" class="hidden bg-thansen-500 hover:bg-thansen-600 text-white font-bold text-xs px-3 sm:px-4 py-2 rounded-xl flex items-center space-x-2"><i class="fa-solid fa-plus text-thansen-yellow"></i><span>Ny Oppgave</span></button>
         </div>
       </div>
       <div id="mobile-snap-notif" class="flex lg:hidden items-center justify-center space-x-2 py-2 px-4 bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-900 text-[10px] text-slate-400">
@@ -151,7 +151,7 @@
 </div>
 
 <!-- Detail modal -->
-<div id="task-detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-task-title" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+<div id="task-detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-task-title" class="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 hidden">
   <div class="bg-white dark:bg-slate-950 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
     <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/20">
       <div class="flex items-center space-x-2 text-thansen-500"><i class="fa-solid fa-circle-info text-xl text-thansen-yellow bg-thansen-500 p-1.5 rounded-lg"></i><h3 class="font-bold text-base sm:text-lg">Oppgavedetaljer</h3></div>
@@ -166,7 +166,7 @@
       <div class="bg-slate-50 dark:bg-slate-900/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
         <label for="detail-task-status-select" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Endre Status</label>
         <select id="detail-task-status-select" onchange="handleDetailStatusChange()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-thansen-500">
-          <option value="todo">🔴 Gjøremål (Ikke startet)</option><option value="progress">🔵 Pågår</option><option value="done">🟢 Fullført / Arkivert</option>
+          <option value="todo">Gjøremål (Ikke startet)</option><option value="progress">Pågår</option><option value="done">Fullført / Arkivert</option>
         </select>
       </div>
     </div>
@@ -181,7 +181,7 @@
 </div>
 
 <!-- Task create/edit modal -->
-<div id="task-modal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+<div id="task-modal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title" class="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 hidden">
   <div class="bg-white dark:bg-slate-950 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
     <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/20">
       <h3 id="task-modal-title" class="font-bold text-base sm:text-lg flex items-center space-x-2"><i class="fa-solid fa-circle-plus text-thansen-500"></i><span>Opprett Gjøremål</span></h3>
@@ -196,7 +196,7 @@
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div><label for="task-frequency" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Gjentakelse</label><select id="task-frequency" onchange="toggleFrequencyNotice()" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"><option value="once">Én gang</option><option value="daily">Daglig</option><option value="weekly">Ukentlig</option><option value="monthly">Månedlig</option></select></div>
-        <div><label for="task-priority" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Prioritet</label><select id="task-priority" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"><option value="low">🟢 Lav</option><option value="medium">🟡 Middels</option><option value="high">🔴 Kritisk</option></select></div>
+        <div><label for="task-priority" class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Prioritet</label><select id="task-priority" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-thansen-500 focus:outline-none"><option value="low">Lav</option><option value="medium">Middels</option><option value="high">Kritisk</option></select></div>
       </div>
       <div id="smart-recurring-info" class="hidden p-3 rounded-xl border border-thansen-100 dark:border-thansen-500/30 bg-thansen-50/50 dark:bg-thansen-500/10 text-[10px] text-thansen-600 dark:text-thansen-400 leading-relaxed"><p class="font-bold flex items-center mb-1"><i class="fa-solid fa-circle-nodes mr-1 text-thansen-yellow"></i> Intelligent rotasjon aktiv</p>Fullføres oppgaven i tide, settes neste frist nøyaktig 1 syklus frem. Ved forsinkelse hoppes det til neste kommende intervall for å unngå opphopning.</div>
       <div class="grid grid-cols-2 gap-4">
@@ -213,7 +213,7 @@
 </div>
 
 <!-- Coworker modal -->
-<div id="coworker-modal" role="dialog" aria-modal="true" aria-labelledby="coworker-modal-title" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+<div id="coworker-modal" role="dialog" aria-modal="true" aria-labelledby="coworker-modal-title" class="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 hidden">
   <div class="bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
     <div class="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between"><h3 id="coworker-modal-title" class="font-bold flex items-center space-x-2"><i class="fa-solid fa-user-plus text-thansen-500"></i><span>Registrer Ansatt</span></h3><button onclick="closeCoworkerModal()" aria-label="Lukk" class="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"><i class="fa-solid fa-times" aria-hidden="true"></i></button></div>
     <form id="coworker-form" onsubmit="handleCoworkerSubmit(event)" class="p-5 space-y-4">
@@ -248,7 +248,7 @@
 <script src="shared.js?v=14"></script>
 <script>
 const T = window.THelper;
-const BUILD = '2026-06-11b';   // bumped on each deploy so a stale cache is easy to spot
+const BUILD = '2026-06-11c';   // bumped on each deploy so a stale cache is easy to spot
 let isAdmin = false, isDev = false, me = null, filterTag = '', weekOffset = 0;
 let state = { activeViewTab:'board', coworkers:[], tasks:[], alerts:[], notes:[], staffStatus:[],
               loadState:'loading', loadError:'' };   // loading | ready | error — skiller «laster» fra «tomt» og «feil»
@@ -363,7 +363,7 @@ function setAssigneeFilter(v){ filterTag=v; renderScheduler(); }
 function renderFilterOptions(){
   const sel=document.getElementById('filter-assignee'); if(!sel) return;
   let html='<option value="">Alle medarbeidere</option>';
-  if(me) html+=`<option value="${esc(me.tag)}">⭐ Mine oppgaver (${esc(me.tag)})</option>`;
+  if(me) html+=`<option value="${esc(me.tag)}">Mine oppgaver (${esc(me.tag)})</option>`;
   html+=state.coworkers.map(c=>`<option value="${esc(c.tag)}">${esc(c.name)} (${esc(c.tag)})</option>`).join('');
   sel.innerHTML=html;
   if(![...sel.options].some(o=>o.value===filterTag)) filterTag='';
@@ -522,7 +522,7 @@ function openAssigneePicker(taskId, dateObj){
       </label>`).join('') : '<p class="text-xs text-slate-400 italic p-2">Ingen ansatte registrert.</p>';
   let ov=document.getElementById('assignee-picker');
   if(!ov){ ov=document.createElement('div'); ov.id='assignee-picker'; document.body.appendChild(ov); }
-  ov.className='fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4';
+  ov.className='fixed inset-0 bg-slate-900/70 z-[60] flex items-center justify-center p-4';
   ov.innerHTML=`
     <div class="bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
       <div class="p-4 border-b border-slate-200 dark:border-slate-800">
@@ -556,7 +556,7 @@ function openStatusMenu(tag){
   const cur=currentStatus(tag);
   const btn=k=>{ const d=STATUS_DEF[k]; return `<button onclick="setStatusNow('${esc(tag)}','${k}');closeStatusMenu()" class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900 text-left"><span class="w-7 h-7 rounded-lg inline-flex items-center justify-center text-white shrink-0" style="background:${d.color}"><i class="fa-solid ${d.icon} text-xs"></i></span><span class="text-xs font-semibold text-slate-700 dark:text-slate-200">${d.label}${d.allDay?'':' ('+d.dur+'m)'}</span></button>`; };
   let ov=document.getElementById('status-menu'); if(!ov){ ov=document.createElement('div'); ov.id='status-menu'; document.body.appendChild(ov); }
-  ov.className='fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4';
+  ov.className='fixed inset-0 bg-slate-900/70 z-[60] flex items-center justify-center p-4';
   ov.innerHTML=`
     <div class="bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
       <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
@@ -589,7 +589,7 @@ function openStatusModal(ymdStr){
     : `<option value="${esc(me.tag)}">${esc(me.name||me.tag)} (${esc(me.tag)})</option>`;
   const kinds = Object.keys(STATUS_DEF).map(k=>`<option value="${k}">${STATUS_DEF[k].label}</option>`).join('');
   let ov=document.getElementById('status-modal'); if(!ov){ ov=document.createElement('div'); ov.id='status-modal'; document.body.appendChild(ov); }
-  ov.className='fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4';
+  ov.className='fixed inset-0 bg-slate-900/70 z-[60] flex items-center justify-center p-4';
   ov.innerHTML=`
    <div class="bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
      <div class="p-4 border-b border-slate-200 dark:border-slate-800"><h3 class="font-bold text-sm flex items-center gap-2"><i class="fa-regular fa-clock text-thansen-500"></i>Registrer status</h3><p class="text-[11px] text-slate-400 capitalize">${esc(dstr)}</p></div>
@@ -749,7 +749,7 @@ function renderTimelineView(){
     return new Date(t.due).toDateString()===todayStr;
   }).sort((a,b)=> (crossOverdue(b)?1:0)-(crossOverdue(a)?1:0) || timeOf(a)-timeOf(b) || stableOrder(a,b));
   const heading=`<div class="text-xs text-slate-400 mb-3">${now.toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'long'})}</div>`;
-  if(!items.length){ box.innerHTML=heading+'<div class="empty">Ingen oppgaver i dag 🎉</div>'; return; }
+  if(!items.length){ box.innerHTML=heading+'<div class="empty">Ingen oppgaver i dag</div>'; return; }
   const nowMin=now.getHours()*60+now.getMinutes(); let placed=false;
   let html=heading+'<div class="timeline">';
   items.forEach(t=>{
@@ -794,7 +794,8 @@ function renderKanbanView(){
   const keep={h:c.scrollLeft};
   ['todo','progress','done'].forEach(s=>{ const el=document.getElementById('kanban-col-'+s); if(el) keep[s]=el.scrollTop; });
   c.innerHTML='';
-  const cols=[ {id:'todo',title:'🔴 Gjøremål'},{id:'progress',title:'🔵 Pågår'},{id:'done',title:'🟢 Fullført'} ];
+  const dot=c=>`<span class="w-2 h-2 rounded-full inline-block align-middle mr-1.5" style="background:${c}"></span>`;
+  const cols=[ {id:'todo',title:dot('#e30613')+'Gjøremål'},{id:'progress',title:dot('#2684e6')+'Pågår'},{id:'done',title:dot('#10b981')+'Fullført'} ];
   cols.forEach(col=>{
     const el=document.createElement('div');
     el.className="w-[85vw] sm:w-80 lg:w-auto lg:flex-1 lg:min-w-0 flex flex-col h-full shrink-0 lg:shrink bg-slate-100/30 dark:bg-slate-950/40 rounded-2xl p-4 border border-slate-200/50 dark:border-slate-800/40 snap-column";

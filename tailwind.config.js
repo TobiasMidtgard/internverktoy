@@ -9,7 +9,7 @@ module.exports = {
       colors: {
         thansen: {
           50: '#f0f6fc', 100: '#e1edf9', 400: '#5b9bd5', 500: '#004595',
-          600: '#003573', 700: '#002552', yellow: '#ffcc00', red: '#e30613',
+          600: '#003573', 700: '#002552', yellow: '#ffd400', red: '#e30613',
         },
       },
       fontFamily: { sans: ['Inter', 'sans-serif'] },
