@@ -124,6 +124,7 @@ create table if not exists public.tasks (
   assignees text[] not null default '{}'::text[],
   duration_min integer not null default 30,
   day_assignees jsonb not null default '{}'::jsonb,
+  day_times jsonb not null default '{}'::jsonb,
   constraint tasks_pkey PRIMARY KEY (id),
   constraint tasks_priority_check CHECK ((priority = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text]))),
   constraint tasks_recur_n_check CHECK ((recur_n >= 1)),
@@ -199,6 +200,23 @@ create or replace view public.coworkers_public as
    FROM coworkers;
 
 -- ---------- funksjoner ----------
+CREATE OR REPLACE FUNCTION public._apply_day_time(p_due timestamp with time zone, p_times jsonb)
+ RETURNS timestamp with time zone
+ LANGUAGE sql
+ IMMUTABLE
+AS $function$
+  select case
+    when p_due is null or p_times is null or p_times = '{}'::jsonb then p_due
+    else (
+      ( to_char(p_due at time zone 'Europe/Oslo','YYYY-MM-DD') || ' ' ||
+        coalesce( p_times->>(extract(isodow from p_due at time zone 'Europe/Oslo')::int::text),
+                  p_times->>'d',
+                  to_char(p_due at time zone 'Europe/Oslo','HH24:MI') )
+      )::timestamp at time zone 'Europe/Oslo')
+  end
+$function$
+;
+
 CREATE OR REPLACE FUNCTION public._clean_color(p text, p_default text)
  RETURNS text
  LANGUAGE sql
@@ -411,12 +429,14 @@ AS $function$
 declare r public.tasks;
 begin
   perform public._require_manager(p_auth_tag,p_auth_pw);
-  insert into public.tasks (title, notes, assignees, recur_unit, recur_n, due_at, status, priority, done, duration_min)
+  insert into public.tasks (title, notes, assignees, recur_unit, recur_n, due_at, status, priority, done, duration_min, day_times)
   values (coalesce(nullif(trim(p_task->>'title'),''),'Untitled'), nullif(p_task->>'notes',''),
     coalesce((select array_agg(x) from jsonb_array_elements_text(coalesce(p_task->'assignees','[]'::jsonb)) as x),'{}'),
-    coalesce(p_task->>'recur_unit','none'), coalesce((p_task->>'recur_n')::int,1), (p_task->>'due_at')::timestamptz,
+    coalesce(p_task->>'recur_unit','none'), coalesce((p_task->>'recur_n')::int,1),
+    public._apply_day_time((p_task->>'due_at')::timestamptz, coalesce(p_task->'day_times','{}'::jsonb)),
     coalesce(p_task->>'status','todo'), coalesce(p_task->>'priority','medium'), coalesce(p_task->>'status','todo')='done',
-    coalesce((p_task->>'duration_min')::int, 30))
+    coalesce((p_task->>'duration_min')::int, 30),
+    coalesce(p_task->'day_times','{}'::jsonb))
   returning * into r; return r;
 end $function$
 ;
@@ -815,7 +835,7 @@ declare
   nd timestamptz;
 begin
   for r in
-    select id, due_at, recur_n, recur_unit
+    select id, due_at, recur_n, recur_unit, day_times
     from public.tasks
     where recur_unit <> 'none' and status = 'done' and last_done_at is not null and (
          (recur_unit = 'day'   and (last_done_at at time zone 'Europe/Oslo')::date < (now() at time zone 'Europe/Oslo')::date)
@@ -833,6 +853,7 @@ begin
         while ((nd + step) at time zone 'Europe/Oslo')::date <= (now() at time zone 'Europe/Oslo')::date loop
           nd := nd + step;                                                     -- siste tapte dags-slot
         end loop;
+        nd := public._apply_day_time(nd, r.day_times);  -- ukedagstid (avvik eller standard)
       end if;
     end if;
     update public.tasks
@@ -1106,7 +1127,7 @@ CREATE OR REPLACE FUNCTION public.update_task(p_auth_tag text, p_auth_pw text, p
  SECURITY DEFINER
  SET search_path TO 'public'
 AS $function$
-declare r public.tasks; old_key text; new_key text; merged jsonb;
+declare r public.tasks; old_key text; new_key text; merged jsonb; nt jsonb; ndue timestamptz;
 begin
   perform public._require_manager(p_auth_tag,p_auth_pw);
   select * into r from public.tasks where id = p_id;
@@ -1126,12 +1147,17 @@ begin
     end if;
   end if;
 
+  nt   := case when p_task ? 'day_times' then coalesce(p_task->'day_times','{}'::jsonb) else r.day_times end;
+  ndue := case when p_task ? 'due_at' then (p_task->>'due_at')::timestamptz else r.due_at end;
+  -- normaliser kun ved modal-lagring (payload med day_times); dra-flytting beholder eksplisitt tid
+  if p_task ? 'day_times' then ndue := public._apply_day_time(ndue, nt); end if;
+
   update public.tasks set
     title=coalesce(nullif(trim(p_task->>'title'),''),title),
     notes=case when p_task ? 'notes' then nullif(p_task->>'notes','') else notes end,
     assignees=case when p_task ? 'assignees' then coalesce((select array_agg(x) from jsonb_array_elements_text(p_task->'assignees') as x),'{}') else assignees end,
     recur_unit=coalesce(p_task->>'recur_unit',recur_unit), recur_n=coalesce((p_task->>'recur_n')::int,recur_n),
-    due_at=case when p_task ? 'due_at' then (p_task->>'due_at')::timestamptz else due_at end,
+    due_at=ndue, day_times=nt,
     status=coalesce(p_task->>'status',status), priority=coalesce(p_task->>'priority',priority),
     done=case when p_task ? 'status' then (p_task->>'status')='done' else done end,
     duration_min=case when p_task ? 'duration_min' then (p_task->>'duration_min')::int else duration_min end
@@ -1230,6 +1256,7 @@ grant delete, insert, references, select, trigger, truncate, update on public.wi
 
 -- ---------- funksjons-grants ----------
 -- (funksjoner uten linje her er kun for postgres/service_role)
+grant execute on function public._apply_day_time(p_due timestamp with time zone, p_times jsonb) to anon, authenticated;
 grant execute on function public._clean_color(p text, p_default text) to anon, authenticated;
 grant execute on function public._require_manager(p_auth_tag text, p_auth_pw text) to anon, authenticated;
 grant execute on function public.account_role(p_tag text, p_password text) to anon, authenticated;
