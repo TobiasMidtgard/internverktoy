@@ -1129,16 +1129,17 @@ function createWeeklyBlock(t, span, cellDate){
   const due=t.due?new Date(t.due):null;
   const startH=due?Math.min(21,Math.max(7,due.getHours())):9;
   const endH=Math.min(22, startH+span);
-  const col=t.priority==='high'?'#ef4444':t.priority==='medium'?'#f59e0b':'#10b981';
+  // NB: ikke kall denne 'col' — det skygger for den globale col()-fargevaskeren (krasjet ukesvisningen)
+  const prio=t.priority==='high'?'#ef4444':t.priority==='medium'?'#f59e0b':'#10b981';
   const blk=document.createElement('div');
   blk.className='relative overflow-hidden rounded-lg border bg-white dark:bg-slate-950 shadow-sm cursor-pointer';
-  blk.style.borderLeft='3px solid '+col; blk.style.borderColor=(t.priority==='high'?'#ef4444':'');
+  blk.style.borderLeft='3px solid '+prio; blk.style.borderColor=(t.priority==='high'?'#ef4444':'');
   const people=assigneesFor(t, cellDate);
   let w=''; people.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-6 h-5 rounded text-[9px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`; });
   if(!people.length && isAdmin) w='<span class="text-[10px] text-slate-400 italic">+ sett opp</span>';
   const md=t.desc?`<div class="mt-0.5 space-y-0.5 text-[10px] leading-tight">${parseDescriptionToHTML(t.id,t.desc)}</div>`:'';
   blk.innerHTML=`<div class="p-1.5">
-    <div class="flex items-center gap-1 text-[9px] font-bold text-slate-400"><span class="w-1.5 h-1.5 rounded-full" style="background-color:${col}"></span>${String(startH).padStart(2,'0')}–${String(endH).padStart(2,'0')}</div>
+    <div class="flex items-center gap-1 text-[9px] font-bold text-slate-400"><span class="w-1.5 h-1.5 rounded-full" style="background-color:${prio}"></span>${String(startH).padStart(2,'0')}–${String(endH).padStart(2,'0')}</div>
     <div class="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">${e(t.title)}</div>${md}
     <div class="wk-assign flex flex-wrap gap-1 mt-1 ${isAdmin?'cursor-pointer':''}" title="${isAdmin?'Velg hvem som gjør dette denne dagen':''}">${w}</div>
   </div>${isAdmin?'<div class="wk-resize" title="Dra for å endre varighet"></div>':''}`;
