@@ -9,26 +9,24 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0e1116;
+    --bg:#0f1318;
     --panel:#161b22;
     --panel-2:#1c232d;
     --line:#2a323d;
-    --ink:#e9eef5;
-    --muted:#8b97a6;
-    --accent:#f4b942;
-    --accent-2:#3fb6a8;
-    --danger:#e85d75;
+    --ink:#f1f4f8;
+    --muted:#97a3b2;
+    --accent:#ffd400;       /* Thansen-gul — reservert pris/CTA/markering */
+    --accent-2:#2684e6;     /* Thansen-blå — interaktivt (hover/fokus/sekundært) */
+    --danger:#e30613;       /* flater/border */
+    --danger-ink:#ff8089;   /* liten rød tekst på mørk flate (AA) */
     --radius:14px;
-    --shadow:0 18px 40px -18px rgba(0,0,0,.7);
+    --shadow:0 6px 18px -8px rgba(0,0,0,.5);
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
   html,body{height:100%;}
   body{
     font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
-    background:
-      radial-gradient(1200px 600px at 80% -10%, rgba(63,182,168,.10), transparent 60%),
-      radial-gradient(900px 500px at -10% 110%, rgba(244,185,66,.10), transparent 55%),
-      var(--bg);
+    background:var(--bg);
     color:var(--ink);
     overflow:hidden;
   }
@@ -40,12 +38,11 @@
     position:fixed;top:0;left:0;right:0;z-index:30;
     display:flex;align-items:center;gap:14px;
     padding:12px 16px;
-    background:rgba(14,17,22,.82);
-    backdrop-filter:blur(12px);
+    background:#11151b;
     border-bottom:1px solid var(--line);
   }
   .logo{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.5px;}
-  .logo .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent);transition:.3s;}
+  .logo .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);transition:.3s;}
   .logo span{color:var(--muted);font-weight:500;}
   .spacer{flex:1;}
 
@@ -66,7 +63,7 @@
     padding:10px 14px;border-radius:10px;font:inherit;font-size:13px;font-weight:600;
     cursor:pointer;transition:.15s;white-space:nowrap;
   }
-  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn:hover{border-color:var(--accent-2);color:var(--accent-2);}
   .btn.primary{background:var(--accent);color:#1a1205;border-color:var(--accent);}
   .btn.primary:hover{filter:brightness(1.08);}
   .btn:disabled{opacity:.55;cursor:default;}
@@ -90,20 +87,20 @@
   .hint{
     position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
     z-index:20;font-size:12px;color:var(--muted);
-    background:rgba(22,27,34,.8);padding:8px 14px;border-radius:30px;border:1px solid var(--line);
-    backdrop-filter:blur(8px);pointer-events:none;
+    background:var(--panel);padding:8px 14px;border-radius:30px;border:1px solid var(--line);
+    pointer-events:none;
   }
 
   /* ---------- Bike card ---------- */
   .card{
     position:absolute;width:300px;
-    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    background:var(--panel);
     border:1px solid var(--line);border-radius:var(--radius);
     box-shadow:var(--shadow);
     overflow:hidden;cursor:grab;
     transition:border-color .15s, box-shadow .15s;
   }
-  .card.dragging{cursor:grabbing;box-shadow:0 26px 60px -16px rgba(0,0,0,.85);z-index:50!important;border-color:var(--accent);}
+  .card.dragging{cursor:grabbing;box-shadow:0 10px 24px -8px rgba(0,0,0,.6);z-index:50!important;border-color:var(--accent);}
   .card-head{
     display:flex;align-items:center;gap:10px;
     padding:14px 16px;border-bottom:1px solid var(--line);
@@ -122,9 +119,9 @@
   .desc{font-size:12.5px;line-height:1.5;color:var(--muted);}
   .badges{display:flex;flex-wrap:wrap;gap:6px;}
   .badge{font-size:10px;font-weight:700;letter-spacing:.4px;padding:3px 8px;border-radius:20px;text-transform:uppercase;}
-  .badge.synced{background:rgba(63,182,168,.16);color:var(--accent-2);border:1px solid var(--accent-2);}
+  .badge.synced{background:rgba(38,132,230,.16);color:#7db8f0;border:1px solid var(--accent-2);}
   .badge.instock{background:rgba(99,210,151,.14);color:#63d297;border:1px solid #2f7d54;}
-  .badge.oos{background:rgba(232,93,117,.14);color:var(--danger);border:1px solid var(--danger);}
+  .badge.oos{background:rgba(227,6,19,.14);color:var(--danger-ink);border:1px solid var(--danger);}
   .badge.flag{background:rgba(139,151,166,.14);color:var(--muted);border:1px solid var(--line);}
   /* ---------- Spec tags ---------- */
   .spec-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:-4px;}
@@ -167,7 +164,7 @@
   /* ---------- Fullscreen barcode ---------- */
   #overlay{
     position:fixed;inset:0;z-index:125;display:none;
-    background:rgba(8,10,13,.94);backdrop-filter:blur(6px);
+    background:rgba(8,10,13,.94);
     flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:24px;
   }
   #overlay.show{display:flex;animation:fade .2s ease;}
@@ -187,8 +184,8 @@
 
   /* ---------- Controls ---------- */
   .controls{display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end;}
-  .btn.active{background:var(--accent-2);border-color:var(--accent-2);color:#06231f;}
-  .btn.active:hover{filter:brightness(1.06);color:#06231f;}
+  .btn.active{background:var(--accent-2);border-color:var(--accent-2);color:#fff;}
+  .btn.active:hover{filter:brightness(1.06);color:#fff;}
 
   /* hide editing affordances while locked (view-only) */
   body.locked .edit-btn,
@@ -198,7 +195,7 @@
   .edit-btn{background:transparent;border:1px solid var(--line);color:var(--muted);
     width:30px;height:30px;border-radius:8px;font-size:14px;cursor:pointer;flex-shrink:0;line-height:1;
     display:flex;align-items:center;justify-content:center;transition:.15s;}
-  .edit-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .edit-btn:hover{border-color:var(--accent-2);color:var(--accent-2);}
   .remove-btn{background:transparent;border:1px solid var(--line);color:var(--muted);
     width:30px;height:30px;border-radius:8px;font-size:13px;cursor:pointer;flex-shrink:0;line-height:1;
     display:flex;align-items:center;justify-content:center;transition:.15s;}
@@ -207,10 +204,10 @@
 
   /* ---------- Editor + passcode modals ---------- */
   #editor,#passModal{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;padding:18px;
-    background:rgba(8,10,13,.6);backdrop-filter:blur(6px);}
+    background:rgba(8,10,13,.72);}
   #passModal{z-index:130;}
   #editor.show,#passModal.show{display:flex;animation:fade .18s ease;}
-  .editor-card{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line);
+  .editor-card{background:var(--panel);border:1px solid var(--line);
     border-radius:16px;box-shadow:var(--shadow);width:min(460px,94vw);max-height:90vh;overflow:auto;
     padding:22px;display:flex;flex-direction:column;gap:13px;}
   .editor-card h2{font-size:18px;font-weight:700;}
@@ -219,16 +216,16 @@
   .field input,.field textarea{background:var(--bg);border:1px solid var(--line);border-radius:10px;
     color:var(--ink);padding:11px 12px;font:inherit;font-size:16px;width:100%;}
   .field textarea{resize:vertical;min-height:72px;line-height:1.45;}
-  .field input:focus,.field textarea:focus{outline:none;border-color:var(--accent);}
+  .field input:focus,.field textarea:focus{outline:none;border-color:var(--accent-2);}
   .frow{display:flex;gap:12px;}
   .frow .field{flex:1;min-width:0;}
   .color-field{flex:0 0 auto;}
   .color-field input[type=color]{width:54px;height:46px;padding:4px;cursor:pointer;}
   .editor-actions{display:flex;align-items:center;gap:10px;margin-top:2px;}
   .editor-actions .spc{flex:1;}
-  .btn.danger{border-color:var(--danger);color:var(--danger);}
+  .btn.danger{border-color:var(--danger);color:var(--danger-ink);}
   .btn.danger:hover{background:var(--danger);color:#fff;border-color:var(--danger);}
-  .err{color:var(--danger);font-size:12px;font-weight:600;min-height:1px;}
+  .err{color:var(--danger-ink);font-size:12px;font-weight:600;min-height:1px;}
 
   /* ---------- Additional-items editor ---------- */
   .items-editor{display:flex;flex-direction:column;gap:8px;}
@@ -247,7 +244,7 @@
     z-index:140;background:var(--danger);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;
     font-weight:600;opacity:0;pointer-events:none;transition:.25s;box-shadow:var(--shadow);max-width:90vw;text-align:center;}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-  #toast.ok{background:var(--accent-2);color:#06231f;}
+  #toast.ok{background:var(--accent-2);color:#fff;}
   .toast-undo{margin-left:12px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);
     color:inherit;font:inherit;font-size:12px;font-weight:700;padding:4px 11px;border-radius:8px;cursor:pointer;
     vertical-align:middle;}
@@ -256,12 +253,12 @@
   /* ---------- Spare-parts panel ---------- */
   #partsPanel{
     position:fixed;inset:0;z-index:110;display:none;
-    background:rgba(8,10,13,.6);backdrop-filter:blur(4px);
+    background:rgba(8,10,13,.72);
     align-items:flex-end;justify-content:flex-end;
   }
   #partsPanel.show{display:flex;animation:fade .2s ease;}
   .parts-sheet{
-    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    background:var(--panel);
     border:1px solid var(--line);border-radius:16px 16px 0 0;
     width:100%;max-width:420px;max-height:80vh;
     display:flex;flex-direction:column;
@@ -278,7 +275,7 @@
   .parts-search{margin:12px 16px 0;flex-shrink:0;}
   .parts-search input{background:var(--bg);border:1px solid var(--line);border-radius:10px;
     color:var(--ink);padding:11px 14px;font:inherit;font-size:16px;width:100%;}
-  .parts-search input:focus{outline:none;border-color:var(--accent);}
+  .parts-search input:focus{outline:none;border-color:var(--accent-2);}
   .parts-list{flex:1;overflow-y:auto;padding:8px 0 4px;}
   .parts-item{display:grid;grid-template-columns:1fr auto;gap:4px 12px;
     padding:10px 16px;border-bottom:1px solid var(--line);cursor:default;}
@@ -292,7 +289,7 @@
   .parts-footer a{display:block;text-align:center;color:var(--accent-2);font-size:13px;font-weight:600;
     padding:12px;border:1px solid var(--accent-2);border-radius:10px;text-decoration:none;min-height:44px;
     display:flex;align-items:center;justify-content:center;}
-  .parts-footer a:hover{background:rgba(63,182,168,.12);}
+  .parts-footer a:hover{background:rgba(38,132,230,.12);}
   .parts-noresult{padding:12px 16px;text-align:center;color:var(--muted);font-size:13px;}
   @media (max-width:640px){
     #partsPanel{align-items:flex-end;justify-content:stretch;}
@@ -306,12 +303,12 @@
   /* ---------- Library panel (all bikes / add / jump) ---------- */
   #libraryPanel{
     position:fixed;inset:0;z-index:110;display:none;
-    background:rgba(8,10,13,.6);backdrop-filter:blur(4px);
+    background:rgba(8,10,13,.72);
     align-items:flex-end;justify-content:flex-end;
   }
   #libraryPanel.show{display:flex;animation:fade .2s ease;}
   .lib-sheet{
-    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    background:var(--panel);
     border:1px solid var(--line);border-radius:16px 16px 0 0;
     width:100%;max-width:420px;max-height:82vh;
     display:flex;flex-direction:column;box-shadow:var(--shadow);overflow:hidden;
@@ -329,7 +326,7 @@
   .lib-search{margin:12px 16px 0;flex-shrink:0;}
   .lib-search input{background:var(--bg);border:1px solid var(--line);border-radius:10px;
     color:var(--ink);padding:11px 14px;font:inherit;font-size:16px;width:100%;}
-  .lib-search input:focus{outline:none;border-color:var(--accent);}
+  .lib-search input:focus{outline:none;border-color:var(--accent-2);}
   .lib-list{flex:1;overflow-y:auto;padding:8px 0 4px;margin-top:8px;}
   .lib-item{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line);}
   .lib-item:last-child{border-bottom:none;}
@@ -346,7 +343,7 @@
   .lib-add{background:var(--panel);border:1px solid var(--accent-2);color:var(--accent-2);
     border-radius:8px;padding:8px 13px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;
     min-height:40px;white-space:nowrap;}
-  .lib-add:hover{background:rgba(63,182,168,.12);}
+  .lib-add:hover{background:rgba(38,132,230,.12);}
   .lib-empty{padding:24px 16px;text-align:center;color:var(--muted);font-size:13px;}
   @media (max-width:640px){
     #libraryPanel{align-items:flex-end;justify-content:stretch;}
@@ -362,14 +359,14 @@
     flex:1;padding:11px 10px;font:inherit;font-size:13px;font-weight:600;
     background:var(--bg);color:var(--muted);border:none;cursor:pointer;transition:.15s;min-height:44px;
   }
-  .status-toggle button.active{background:var(--accent-2);color:#06231f;}
+  .status-toggle button.active{background:var(--accent-2);color:#fff;}
   .status-toggle button:first-child{border-right:1px solid var(--line);}
 
   /* ---------- Bike detail modal (double-click) ---------- */
   #detailModal{position:fixed;inset:0;z-index:115;display:none;align-items:center;justify-content:center;padding:18px;
-    background:rgba(8,10,13,.7);backdrop-filter:blur(6px);}
+    background:rgba(8,10,13,.72);}
   #detailModal.show{display:flex;animation:fade .18s ease;}
-  .detail-card{position:relative;background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line);
+  .detail-card{position:relative;background:var(--panel);border:1px solid var(--line);
     border-radius:16px;box-shadow:var(--shadow);width:min(440px,94vw);max-height:90vh;overflow:auto;}
   .detail-close{position:absolute;top:10px;right:10px;z-index:2;background:rgba(0,0,0,.45);border:1px solid var(--line);
     color:var(--ink);width:38px;height:38px;border-radius:9px;cursor:pointer;font-size:16px;
@@ -410,7 +407,7 @@
   <div class="logo"><a href="index.html" title="Til Thansen Verktøykasse" style="text-decoration:none;color:inherit;opacity:.7;margin-right:10px;font-weight:600;">‹ Hjem</a><span class="dot" id="liveDot" title="Kobler til…"></span>VELODEX<span>· sykkelregister</span></div>
   <div class="controls">
     <button class="btn" id="bikesBtn">Sykler</button>
-    <button class="btn" id="lockBtn">🔒 Kun visning</button>
+    <button class="btn" id="lockBtn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Kun visning</button>
     <button class="btn" id="snapToggle" aria-pressed="false">Snapp: Av</button>
     <select id="snapSize" title="Rutenettstørrelse">
       <option value="20">Rutenett 20</option>
@@ -426,7 +423,7 @@
   <div id="canvas"></div>
 </div>
 
-<div class="hint">Dra for å panorere · dobbelttrykk et kort for detaljer · trykk en strekkode for å forstørre · 🔒 lås opp for å redigere</div>
+<div class="hint">Dra for å panorere · dobbelttrykk et kort for detaljer · trykk en strekkode for å forstørre · lås opp for å redigere</div>
 
 <div id="overlay">
   <div class="fs-name" id="fsName"></div>
@@ -446,7 +443,7 @@
       <div class="field"><label>Pris (kr)</label><input id="f-price" type="number" min="0" step="1" placeholder="0"></div>
     </div>
     <div class="frow">
-      <div class="field color-field"><label>Farge</label><input id="f-color" type="color" value="#f4b942"></div>
+      <div class="field color-field"><label>Farge</label><input id="f-color" type="color" value="#004595"></div>
       <div class="field"><label>Fargenavn</label><input id="f-colorName" placeholder="f.eks. Rav"></div>
     </div>
     <div class="frow">
@@ -501,7 +498,7 @@
       <div class="lib-title" id="libTitle">Sykler</div>
       <button class="lib-close" id="libClose" title="Lukk">✕</button>
     </div>
-    <button class="lib-create" id="libCreate" type="button">＋ Opprett ny egen sykkel</button>
+    <button class="lib-create" id="libCreate" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Opprett ny egen sykkel</button>
     <div class="lib-search"><input type="search" id="libSearch" placeholder="Søk etter sykler…" autocomplete="off"></div>
     <div class="lib-list" id="libList"></div>
   </div>
@@ -552,7 +549,7 @@ function nok(n){return (Number(n)||0).toLocaleString('nb-NO')+' kr';}
 /* DB row -> client object, and client -> DB payload */
 function fromRow(r){
   return {
-    uid:r.uid, name:r.name||'', wheel_size:r.wheel_size||'', color:r.color||'#f4b942',
+    uid:r.uid, name:r.name||'', wheel_size:r.wheel_size||'', color:r.color||'#004595',
     colorName:r.color_name||'—', price:r.price||0, frame:r.frame||'', itemNumber:r.item_number||'',
     desc:r.descr||'', items:Array.isArray(r.items)?r.items:[],
     x:Number(r.x)||0, y:Number(r.y)||0,
@@ -613,15 +610,16 @@ function itemsHtml(items){
 function specsHtml(specs){
   if(!specs||!Object.keys(specs).length) return '';
   const tags=[];
-  if(specs.gears)     tags.push(`<span class="spec-tag">⚙ <b>${esc(specs.gears)}-gir</b></span>`);
+  const I=n=>window.THelper.icon(n);
+  if(specs.gears)     tags.push(`<span class="spec-tag">${I('gear')} <b>${esc(specs.gears)}-gir</b></span>`);
   if(specs.brake_front){
     const short=specs.brake_front.replace('Mekanisk ','Mek. ').replace('Hydraulisk ','Hyd. ').replace('skivebremse','skive').replace('skivebrems','skive');
-    tags.push(`<span class="spec-tag">🛑 <b>${esc(short)}</b></span>`);
+    tags.push(`<span class="spec-tag">${I('disc')} <b>${esc(short)}</b></span>`);
   }
   if(specs.tyre)      tags.push(`<span class="spec-tag">◎ <b>${esc(specs.tyre)}</b></span>`);
-  if(specs.weight_kg) tags.push(`<span class="spec-tag">⚖ <b>${esc(specs.weight_kg)} kg</b></span>`);
-  if(specs.motor)     tags.push(`<span class="spec-tag">⚡ <b>${esc(specs.motor.split(' ').slice(0,2).join(' '))}</b></span>`);
-  if(specs.battery)   tags.push(`<span class="spec-tag">🔋 <b>${esc(specs.battery.split(' ').slice(0,2).join(' '))}</b></span>`);
+  if(specs.weight_kg) tags.push(`<span class="spec-tag">${I('weight')} <b>${esc(specs.weight_kg)} kg</b></span>`);
+  if(specs.motor)     tags.push(`<span class="spec-tag">${I('bolt')} <b>${esc(specs.motor.split(' ').slice(0,2).join(' '))}</b></span>`);
+  if(specs.battery)   tags.push(`<span class="spec-tag">${I('battery')} <b>${esc(specs.battery.split(' ').slice(0,2).join(' '))}</b></span>`);
   if(!tags.length) return '';
   return `<div class="spec-row">${tags.join('')}</div>`;
 }
@@ -630,7 +628,7 @@ function partsButtonHtml(b){
   const count = (b.spareParts && b.spareParts.length) || 0;
   if(!b.source_url) return '';
   const label = count>0 ? `${count} reservedeler funnet` : 'Se reservedeler på Thansen';
-  return `<button class="parts-btn" data-parts><span class="parts-icon">🔧</span><span class="parts-label">${label}</span><span class="parts-arrow">▶</span></button>`;
+  return `<button class="parts-btn" data-parts><span class="parts-icon">${window.THelper.icon('wrench')}</span><span class="parts-label">${label}</span><span class="parts-arrow">${window.THelper.icon('chevron-right')}</span></button>`;
 }
 function makeCard(b){
   const el = document.createElement('div');
@@ -650,7 +648,7 @@ function makeCard(b){
       <div class="grip"><i></i><i></i><i></i></div>
       <div class="card-title">${esc(b.name)}</div>
       <div class="swatch" style="background:${esc(b.color)}"></div>
-      <button class="edit-btn" data-edit title="Rediger sykkel">✎</button>
+      <button class="edit-btn" data-edit title="Rediger sykkel" aria-label="Rediger sykkel">${window.THelper.icon('pencil')}</button>
       <button class="remove-btn" data-remove title="Fjern fra utstilling">✕</button>
     </div>
     <div class="card-body">
@@ -1142,8 +1140,8 @@ function openDetail(b){
       ${(b.frame||b.itemNumber)?`<div class="barcode-box" data-d-bc><svg class="d-bc-svg"></svg><div class="barcode-label">${b.frame?'FRAME':'VARENR'} · ${esc(b.frame||b.itemNumber)}</div>${b.frame&&b.itemNumber?`<div class="barcode-label">VARENR · ${esc(b.itemNumber)}</div>`:''}</div>`:''}
       <div class="detail-actions">
         ${b.source_url?`<a class="btn" href="${esc(b.source_url)}" target="_blank" rel="noopener">↗ Open on Thansen</a>`:''}
-        ${b.source_url?`<button class="btn" data-d-parts>🔧 Spare parts</button>`:''}
-        ${isEditing()?`<button class="btn" data-d-edit>✎ Rediger</button>`:''}
+        ${b.source_url?`<button class="btn" data-d-parts>${window.THelper.icon('wrench')} Reservedeler</button>`:''}
+        ${isEditing()?`<button class="btn" data-d-edit>${window.THelper.icon('pencil')} Rediger</button>`:''}
       </div>
     </div>`;
   const cur=()=>bikes.find(x=>x.uid===b.uid)||b;
@@ -1247,9 +1245,9 @@ const lockBtn=document.getElementById('lockBtn');
 function updateLockUI(){
   const editing=isEditing();
   document.body.classList.toggle('locked',!editing);
-  lockBtn.textContent=editing?'🔓 Redigering':'🔒 Kun visning';
+  lockBtn.innerHTML=(editing?window.THelper.icon('unlock'):window.THelper.icon('lock'))+(editing?' Redigering':' Kun visning');
   lockBtn.classList.toggle('active',editing);
-  bikesBtn.textContent=editing?'+ Add bike':'Bikes';
+  bikesBtn.textContent=editing?'+ Ny sykkel':'Sykler';
   bikesBtn.classList.toggle('primary',editing);
   if(!editing)clearSelection();
   refreshLibrary();
@@ -1335,7 +1333,7 @@ function openEditor(b){
   F.name.value=b?b.name:'';
   F.size.value=b?b.wheel_size:'';
   F.price.value=b?b.price:'';
-  F.color.value=b?b.color:'#f4b942';
+  F.color.value=b?b.color:'#004595';
   F.colorName.value=b?b.colorName:'';
   F.frame.value=b?b.frame:'';
   F.itemNumber.value=b?b.itemNumber:'';
