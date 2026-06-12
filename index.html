@@ -36,7 +36,7 @@
   --th-font-mono:'Martian Mono',ui-monospace,'Cascadia Mono','Roboto Mono',monospace;
   --th-dur:180ms;--th-dur-slow:240ms;--th-ease:cubic-bezier(0.16,1,0.3,1)}
 *{box-sizing:border-box}
-html,body{margin:0}
+html,body{margin:0;overflow-x:clip}
 body{background:var(--th-bg,#0f1318);color:var(--th-text,#f1f4f8);font:400 16px/1.55 var(--th-font-ui,system-ui,sans-serif);-webkit-font-smoothing:antialiased}
 .mono{font-family:var(--th-font-mono)}
 
@@ -178,7 +178,10 @@ html.th-cursor input,html.th-cursor select,html.th-cursor textarea,html.th-curso
   .om-art{max-width:380px}
 }
 @media(max-width:640px){
-  .clockbox .wk,.clock-sep{display:none}
+  /* Klokke + ukenummer er pynt på mobil: ordmerke + innloggingschip får ikke plass sammen med dem */
+  .clockbox{display:none}
+  .wordmark{font-size:12.5px;letter-spacing:.07em}
+  .hub-top{padding:14px 16px}
   .hero-inner{padding-top:96px}
   #bikeFallback{width:88vw;opacity:.25;top:10vh}
 }

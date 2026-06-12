@@ -358,7 +358,7 @@
 <script src="shared.js?v=16"></script>
 <script>
 const T = window.THelper;
-const BUILD = '2026-06-12-redesign';   // bumped on each deploy so a stale cache is easy to spot
+const BUILD = '2026-06-12-oppgaveregler';   // bumped on each deploy so a stale cache is easy to spot
 let isAdmin = false, isDev = false, me = null, filterTag = '', weekOffset = 0;
 let state = { activeViewTab:'board', coworkers:[], tasks:[], alerts:[], notes:[], staffStatus:[],
               loadState:'loading', loadError:'' };   // loading | ready | error — skiller «laster» fra «tomt» og «feil»
@@ -386,6 +386,34 @@ function timeStrOn(t, dateObj){
   if(!t.due) return null;
   const d=new Date(t.due);
   return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+/* Eierbeslutning 2026-06-12: bare MIDDELS-prioritet henger med videre til senere dager
+   (serverens rollover_incomplete flytter dem til dagens dato). Kritisk og lav er dagbundne:
+   ble de ikke gjort den dagen, blir de stående på sin egen dato i ukesplanen — aldri på «I dag». */
+function lapsedOneOff(t){
+  if(t.frequency!=='once' || t.status==='done' || !t.due || t.priority==='medium') return false;
+  const s=new Date(); s.setHours(0,0,0,0);
+  return new Date(t.due)<s;
+}
+/* Gjentakende oppgaver er ferske instanser per dag: de forekommer i dag eller ikke,
+   og OVERTID måles mot DAGENS klokkeslett (day_times/frist-tid) — aldri mot gammel due_at-dato. */
+function occursToday(t){
+  const today=new Date();
+  if(t.frequency==='daily') return true;
+  if(!t.due) return false;
+  const due=new Date(t.due);
+  if(t.frequency==='weekly') return ((due.getDay()===0)?6:due.getDay()-1)===((today.getDay()===0)?6:today.getDay()-1);
+  if(t.frequency==='monthly') return due.getDate()===today.getDate();
+  return due.toDateString()===today.toDateString();
+}
+function isOverdueNow(t){
+  if(t.status==='done' || !t.due) return false;
+  const now=new Date();
+  if(t.frequency==='once') return new Date(t.due)<now;
+  if(!occursToday(t)) return false;
+  const ts=timeStrOn(t, now); if(!ts) return false;
+  const occ=new Date(now); occ.setHours(+ts.slice(0,2), +ts.slice(3,5), 59, 0);
+  return occ<now;
 }
 // engangsoppgaver ligger kun i Fullført den dagen de ble gjort (gjentakende nullstilles av rollover)
 function doneVisibleOn(t, dateObj){
@@ -858,9 +886,9 @@ function renderTimelineView(){
   const box=document.getElementById('view-timeline');
   const now=new Date(), todayStr=now.toDateString();
   const startOfToday=new Date(now); startOfToday.setHours(0,0,0,0);
-  // Forfalt en TIDLIGERE dag og fortsatt ugjort (gjelder også høyprioritet som
-  // rollover_incomplete bevisst lar stå) — skal alltid synes på «I dag», øverst.
-  const crossOverdue=t=> t.status!=='done' && t.due && new Date(t.due)<startOfToday;
+  // Forfalt en TIDLIGERE dag og fortsatt ugjort: bare MIDDELS henger med til i dag
+  // (kritisk/lav er dagbundne og blir stående på sin egen dato i ukesplanen).
+  const crossOverdue=t=> t.frequency==='once' && t.priority==='medium' && t.status!=='done' && t.due && new Date(t.due)<startOfToday;
   const timeOf=t=>{ if(!t.due) return 24*60+1; const d=new Date(t.due); return d.getHours()*60+d.getMinutes(); };
   const items=state.tasks.filter(t=>{
     if(!passFilterOn(t, now)) return false;
@@ -889,7 +917,7 @@ function timelineRow(t, now){
   const time=t.due?(crossDay ? new Date(t.due).toLocaleDateString('nb-NO',{day:'numeric',month:'short'})
                              : new Date(t.due).toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'})):'—';
   const dot=t.priority==='high'?'bg-red-500':t.priority==='medium'?'bg-amber-500':'bg-emerald-500';
-  const overdue=t.due && new Date(t.due)<now && t.status!=='done';
+  const overdue=isOverdueNow(t);
   const done=t.status==='done';
   const people=assigneesFor(t, now);
   const asg=people.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="asg-pill" style="border-bottom-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`;}).join('')
@@ -924,7 +952,7 @@ function renderKanbanView(){
     el.addEventListener('dragover',e=>{ e.preventDefault(); el.classList.add('border-thansen-500'); });
     el.addEventListener('dragleave',()=>el.classList.remove('border-thansen-500'));
     el.addEventListener('drop',e=>{ el.classList.remove('border-thansen-500'); const d=e.dataTransfer.getData('text/plain'); if(d.startsWith('task:')) moveTaskStatus(d.slice(5), col.id); });
-    const colTasks=state.tasks.filter(t=>t.status===col.id && doneVisibleOn(t, new Date()) && passFilterOn(t, boardDateFor(t))).sort((a,b)=>floatMine(a,b,boardDateFor(a),boardDateFor(b)));
+    const colTasks=state.tasks.filter(t=>t.status===col.id && !lapsedOneOff(t) && doneVisibleOn(t, new Date()) && passFilterOn(t, boardDateFor(t))).sort((a,b)=>floatMine(a,b,boardDateFor(a),boardDateFor(b)));
     // Gjøremål deles i horisonter: «I dag» alltid synlig, uke/måned foldes bort (telleren viser dagens)
     const buckets = col.id==='todo' ? {today:[],week:[],month:[],later:[]} : null;
     if(buckets) colTasks.forEach(t=>buckets[horizonOf(t)].push(t));
@@ -953,12 +981,15 @@ function renderKanbanView(){
 }
 
 /* ---------- horisonter (Gjøremål-kolonnen) ---------- */
-// daglige + forfalt + dagens = 'today'; resten sorteres etter frist: denne uken / denne måneden / senere
+// daglige + dagens + middels-overheng = 'today'; gjentakende etter om de forekommer i dag;
+// engangsoppgaver med fremtidig frist sorteres: denne uken / denne måneden / senere
 function horizonOf(t){
   if(t.frequency==='daily' || !t.due) return 'today';
+  if(t.frequency==='weekly') return occursToday(t)?'today':'week';
+  if(t.frequency==='monthly') return occursToday(t)?'today':'month';
   const due=new Date(t.due);
   const endToday=new Date(); endToday.setHours(23,59,59,999);
-  if(due<=endToday) return 'today';
+  if(due<=endToday) return 'today';   // (kritisk/lav fra tidligere dager er alt bortfalt via lapsedOneOff)
   const sun=mondayOf(0); sun.setDate(sun.getDate()+6); sun.setHours(23,59,59,999);
   if(due<=sun) return 'week';
   const eom=new Date(); eom.setMonth(eom.getMonth()+1,0); eom.setHours(23,59,59,999);
@@ -1005,7 +1036,7 @@ async function toggleTaskCheckline(taskId, idx){
 /* ---------- task cards ---------- */
 function createTaskCard(task, weekly=false){
   const card=document.createElement('div');
-  const overdue = task.due && new Date(task.due)<new Date() && task.status!=='done';
+  const overdue = isOverdueNow(task);
   card.id=`card-${task.id}`;
   card.setAttribute('role','button'); card.tabIndex=0;   // nåbar med Tab + Enter/Space
   card.addEventListener('click',e=>{
@@ -1051,7 +1082,7 @@ function createTaskCard(task, weekly=false){
   card.innerHTML=`<div class="flex flex-col space-y-2.5">
     <div class="flex items-center justify-between"><div class="flex items-center gap-2 flex-wrap">${pri}<span class="freq-tag"><i class="fa-solid ${fr.i}"></i><span>${fr.d}</span></span></div>${overdue?'<span class="mono text-[9px] font-bold text-red-500 flex items-center space-x-1"><i class="fa-solid fa-triangle-exclamation"></i><span>OVERTID</span></span>':''}</div>
     <div><h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight mb-2">${esc(task.title)}</h4><div class="space-y-1 mt-1">${parseDescriptionToHTML(task.id, task.desc)}</div></div>
-    <div class="pt-2 border-t border-slate-100 dark:border-slate-900 flex items-center justify-between">${asg}<div class="mono flex items-center space-x-1 text-slate-400 text-[10px]" title="Frist og varighet"><i class="fa-regular fa-clock text-[9px]"></i><span>${formatCardDate(task.due)}</span><span class="opacity-60">/ ${fmtDur(task.duration||30)}</span></div></div>
+    <div class="pt-2 border-t border-slate-100 dark:border-slate-900 flex items-center justify-between">${asg}<div class="mono flex items-center space-x-1 text-slate-400 text-[10px]" title="Frist og varighet"><i class="fa-regular fa-clock text-[9px]"></i><span>${task.frequency==='daily' ? 'i dag kl. '+(timeStrOn(task,new Date())||'—') : formatCardDate(task.due)}</span><span class="opacity-60">/ ${fmtDur(task.duration||30)}</span></div></div>
     <div class="flex lg:hidden items-center justify-between mt-1 pt-2 border-t border-slate-100 dark:border-slate-900">
       <button onclick="moveStatusBy('${task.id}',-1)" ${STATUSES.indexOf(task.status)<=0?'disabled':''} class="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 disabled:opacity-30 flex items-center justify-center" title="Forrige status"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
       <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">${STATUS_LABEL[task.status]}</span>
@@ -1213,7 +1244,7 @@ function weekTasksForDay(dateObj){
   return state.tasks.filter(t=>{
     if(t.status==='done' || !passFilterOn(t, dateObj)) return false;
     const due=t.due?new Date(t.due):null;
-    if(isToday && due && due<startOfDate) return true;   // forfalt tidligere dag — vis på dagens side
+    if(isToday && t.frequency==='once' && t.priority==='medium' && due && due<startOfDate) return true;   // bare middels henger med til dagens side
     if(t.frequency==='daily') return true;
     if(t.frequency==='weekly'){ if(!due) return false; const tWd=(due.getDay()===0)?6:due.getDay()-1; return tWd===dWd; }
     if(t.frequency==='monthly') return !!due && due.getDate()===dateObj.getDate();
@@ -1230,7 +1261,7 @@ function agendaTaskRow(t, dateObj, now){
   const e=T.esc;
   const time=timeStrOn(t, dateObj)||'—';
   const dot=t.priority==='high'?'bg-red-500':t.priority==='medium'?'bg-amber-500':'bg-emerald-500';
-  const overdue=t.due && new Date(t.due)<now && t.status!=='done';
+  const overdue=isOverdueNow(t);
   const ppl=assigneesFor(t, dateObj);
   let pills=ppl.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="asg-pill" style="border-bottom-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`;}).join('');
   if(!ppl.length) pills=`<span class="text-[9px] text-slate-400 italic">${isAdmin?'+ sett opp ansvarlig':'Ingen tildelt'}</span>`;
@@ -1500,10 +1531,17 @@ async function deleteTask(taskId){
 /* ---------- alerts ---------- */
 function recalculateAlerts(){
   const now=new Date(); const a=[];
-  state.tasks.forEach(t=>{ if(t.status==='done'||!t.due) return; const h=(new Date(t.due)-now)/3600000;
-    const asg=assigneesFor(t, new Date(t.due));
-    if(h<0) a.push({taskId:t.id,type:'critical',title:'RØD FRIST: OVERTID',message:`"${t.title}" skulle vært gjort innen ${formatCardDate(t.due)}.`,assignees:asg});
-    else if(h<12) a.push({taskId:t.id,type:'warning',title:'Frist nærmer seg (< 12t)',message:`Husk å fullføre "${t.title}".`,assignees:asg});
+  state.tasks.forEach(t=>{ if(t.status==='done'||!t.due) return;
+    if(t.frequency==='once'){
+      if(lapsedOneOff(t)) return;   // kritisk/lav fra tidligere dager er bortfalt — ingen varsler
+      const h=(new Date(t.due)-now)/3600000;
+      const asg=assigneesFor(t, new Date(t.due));
+      if(h<0) a.push({taskId:t.id,type:'critical',title:'RØD FRIST: OVERTID',message:`"${t.title}" skulle vært gjort innen ${formatCardDate(t.due)}.`,assignees:asg});
+      else if(h<12) a.push({taskId:t.id,type:'warning',title:'Frist nærmer seg (< 12t)',message:`Husk å fullføre "${t.title}".`,assignees:asg});
+    } else if(isOverdueNow(t)){
+      // gjentakende: fersk instans per dag — varsle kun når DAGENS forekomst er forbi tiden
+      a.push({taskId:t.id,type:'critical',title:'RØD FRIST: OVERTID',message:`"${t.title}" skulle vært gjort innen kl. ${timeStrOn(t,now)||'—'} i dag.`,assignees:assigneesFor(t, now)});
+    }
   });
   if(a.length>state.alerts.length) playSound(a.some(x=>x.type==='critical')?'critical':'info');
   state.alerts=a;
