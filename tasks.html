@@ -4,94 +4,165 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#004595">
-<title>ButikkPlanlegger · Thansen Verktøykasse</title>
+<title>ButikkPlanlegger · Thansen Internverktøy</title>
 <!-- Statisk Tailwind-bygg (tailwind.config.js + tw-input.css -> tailwind.css).
      Bruker du NYE utility-klasser: kjør npx-kommandoen i tailwind.config.js og bump ?v= -->
 <link rel="stylesheet" href="tailwind.css?v=4">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800;900&family=Martian+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  body{font-family:'Inter',sans-serif;-webkit-tap-highlight-color:transparent;}
+  /* «Teknisk presisjon» — spes-ark-skinn. Kanoniske tokens injiseres av shared.js (v16);
+     verdiene under er identiske fallbacks så førstemaling aldri står uten dem. */
+  :root{ --th-brand:#004595; --th-brand-2:#2684e6; --th-yellow:#ffd400; --th-red:#e30613;
+         --th-bg:#0f1318; --th-panel:#161b22; --th-line:#2a323d; --th-text:#f1f4f8; --th-muted:#97a3b2;
+         --th-blue-line:rgba(38,132,230,.28); --th-grid:rgba(38,132,230,.07);
+         --th-font-ui:'Schibsted Grotesk',system-ui,sans-serif; --th-font-mono:'Martian Mono',ui-monospace,monospace;
+         --th-radius:10px; --th-shadow:0 6px 18px -8px rgba(0,0,0,.5);
+         --th-dur:180ms; --th-dur-slow:240ms; --th-ease:cubic-bezier(0.16,1,0.3,1); }
+  body{font-family:var(--th-font-ui);-webkit-tap-highlight-color:transparent;}
   ::-webkit-scrollbar{width:6px;height:6px;} ::-webkit-scrollbar-track{background:transparent;}
-  ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px;} .dark ::-webkit-scrollbar-thumb{background:#475569;}
-  .glass{background:rgba(255,255,255,.97);}
-  .dark .glass{background:rgba(15,23,42,.97);}
+  ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px;} .dark ::-webkit-scrollbar-thumb{background:var(--th-line);}
+  /* .glass beholdes som navn (JS refererer den), men er nå solid panel + 1px linje — ingen blur */
+  .glass{background:#ffffff;}
+  .dark .glass{background:var(--th-panel);}
   @keyframes subtle-pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.02);}}
   .pulse-alert{animation:subtle-pulse 2s infinite ease-in-out;}
   .snap-x-container{scroll-snap-type:x mandatory;} .snap-column{scroll-snap-align:center;}
-  /* dagslinje */
+  /* mono-måledata: alle tall som betyr noe settes i Martian Mono */
+  .mono{font-family:var(--th-font-mono);}
+  .mono-90{font-family:var(--th-font-mono);font-size:.9em;}
+  .uppercase.tracking-wider,.uppercase.tracking-wide{font-family:var(--th-font-mono);letter-spacing:.1em;}
+  #build-stamp,#admin-state,#alert-badge,#detail-task-due,#detail-task-frequency{font-family:var(--th-font-mono);}
+  #build-stamp{font-size:9px;letter-spacing:.04em;}
+  #alert-badge{font-size:9px;}
+  #detail-task-due,#detail-task-frequency{font-size:.92em;}
+  #stat-total-tasks,#stat-completed-tasks{font-family:var(--th-font-mono);font-size:21px;font-weight:700;}
+  /* blåkopi-rutenett i arbeidsflaten (svakt, dekorativt) */
+  #workspace-viewport{background-image:linear-gradient(var(--th-grid) 1px,transparent 1px),linear-gradient(90deg,var(--th-grid) 1px,transparent 1px);background-size:34px 34px;}
+  /* tittelblokk i headeren */
+  .brand-tile{width:38px;height:38px;border-radius:9px;background:var(--th-brand);color:var(--th-yellow);display:flex;align-items:center;justify-content:center;font-size:16px;flex:none;}
+  .tb-idx{font:600 10px var(--th-font-mono);letter-spacing:.1em;color:var(--th-muted);}
+  /* segmentert visningsvelger — hele className byttes av setViewTab (on/off-konstanter) */
+  .seg{display:flex;gap:2px;background:var(--th-bg);border:1px solid var(--th-line);border-radius:10px;padding:3px;}
+  .seg-btn{position:relative;display:flex;align-items:center;gap:7px;border:0;background:transparent;color:var(--th-muted);padding:7px 11px;border-radius:7px;font:600 12px var(--th-font-ui);cursor:pointer;}
+  .seg-btn:hover{color:var(--th-text);}
+  .seg-btn::after{content:"";position:absolute;left:11px;right:11px;bottom:2px;height:2px;background:var(--th-yellow);border-radius:1px;transform:scaleX(0);transform-origin:left;transition:transform var(--th-dur) var(--th-ease);}
+  .seg-btn.on{background:#1b212a;color:#fff;}
+  .seg-btn.on::after{transform:scaleX(1);}
+  /* ukenavigasjon (NAVBTN-konstanten) */
+  .navbtn{padding:7px 11px;border-radius:8px;border:1px solid var(--th-line);background:var(--th-panel);color:var(--th-text);font:600 12px var(--th-font-ui);}
+  .navbtn:hover{border-color:var(--th-brand-2);}
+  /* kanban-kolonner med tittelblokk-hode */
+  .kb-col{background:rgba(15,19,24,.45);border-color:rgba(42,50,61,.55);}
+  .kb-col.border-thansen-500{border-color:#004595;}
+  .kb-head{display:flex;align-items:center;gap:8px;margin-bottom:12px;min-height:24px;}
+  .kb-idx{font:600 10px var(--th-font-mono);letter-spacing:.08em;color:var(--th-brand-2);}
+  .kb-name{font:700 11px var(--th-font-ui);text-transform:uppercase;letter-spacing:.07em;color:var(--th-text);}
+  .kb-rule{flex:1;height:1px;background:var(--th-line);}
+  .kb-count{font:600 10px var(--th-font-mono);color:var(--th-muted);background:var(--th-bg);border:1px solid var(--th-line);border-radius:6px;padding:2px 7px;min-width:26px;text-align:center;}
+  /* spes-ark-kort: prioritet = fylt prikk + mono-etikett, frekvens = mono-mikrotagg */
+  .pri-tag{display:inline-flex;align-items:center;gap:5px;font:600 9px var(--th-font-mono);letter-spacing:.09em;text-transform:uppercase;}
+  .pri-tag::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;flex:none;}
+  .freq-tag{display:inline-flex;align-items:center;gap:4px;font:500 8.5px var(--th-font-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--th-muted);border:1px solid var(--th-line);border-radius:5px;padding:2px 6px;}
+  /* ansvarlig-brikker: medarbeiderfargen som 2px understrek (AA-kontrast), mono-tagg */
+  .asg-pill{position:relative;display:inline-flex;align-items:center;justify-content:center;height:24px;min-width:34px;padding:0 6px;background:var(--th-bg);border:1px solid var(--th-line);border-bottom-width:2px;border-radius:7px;font:600 9px var(--th-font-mono);letter-spacing:.05em;color:var(--th-text);}
+  .asg-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:var(--th-bg);border:1px solid var(--th-line);border-bottom-width:2px;border-radius:8px;font:600 10px var(--th-font-mono);letter-spacing:.04em;color:var(--th-text);}
+  .mention{display:inline-block;padding:0 2px;border-bottom:2px solid var(--th-line);font-family:var(--th-font-mono);font-weight:600;font-size:.9em;color:var(--th-text);}
+  .cw-avatar{width:32px;height:32px;border-radius:8px;border:1px solid var(--th-line);display:flex;align-items:center;justify-content:center;font:600 9px var(--th-font-mono);letter-spacing:.04em;color:var(--th-text);flex:none;}
+  .cw-avatar-sm{width:26px;height:26px;border-radius:7px;}
+  /* dagslinje (re-temet med tokens) */
   .timeline{position:relative;padding:4px 0;}
   .tl-row{display:grid;grid-template-columns:46px 18px 1fr;gap:10px;align-items:start;cursor:pointer;}
-  .tl-time{font-size:12px;font-weight:700;color:#94a3b8;text-align:right;padding-top:14px;}
+  .tl-time{font:600 10px/1 var(--th-font-mono);letter-spacing:.02em;color:var(--th-muted);text-align:right;padding-top:16px;}
   .tl-dot{display:flex;justify-content:center;padding-top:16px;position:relative;}
-  .tl-dot::before{content:"";position:absolute;top:0;bottom:-10px;left:50%;width:2px;background:#2a323d;transform:translateX(-50%);}
+  .tl-dot::before{content:"";position:absolute;top:0;bottom:-10px;left:50%;width:1px;background:var(--th-line);transform:translateX(-50%);}
   .tl-row:last-child .tl-dot::before{display:none;}
-  .tl-card{margin:6px 0;background:#1b212a;border:1px solid #2a323d;border-radius:12px;padding:10px 12px;transition:background .12s;}
-  .tl-card:hover{background:#222a35;}
+  .tl-card{margin:6px 0;background:var(--th-panel);border:1px solid var(--th-line);border-radius:var(--th-radius);padding:10px 12px;transition:border-color var(--th-dur),background var(--th-dur);}
+  .tl-card:hover{border-color:var(--th-blue-line);}
   .tl-done .tl-card{opacity:.55;}
-  .tl-now{display:flex;align-items:center;gap:8px;margin:2px 0 2px 56px;color:#ffd400;font-size:10px;font-weight:800;letter-spacing:.08em;}
-  .tl-now::after{content:"";height:2px;background:#ffd400;flex:1;opacity:.4;border-radius:2px;}
-  .empty{color:#94a3b8;text-align:center;padding:36px 10px;}
+  .tl-now{display:flex;align-items:center;gap:8px;margin:4px 0 4px 56px;color:var(--th-yellow);font:600 10px var(--th-font-mono);letter-spacing:.1em;}
+  .tl-now::before{content:"";width:2px;height:12px;background:var(--th-yellow);flex:none;}
+  .tl-now::after{content:"";height:1px;background:var(--th-yellow);flex:1;opacity:.35;}
+  .empty{color:var(--th-muted);text-align:center;padding:36px 10px;}
   .wk-resize{position:absolute;left:0;right:0;bottom:0;height:9px;cursor:ns-resize;background:rgba(38,132,230,.25);touch-action:none;}
   .wk-resize:hover{background:rgba(38,132,230,.5);}
+  /* ukesplan: blåkopi-hårlinjer (gap-px viser .wk-grid-bakgrunnen), mini-tittelblokk-dager */
+  .wk-grid{background:rgba(38,132,230,.14);border:1px solid var(--th-line);}
+  .wk-head{background:var(--th-bg);padding:8px;}
+  .wk-head.is-today{box-shadow:inset 0 -2px 0 var(--th-yellow);}
+  .wk-dayname{font:600 10px var(--th-font-mono);letter-spacing:.09em;text-transform:uppercase;color:var(--th-text);}
+  .wk-dayname.is-today{color:var(--th-yellow);}
+  .wk-hour{background:var(--th-bg);font:600 9px var(--th-font-mono);color:var(--th-muted);text-align:right;padding:4px 5px 0 0;}
+  .wk-open{background:#141a22;}
+  .wk-closed{background:#0d1219;background-image:repeating-linear-gradient(45deg,transparent 0 6px,rgba(151,163,178,.05) 6px 7px);}
+  .wk-blk{background:#1b212a;border-color:#323b48;}
+  .wk-note{font:500 10px/1.4 var(--th-font-mono);}
   /* bevegelse: kort, modaler, fullføring (tokens/keyframes i shared.js) */
   .tk-card:hover{transform:translateY(-2px);}
-  .sheet-in{animation:th-scale-in 240ms cubic-bezier(.16,1,.3,1);}
+  .sheet-in{position:relative;animation:th-scale-in 240ms cubic-bezier(.16,1,.3,1);}
+  .sheet-in::before{content:"";position:absolute;top:8px;left:8px;width:12px;height:12px;border-top:1px solid var(--th-blue-line);border-left:1px solid var(--th-blue-line);pointer-events:none;z-index:1;}
+  .sheet-in::after{content:"";position:absolute;bottom:8px;right:8px;width:12px;height:12px;border-bottom:1px solid var(--th-blue-line);border-right:1px solid var(--th-blue-line);pointer-events:none;z-index:1;}
   .view-in{animation:th-fade-in 160ms ease-out;}
   button:not(:disabled){transition-property:transform,background-color,border-color,color,box-shadow,opacity;transition-duration:.12s;}
   button:not(:disabled):active{transform:scale(.97);}
   .done-pop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-    background:rgba(16,185,129,.14);border-radius:inherit;pointer-events:none;animation:th-fade-in 150ms ease-out;}
-  .done-pop svg{width:34px;height:34px;}
+    background:rgba(16,185,129,.13);border-radius:inherit;pointer-events:none;animation:th-fade-in 150ms ease-out;}
+  .done-pop svg{width:36px;height:36px;}
   .done-pop path{stroke:#10b981;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round;
-    stroke-dasharray:30;stroke-dashoffset:30;animation:done-draw 350ms cubic-bezier(.16,1,.3,1) 80ms forwards;}
-  @keyframes done-draw{to{stroke-dashoffset:0}}
-  /* horisont-seksjoner i Gjøremål-kolonnen */
-  .hz-head{display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:6px 10px;
-    border:1px dashed #cbd5e1;border-radius:10px;background:transparent;color:#94a3b8;
-    font:inherit;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;
-    transition:border-color 180ms,color 180ms;}
-  .dark .hz-head{border-color:#2a323d;}
-  .hz-head:hover{border-color:#2684e6;color:#64748b;} .dark .hz-head:hover{color:#cbd5e1;}
-  .hz-chev{font-size:10px;transition:transform 240ms cubic-bezier(.16,1,.3,1);}
+    stroke-dasharray:30;stroke-dashoffset:30;animation:th-draw 350ms var(--th-ease) 80ms forwards;}
+  /* horisont-seksjoner i Gjøremål-kolonnen — tittelblokk: mono-indeks + linjal + tellebrikke */
+  .hz-head{display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:6px 2px;
+    border:0;background:transparent;color:var(--th-muted);
+    font:600 10px var(--th-font-mono);letter-spacing:.1em;text-transform:uppercase;cursor:pointer;
+    transition:color 180ms;}
+  .hz-head:hover{color:#cbd5e1;}
+  .hz-idx{color:var(--th-brand-2);}
+  .hz-rule{flex:1;height:1px;background:var(--th-line);}
+  .hz-chev{font-size:9px;transition:transform 240ms cubic-bezier(.16,1,.3,1);}
   .hz-head[aria-expanded="true"] .hz-chev{transform:rotate(90deg);}
-  .hz-count{margin-left:auto;background:rgba(38,132,230,.15);color:#2684e6;border-radius:999px;padding:1px 8px;font-size:10px;font-weight:700;}
-  .dark .hz-count{color:#7db8f0;}
+  .hz-count{background:rgba(38,132,230,.12);color:#7db8f0;border:1px solid var(--th-blue-line);border-radius:6px;padding:2px 7px;font:600 9.5px var(--th-font-mono);}
   .hz-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows 240ms cubic-bezier(.16,1,.3,1);}
   .hz-body.open{grid-template-rows:1fr;}
   .hz-inner{overflow:hidden;min-height:0;}
   .hz-body.open .hz-inner{padding-top:12px;}
+  /* toast (fargene sendes fortsatt per kall — kun skallet er re-skinnet) */
+  .tk-toast{background:var(--th-panel);border:1px solid var(--th-line);border-radius:var(--th-radius);padding:12px 14px;box-shadow:var(--th-shadow);max-width:88vw;}
   /* Touch-enheter har ingen hover: vis fjern-knappen alltid, og gi de små ✕-ene 44px-ish trykkflate */
   @media (hover: none){
-    .pill-x{ display:flex !important; width:20px !important; height:20px !important; top:-8px !important; right:-8px !important; font-size:11px !important; }
+    .pill-x{ display:flex !important; width:26px !important; height:26px !important; top:-11px !important; right:-11px !important; font-size:12px !important; }
     .tap-x{ padding:10px !important; margin:-10px !important; }
   }
+  /* Mørk modus: thansen-500 (#004595) er for mørk som TEKST på mørke flater (≈2:1) — lys variant gir 6.3:1.
+     Elementer med dark:text-thansen-yellow skal forbli gule og unntas. */
+  html.dark .text-thansen-500:not(.dark\:text-thansen-yellow){color:#5b9bd5;}
+  html.dark .hover\:text-thansen-500:hover{color:#5b9bd5;}
+  #task-desc{font-family:var(--th-font-mono);}
 </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
 
 <div id="app" class="flex flex-col h-screen overflow-hidden">
   <header class="glass border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 flex items-center justify-between z-30 shrink-0">
-    <div class="flex items-center space-x-3">
-      <a href="index.html" title="Til Verktøykassen" class="text-slate-400 hover:text-thansen-500 mr-1"><i class="fa-solid fa-chevron-left"></i></a>
-      <div class="bg-thansen-500 p-2.5 rounded-xl text-white flex items-center justify-center">
-        <i class="fa-solid fa-store text-lg sm:text-xl text-thansen-yellow"></i>
-      </div>
-      <div>
-        <div class="flex items-center space-x-2">
-          <span class="text-xs font-black tracking-widest text-thansen-yellow bg-thansen-500 px-1.5 py-0.5 rounded">thansen</span>
-          <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white">ButikkPlanlegger</h1>
+    <div class="flex items-center space-x-3 min-w-0">
+      <a href="index.html" title="Til internverktøyene" aria-label="Til internverktøyene" class="text-slate-400 hover:text-thansen-500 mr-1"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></a>
+      <div class="brand-tile"><i class="fa-solid fa-store"></i></div>
+      <div class="min-w-0">
+        <div class="flex items-center gap-2">
+          <span class="tb-idx">02 /</span>
+          <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">ButikkPlanlegger</h1>
         </div>
-        <p class="text-[10px] text-slate-400 dark:text-slate-500">Intern oppgavefordeling og vaktstyring <span id="build-stamp" class="opacity-50"></span></p>
+        <p class="text-[10px] text-slate-400">Intern oppgavefordeling og vaktstyring <span id="build-stamp"></span></p>
       </div>
     </div>
 
     <div class="flex items-center space-x-2 sm:space-x-3">
       <span id="admin-state" class="hidden sm:inline text-[11px] font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400"></span>
-      <button onclick="toggleMobileSidebar()" class="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900" title="Vis ansatte"><i class="fa-solid fa-users text-lg"></i></button>
+      <button onclick="toggleMobileSidebar()" class="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900" title="Vis ansatte" aria-label="Vis ansatte"><i class="fa-solid fa-users text-lg" aria-hidden="true"></i></button>
       <button onclick="toggleAlertsPanel()" aria-label="Varsler" class="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900"><i class="fa-solid fa-bell text-lg" aria-hidden="true"></i><span id="alert-badge" class="absolute top-0.5 right-0 min-w-[17px] h-[17px] px-1 bg-thansen-red rounded-full hidden text-[10px] font-bold text-white text-center leading-[17px]"></span></button>
-      <button id="lockBtn" onclick="toggleAdmin()" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900" title="Logg inn som admin"><i class="fa-solid fa-lock text-lg"></i></button>
+      <button id="lockBtn" onclick="toggleAdmin()" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-900" title="Logg inn som admin" aria-label="Logg inn eller ut"><i class="fa-solid fa-lock text-lg" aria-hidden="true"></i></button>
     </div>
   </header>
 
@@ -100,17 +171,17 @@
     <aside id="workspace-sidebar" class="fixed lg:static inset-y-0 left-0 w-80 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 flex flex-col shrink-0 overflow-y-auto z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
       <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 lg:hidden bg-slate-50 dark:bg-slate-900/40">
         <span class="font-bold text-sm flex items-center"><i class="fa-solid fa-users mr-2 text-thansen-500"></i>Ansatte & Oversikt</span>
-        <button onclick="toggleMobileSidebar()" class="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800"><i class="fa-solid fa-xmark"></i></button>
+        <button onclick="toggleMobileSidebar()" class="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800" aria-label="Lukk ansattpanel"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
       </div>
       <div class="p-6 border-b border-slate-200 dark:border-slate-800">
         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Butikkens Gjøremål</h3>
         <div class="grid grid-cols-2 gap-3">
           <div class="bg-thansen-50/50 dark:bg-thansen-500/10 p-3 rounded-xl border border-thansen-100 dark:border-thansen-500/20">
-            <span class="text-xs text-thansen-600 dark:text-thansen-400 font-medium">Planlagt</span>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-thansen-600 dark:text-thansen-400">Planlagt</span>
             <div id="stat-total-tasks" class="text-2xl font-black text-thansen-700 dark:text-white mt-1">0</div>
           </div>
           <div class="bg-emerald-50/50 dark:bg-emerald-950/20 p-3 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
-            <span class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Fullført</span>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Fullført</span>
             <div id="stat-completed-tasks" class="text-2xl font-black text-emerald-900 dark:text-emerald-100 mt-1">0</div>
           </div>
         </div>
@@ -145,10 +216,10 @@
           <select id="filter-assignee" onchange="setAssigneeFilter(this.value)" title="Filtrer på medarbeider" class="bg-slate-100 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-thansen-500">
             <option value="">Alle medarbeidere</option>
           </select>
-          <div class="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200/60 dark:border-slate-800">
-            <button onclick="setViewTab('board')" id="tab-btn-board" class="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm"><i class="fa-solid fa-columns text-thansen-500"></i><span>Tavle</span></button>
-            <button onclick="setViewTab('weekly')" id="tab-btn-weekly" class="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 text-slate-500 dark:text-slate-400"><i class="fa-solid fa-calendar-days"></i><span>Ukesplan</span></button>
-            <button onclick="setViewTab('timeline')" id="tab-btn-timeline" class="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 text-slate-500 dark:text-slate-400"><i class="fa-regular fa-clock"></i><span>I dag</span></button>
+          <div class="seg">
+            <button onclick="setViewTab('board')" id="tab-btn-board" class="seg-btn on"><i class="fa-solid fa-columns"></i><span>Tavle</span></button>
+            <button onclick="setViewTab('weekly')" id="tab-btn-weekly" class="seg-btn"><i class="fa-solid fa-calendar-days"></i><span>Ukesplan</span></button>
+            <button onclick="setViewTab('timeline')" id="tab-btn-timeline" class="seg-btn"><i class="fa-regular fa-clock"></i><span>I dag</span></button>
           </div>
           <button id="add-task-global-btn" onclick="openTaskModal()" class="hidden bg-thansen-500 hover:bg-thansen-600 text-white font-bold text-xs px-3 sm:px-4 py-2 rounded-xl flex items-center space-x-2"><i class="fa-solid fa-plus text-thansen-yellow"></i><span>Ny Oppgave</span></button>
         </div>
@@ -166,8 +237,8 @@
     <!-- Alerts -->
     <div id="alerts-panel" class="absolute top-0 right-0 h-full w-80 bg-white dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800 shadow-2xl z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
       <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-        <div><h3 class="font-bold flex items-center space-x-2"><i class="fa-solid fa-bell text-thansen-red"></i><span>Varslingssenter</span></h3><p class="text-[10px] text-slate-400">Gjøremål med utgått eller kort frist</p></div>
-        <button onclick="toggleAlertsPanel()" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-400"><i class="fa-solid fa-times"></i></button>
+        <div><div class="th-kicker mb-1">Frister / varsler</div><h3 class="font-bold flex items-center space-x-2"><i class="fa-solid fa-bell text-thansen-red"></i><span>Varslingssenter</span></h3><p class="text-[10px] text-slate-400">Gjøremål med utgått eller kort frist</p></div>
+        <button onclick="toggleAlertsPanel()" aria-label="Lukk varsler" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-400"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
       </div>
       <div id="alerts-list" class="flex-1 overflow-y-auto p-6 space-y-4"></div>
       <div class="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40">
@@ -181,11 +252,11 @@
 <div id="task-detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-task-title" class="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 hidden">
   <div class="sheet-in bg-white dark:bg-slate-950 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
     <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/20">
-      <div class="flex items-center space-x-2 text-thansen-500"><i class="fa-solid fa-circle-info text-xl text-thansen-yellow bg-thansen-500 p-1.5 rounded-lg"></i><h3 class="font-bold text-base sm:text-lg">Oppgavedetaljer</h3></div>
+      <div><div class="th-kicker mb-1">Oppgave / detaljblad</div><h3 class="font-bold text-base sm:text-lg text-slate-900 dark:text-white">Oppgavedetaljer</h3></div>
       <button onclick="closeTaskDetailModal()" aria-label="Lukk" class="p-2 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"><i class="fa-solid fa-times" aria-hidden="true"></i></button>
     </div>
     <div class="p-6 overflow-y-auto flex-1 space-y-4">
-      <div><span id="detail-task-priority" class="text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wide"></span><span id="detail-task-frequency" class="bg-slate-100 dark:bg-slate-900 text-slate-500 text-[9px] font-medium px-1.5 py-0.5 rounded ml-2"></span></div>
+      <div class="flex items-center gap-3 flex-wrap"><span id="detail-task-priority" class="pri-tag"></span><span id="detail-task-frequency" class="bg-slate-100 dark:bg-slate-900 text-slate-500 text-[9px] font-medium px-1.5 py-0.5 rounded"></span></div>
       <div><h2 id="detail-task-title" class="text-lg font-bold leading-tight"></h2><div class="flex items-center space-x-1.5 text-slate-400 text-xs mt-1"><i class="fa-regular fa-clock"></i><span id="detail-task-due"></span></div></div>
       <hr class="border-slate-100 dark:border-slate-800" />
       <div><h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Beskrivelse & Sjekkliste</h4><div id="detail-task-parsed-desc" class="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-xs space-y-2"></div></div>
@@ -227,7 +298,7 @@
       </div>
       <div id="smart-recurring-info" class="hidden p-3 rounded-xl border border-thansen-100 dark:border-thansen-500/30 bg-thansen-50/50 dark:bg-thansen-500/10 text-[10px] text-thansen-600 dark:text-thansen-400 leading-relaxed"><p class="font-bold flex items-center mb-1"><i class="fa-solid fa-circle-nodes mr-1 text-thansen-yellow"></i> Intelligent rotasjon aktiv</p>Fullføres oppgaven i tide, settes neste frist nøyaktig 1 syklus frem. Ved forsinkelse hoppes det til neste kommende intervall for å unngå opphopning.</div>
       <div id="task-daytimes" class="hidden">
-        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Annen tid enkelte dager <span class="normal-case font-medium tracking-normal">(tomt = fristens klokkeslett — f.eks. lørdag 10:00 når butikken åpner senere)</span></label>
+        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Annen tid enkelte dager <span class="normal-case font-medium tracking-normal">(tomt = fristens klokkeslett, f.eks. lørdag 10:00 når butikken åpner senere)</span></label>
         <div class="grid grid-cols-4 sm:grid-cols-7 gap-2">
           <div><div class="text-[9px] font-bold text-slate-400 text-center mb-1">Man</div><input type="time" id="dt-1" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-1 py-1.5 text-[11px] text-center"></div>
           <div><div class="text-[9px] font-bold text-slate-400 text-center mb-1">Tir</div><input type="time" id="dt-2" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-1 py-1.5 text-[11px] text-center"></div>
@@ -280,14 +351,14 @@
 
 <!-- Trash zone -->
 <div id="assignee-trash-zone" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-thansen-red text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center space-x-3 border-2 border-dashed border-red-300 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
-  <i class="fa-solid fa-user-minus text-xl animate-bounce"></i>
+  <i class="fa-solid fa-user-minus text-xl"></i>
   <div><p class="text-xs font-bold">Fjern fra oppgave</p><p class="text-[10px] opacity-90">Slipp ansatt-kortet her.</p></div>
 </div>
 
-<script src="shared.js?v=15"></script>
+<script src="shared.js?v=16"></script>
 <script>
 const T = window.THelper;
-const BUILD = '2026-06-12b';   // bumped on each deploy so a stale cache is easy to spot
+const BUILD = '2026-06-12-redesign';   // bumped on each deploy so a stale cache is easy to spot
 let isAdmin = false, isDev = false, me = null, filterTag = '', weekOffset = 0;
 let state = { activeViewTab:'board', coworkers:[], tasks:[], alerts:[], notes:[], staffStatus:[],
               loadState:'loading', loadError:'' };   // loading | ready | error — skiller «laster» fra «tomt» og «feil»
@@ -333,7 +404,7 @@ async function addAssigneeOn(taskId, dateObj, tag){
   if(assigneesFor(t, dateObj).includes(tag)){ showToast(`${tag} er allerede satt opp denne dagen.`,'#f59e0b'); return; }
   const ab=absenceOn(tag, dateObj);
   try{ await T.rpcAuth('add_day_assignee',{p_id:taskId,p_day:ymd(dateObj),p_tag:tag}); await loadAll();
-    showToast(ab?`Satte opp ${tag} — obs: ${STATUS_DEF[ab].label.toLowerCase()} denne dagen`:`Satte opp ${tag}`, ab?'#f59e0b':'#004595'); }
+    showToast(ab?`Satte opp ${tag} (obs: ${STATUS_DEF[ab].label.toLowerCase()} denne dagen)`:`Satte opp ${tag}`, ab?'#f59e0b':'#004595'); }
   catch(e){ if(e.message!=='no-auth') showToast('Feil: '+e.message,'#e30613'); }
 }
 async function removeAssigneeOn(taskId, dateObj, tag){
@@ -534,17 +605,17 @@ function renderCoworkerList(){
     }
     const cur=currentStatus(c.tag), sd=cur?STATUS_DEF[cur.kind]:null;
     const chip = cur
-      ? `<span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 w-fit" style="color:${sd.color};background:${sd.color}1a"><i class="fa-solid ${sd.icon} text-[8px]"></i>${esc(sd.label)}${cur.allDay?'':' · til '+fmtMin(cur.startMin+cur.durMin)}</span>`
-      : `<span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 w-fit text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"><i class="fa-solid fa-circle text-[6px]"></i>Tilgjengelig</span>`;
+      ? `<span class="mono inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 w-fit" style="color:${sd.color};background:${sd.color}1a"><i class="fa-solid ${sd.icon} text-[8px]"></i>${esc(sd.label)}${cur.allDay?'':' · til '+fmtMin(cur.startMin+cur.durMin)}</span>`
+      : `<span class="mono inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 w-fit text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"><i class="fa-solid fa-circle text-[6px]"></i>Tilgjengelig</span>`;
     item.innerHTML=`
       <div class="flex items-center space-x-2.5 min-w-0">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-[10px] shrink-0" style="background-color:${col(c.color)}">${esc(c.tag)}</div>
+        <div class="cw-avatar shrink-0" style="border-color:${col(c.color)};background:color-mix(in srgb, ${col(c.color)} 16%, transparent)">${esc(c.tag)}</div>
         <div class="flex flex-col min-w-0"><span class="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(c.name)}</span><span class="text-[9px] text-slate-400">${esc(c.title||'Butikkmedarbeider')}</span>${chip}</div>
       </div>
       <div class="flex items-center space-x-2 shrink-0">
-        ${canEditStatus(c.tag)?`<button onclick="openStatusMenu('${esc(c.tag)}')" class="text-slate-300 hover:text-thansen-500" title="Sett status (pause, lunsj …)"><i class="fa-regular fa-clock text-sm"></i></button>`:''}
-        ${isAdmin?`<button onclick="editCoworker('${esc(c.tag)}')" class="text-slate-300 hover:text-thansen-500" title="Rediger profil"><i class="fa-solid fa-pen text-xs"></i></button>
-                   <button onclick="deleteCoworker('${esc(c.tag)}')" class="text-slate-300 hover:text-thansen-red" title="Fjern"><i class="fa-solid fa-user-xmark text-xs"></i></button>`
+        ${canEditStatus(c.tag)?`<button onclick="openStatusMenu('${esc(c.tag)}')" class="text-slate-300 hover:text-thansen-500" title="Sett status (pause, lunsj …)" aria-label="Sett status for ${esc(c.tag)}"><i class="fa-regular fa-clock text-sm" aria-hidden="true"></i></button>`:''}
+        ${isAdmin?`<button onclick="editCoworker('${esc(c.tag)}')" class="text-slate-300 hover:text-thansen-500" title="Rediger profil" aria-label="Rediger profil for ${esc(c.tag)}"><i class="fa-solid fa-pen text-xs" aria-hidden="true"></i></button>
+                   <button onclick="deleteCoworker('${esc(c.tag)}')" class="text-slate-300 hover:text-thansen-red" title="Fjern" aria-label="Fjern ${esc(c.tag)}"><i class="fa-solid fa-user-xmark text-xs" aria-hidden="true"></i></button>`
                  :`<i class="fa-solid fa-grip-vertical text-xs text-slate-300 dark:text-slate-700"></i>`}
       </div>`;
     list.appendChild(item);
@@ -564,9 +635,9 @@ function openAssigneePicker(taskId, dateObj){
   const rows = state.coworkers.length ? state.coworkers.map(c=>`
       <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900">
         <input type="checkbox" value="${esc(c.tag)}" ${cur.includes(c.tag)?'checked':''} class="rounded text-thansen-500 focus:ring-thansen-500 w-4 h-4">
-        <span class="w-6 h-6 rounded-lg text-[9px] font-bold text-white inline-flex items-center justify-center shrink-0" style="background-color:${col(c.color)}">${esc(c.tag)}</span>
+        <span class="cw-avatar cw-avatar-sm shrink-0" style="border-color:${col(c.color)};background:color-mix(in srgb, ${col(c.color)} 16%, transparent)">${esc(c.tag)}</span>
         <span class="text-sm text-slate-700 dark:text-slate-200 font-medium truncate">${esc(c.name)}</span>
-        ${(ab=>ab?`<span class="ml-auto shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded" style="color:${STATUS_DEF[ab].color};background:${STATUS_DEF[ab].color}1a"><i class="fa-solid ${STATUS_DEF[ab].icon} text-[8px] mr-0.5"></i>${esc(STATUS_DEF[ab].label.toLowerCase())}</span>`:'')(absenceOn(c.tag, dateObj))}
+        ${(ab=>ab?`<span class="mono ml-auto shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded" style="color:${STATUS_DEF[ab].color};background:${STATUS_DEF[ab].color}1a"><i class="fa-solid ${STATUS_DEF[ab].icon} text-[8px] mr-0.5"></i>${esc(STATUS_DEF[ab].label.toLowerCase())}</span>`:'')(absenceOn(c.tag, dateObj))}
       </label>`).join('') : '<p class="text-xs text-slate-400 italic p-2">Ingen ansatte registrert.</p>';
   let ov=document.getElementById('assignee-picker');
   if(!ov){ ov=document.createElement('div'); ov.id='assignee-picker'; document.body.appendChild(ov); }
@@ -608,7 +679,7 @@ function openStatusMenu(tag){
   ov.innerHTML=`
     <div class="sheet-in bg-white dark:bg-slate-950 w-full max-w-sm rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
       <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
-        <span class="w-7 h-7 rounded-lg inline-flex items-center justify-center font-bold text-white text-[10px]" style="background:${col(c.color)}">${esc(tag)}</span>
+        <span class="cw-avatar cw-avatar-sm" style="border-color:${col(c.color)};background:color-mix(in srgb, ${col(c.color)} 16%, transparent)">${esc(tag)}</span>
         <div><h3 class="font-bold text-sm">${esc(c.name)}</h3><p class="text-[11px] text-slate-400">Status nå · ${cur?esc(STATUS_DEF[cur.kind].label):'Tilgjengelig'}</p></div>
       </div>
       <div class="p-3 overflow-y-auto">
@@ -747,8 +818,9 @@ async function deleteCoworker(tag){
 /* ---------- view tabs ---------- */
 function setViewTab(tab){
   state.activeViewTab=tab;
-  const on="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-white shadow-sm";
-  const off="px-3 sm:px-4 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 text-slate-500 dark:text-slate-400";
+  // NB: hele className byttes — må speile .seg-btn-skinnet i <style>-blokken
+  const on="seg-btn on";
+  const off="seg-btn";
   const tabs={board:'tab-btn-board',weekly:'tab-btn-weekly',timeline:'tab-btn-timeline'};
   for(const k in tabs){ const el=document.getElementById(tabs[k]); if(el) el.className = (k===tab?on:off); }
   document.getElementById('view-kanban').classList.toggle('hidden', tab!=='board');
@@ -758,7 +830,7 @@ function setViewTab(tab){
   if(act){ act.classList.remove('view-in'); void act.offsetWidth; act.classList.add('view-in'); }
   document.getElementById('mobile-snap-notif').style.display = (tab==='timeline') ? 'none' : '';
   document.getElementById('current-board-title').innerText =
-    tab==='board' ? 'Gjøremålstavle for butikk' : tab==='weekly' ? 'Vaktskjema & Ukesplan' : 'Dagslinje — i dag';
+    tab==='board' ? 'Gjøremålstavle for butikk' : tab==='weekly' ? 'Vaktskjema & Ukesplan' : 'Dagslinje: i dag';
   renderScheduler();
 }
 function renderScheduler(){
@@ -768,7 +840,7 @@ function renderScheduler(){
     const el=document.getElementById(state.activeViewTab==='board'?'view-kanban':state.activeViewTab==='weekly'?'view-weekly':'view-timeline');
     if(el){
       el.innerHTML = state.loadState==='loading'
-        ? `<div class="w-full p-4 space-y-3 animate-pulse" role="status" aria-label="Laster oppgaver">${'<div class="h-24 rounded-xl bg-slate-200/60 dark:bg-slate-800/60"></div>'.repeat(3)}</div>`
+        ? `<div class="w-full p-4 space-y-3" role="status" aria-label="Laster oppgaver">${'<div class="h-24 th-skel"></div>'.repeat(3)}</div>`
         : `<div class="w-full p-8 text-center"><i class="fa-solid fa-triangle-exclamation text-2xl text-thansen-red mb-2"></i>
              <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Fikk ikke lastet oppgavene</p>
              <p class="text-xs text-slate-400 mt-1">${esc(state.loadError||'Ukjent feil')}</p>
@@ -798,7 +870,7 @@ function renderTimelineView(){
     if(!t.due) return false;
     return new Date(t.due).toDateString()===todayStr;
   }).sort((a,b)=> (crossOverdue(b)?1:0)-(crossOverdue(a)?1:0) || timeOf(a)-timeOf(b) || stableOrder(a,b));
-  const heading=`<div class="text-xs text-slate-400 mb-3">${now.toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'long'})}</div>`;
+  const heading=`<div class="th-kicker mb-3">${now.toLocaleDateString('nb-NO',{weekday:'long',day:'numeric',month:'long'})}</div>`;
   if(!items.length){ box.innerHTML=heading+'<div class="empty">Ingen oppgaver i dag</div>'; return; }
   const nowMin=now.getHours()*60+now.getMinutes(); let placed=false;
   let html=heading+'<div class="timeline">';
@@ -820,7 +892,7 @@ function timelineRow(t, now){
   const overdue=t.due && new Date(t.due)<now && t.status!=='done';
   const done=t.status==='done';
   const people=assigneesFor(t, now);
-  const asg=people.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="w-6 h-5 rounded text-[9px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`;}).join('')
+  const asg=people.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="asg-pill" style="border-bottom-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`;}).join('')
     || `<span class="text-[9px] text-slate-400 italic">${isAdmin?'+ sett opp ansvarlig':'Ingen tildelt'}</span>`;
   const fr={once:'Engang',daily:'Daglig',weekly:'Ukentlig',monthly:'Månedlig'}[t.frequency]||'';
   return `<div class="tl-row${done?' tl-done':''}" role="button" tabindex="0" onclick="openTaskDetailModal('${e(t.id)}')">
@@ -831,7 +903,7 @@ function timelineRow(t, now){
         <input type="checkbox" ${done?'checked':''} onclick="event.stopPropagation()" onchange="tlDone('${e(t.id)}',this.checked)" class="w-4 h-4 rounded accent-emerald-500 shrink-0">
         <span class="font-semibold text-sm ${done?'line-through text-slate-400':''}">${e(t.title)}</span>
       </div>
-      <div class="flex items-center gap-1.5 mt-1.5 flex-wrap ${isAdmin?'cursor-pointer hover:opacity-80':''}" ${isAdmin?`onclick="event.stopPropagation();openAssigneePickerToday('${e(t.id)}')" title="Velg hvem som gjør dette i dag"`:''}>${asg}<span class="text-[9px] text-slate-400">${e(fr)}</span>${overdue?'<span class="text-[9px] font-bold text-red-500">OVERTID</span>':''}</div>
+      <div class="flex items-center gap-1.5 mt-1.5 flex-wrap ${isAdmin?'cursor-pointer hover:opacity-80':''}" ${isAdmin?`onclick="event.stopPropagation();openAssigneePickerToday('${e(t.id)}')" title="Velg hvem som gjør dette i dag"`:''}>${asg}<span class="mono text-[9px] text-slate-400 uppercase">${e(fr)}</span>${overdue?'<span class="mono text-[9px] font-bold text-red-500">OVERTID</span>':''}</div>
     </div>
   </div>`;
 }
@@ -845,10 +917,10 @@ function renderKanbanView(){
   ['todo','progress','done'].forEach(s=>{ const el=document.getElementById('kanban-col-'+s); if(el) keep[s]=el.scrollTop; });
   c.innerHTML='';
   const dot=c=>`<span class="w-2 h-2 rounded-full inline-block align-middle mr-1.5" style="background:${c}"></span>`;
-  const cols=[ {id:'todo',title:dot('#e30613')+'Gjøremål'},{id:'progress',title:dot('#2684e6')+'Pågår'},{id:'done',title:dot('#10b981')+'Fullført'} ];
+  const cols=[ {id:'todo',idx:'01',title:dot('#e30613')+'Gjøremål'},{id:'progress',idx:'02',title:dot('#2684e6')+'Pågår'},{id:'done',idx:'03',title:dot('#10b981')+'Fullført'} ];
   cols.forEach(col=>{
     const el=document.createElement('div');
-    el.className="w-[85vw] sm:w-80 lg:w-auto lg:flex-1 lg:min-w-0 flex flex-col h-full shrink-0 lg:shrink bg-slate-100/30 dark:bg-slate-950/40 rounded-2xl p-4 border border-slate-200/50 dark:border-slate-800/40 snap-column";
+    el.className="kb-col w-[85vw] sm:w-80 lg:w-auto lg:flex-1 lg:min-w-0 flex flex-col h-full shrink-0 lg:shrink rounded-2xl p-4 border snap-column";
     el.addEventListener('dragover',e=>{ e.preventDefault(); el.classList.add('border-thansen-500'); });
     el.addEventListener('dragleave',()=>el.classList.remove('border-thansen-500'));
     el.addEventListener('drop',e=>{ el.classList.remove('border-thansen-500'); const d=e.dataTransfer.getData('text/plain'); if(d.startsWith('task:')) moveTaskStatus(d.slice(5), col.id); });
@@ -857,10 +929,10 @@ function renderKanbanView(){
     const buckets = col.id==='todo' ? {today:[],week:[],month:[],later:[]} : null;
     if(buckets) colTasks.forEach(t=>buckets[horizonOf(t)].push(t));
     const headCount = buckets ? buckets.today.length : colTasks.length;
-    el.innerHTML=`<div class="flex items-center justify-between mb-4 shrink-0"><div class="flex items-center space-x-2"><span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300">${col.title}</span><span class="text-xs text-slate-400 font-medium">${headCount}</span></div></div><div class="flex-1 overflow-y-auto space-y-3 pb-4" id="kanban-col-${col.id}"></div>`;
+    el.innerHTML=`<div class="kb-head shrink-0"><span class="kb-idx">${col.idx}</span><span class="kb-name">${col.title}</span><span class="kb-rule"></span><span class="kb-count">${headCount}</span></div><div class="flex-1 overflow-y-auto space-y-3 pb-4" id="kanban-col-${col.id}"></div>`;
     c.appendChild(el);
     const cl=document.getElementById(`kanban-col-${col.id}`);
-    if(!colTasks.length){ cl.innerHTML=`<div class="h-28 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center text-slate-400 text-xs"><i class="fa-solid fa-clipboard-list mb-1.5"></i><span>Ingen oppgaver</span></div>`; }
+    if(!colTasks.length){ cl.innerHTML=`<div class="h-28 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center text-slate-400"><i class="fa-solid fa-clipboard-list mb-1.5"></i><span class="th-kicker">Ingen oppgaver</span></div>`; }
     else if(!buckets) colTasks.forEach(t=>cl.appendChild(createTaskCard(t,false)));
     else {
       buckets.today.forEach(t=>cl.appendChild(createTaskCard(t,false)));
@@ -895,10 +967,11 @@ function horizonOf(t){
 }
 function horizonSection(key,label,tasks){
   const open=localStorage.getItem('thz.'+key)==='1';
+  const idx={week:'01',month:'02',later:'03'}[key]||'';
   const sec=document.createElement('div');
   const head=document.createElement('button');
   head.type='button'; head.className='hz-head'; head.setAttribute('aria-expanded',open?'true':'false');
-  head.innerHTML=`<i class="fa-solid fa-chevron-right hz-chev" aria-hidden="true"></i><span>${label}</span><span class="hz-count">${tasks.length}</span>`;
+  head.innerHTML=`<i class="fa-solid fa-chevron-right hz-chev" aria-hidden="true"></i><span class="hz-idx">${idx}</span><span>${label}</span><span class="hz-rule"></span><span class="hz-count">${tasks.length}</span>`;
   const body=document.createElement('div'); body.className='hz-body'+(open?' open':'');
   const inner=document.createElement('div'); inner.className='hz-inner space-y-3';
   tasks.forEach(t=>inner.appendChild(createTaskCard(t,false)));
@@ -916,10 +989,10 @@ function parseDescriptionToHTML(taskId, desc, readOnly=false){
     let p=line;
     const cm=p.match(/^-\s*\[([ xX])\]\s*(.+)/);
     if(cm){ const on=cm[1].toLowerCase()==='x'; const idx=ci++; out.push(`<label class="flex items-start space-x-2.5 my-1.5 cursor-pointer select-none"><input type="checkbox" onchange="toggleTaskCheckline('${taskId}',${idx})" ${on?'checked':''} ${readOnly?'disabled':''} class="mt-0.5 rounded text-thansen-500 focus:ring-thansen-500 w-4 h-4"><span class="text-xs leading-normal ${on?'line-through text-slate-400':'text-slate-600 dark:text-slate-300'}">${esc(cm[2])}</span></label>`); return; }
-    if(p.includes('!viktig')||p.includes('!important')){ p=p.replace('!viktig','').replace('!important','').trim(); out.push(`<div class="bg-red-500/10 border-l-4 border-thansen-red p-2 my-2 rounded-r text-[11px] text-red-700 dark:text-red-400 font-bold flex items-center space-x-1.5"><i class="fa-solid fa-triangle-exclamation text-thansen-red"></i><span>VIKTIG: ${esc(p)}</span></div>`); return; }
-    if(p.startsWith('?avklare')||p.startsWith('?clarify')){ p=p.replace('?avklare','').replace('?clarify','').trim(); out.push(`<div class="bg-amber-500/10 border-l-4 border-thansen-yellow p-2 my-2 rounded-r text-[11px] text-amber-800 dark:text-amber-400 font-bold flex items-center space-x-1.5"><i class="fa-solid fa-circle-question text-amber-600"></i><span>SPØRSMÅL: ${esc(p)}</span></div>`); return; }
+    if(p.includes('!viktig')||p.includes('!important')){ p=p.replace('!viktig','').replace('!important','').trim(); out.push(`<div class="bg-red-500/10 border dark:border-red-900/40 p-2 my-2 rounded text-[11px] text-red-700 dark:text-red-400 font-bold flex items-center space-x-1.5"><i class="fa-solid fa-triangle-exclamation text-thansen-red"></i><span>VIKTIG: ${esc(p)}</span></div>`); return; }
+    if(p.startsWith('?avklare')||p.startsWith('?clarify')){ p=p.replace('?avklare','').replace('?clarify','').trim(); out.push(`<div class="bg-amber-500/10 border dark:border-amber-900/40 p-2 my-2 rounded text-[11px] text-amber-800 dark:text-amber-400 font-bold flex items-center space-x-1.5"><i class="fa-solid fa-circle-question text-amber-600"></i><span>SPØRSMÅL: ${esc(p)}</span></div>`); return; }
     p=esc(p).replace(/(https?:\/\/[^\s]+)/g,m=>`<a href="${m}" target="_blank" rel="noopener" class="text-thansen-500 dark:text-thansen-yellow hover:underline font-bold"><i class="fa-solid fa-external-link text-[9px] mr-0.5"></i>Lenke</a>`);
-    state.coworkers.forEach(c=>{ if(!/^[A-ZÆØÅ0-9]{4}$/.test(c.tag||'')) return; p=p.replace(new RegExp(`@${c.tag}\\b`,'g'),`<span class="inline-flex items-center px-1.5 py-0.5 rounded-md font-extrabold text-[9px] text-white" style="background-color:${col(c.color)}">@${esc(c.tag)}</span>`); });
+    state.coworkers.forEach(c=>{ if(!/^[A-ZÆØÅ0-9]{4}$/.test(c.tag||'')) return; p=p.replace(new RegExp(`@${c.tag}\\b`,'g'),`<span class="mention" style="border-bottom-color:${col(c.color)}">@${esc(c.tag)}</span>`); });
     if(p.trim()!=='') out.push(`<p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-1">${p}</p>`);
   });
   return out.join('');
@@ -947,12 +1020,12 @@ function createTaskCard(task, weekly=false){
 
   const dot = task.priority==='high'?'bg-red-500':task.priority==='medium'?'bg-amber-500':'bg-emerald-500';
   if(weekly){
-    card.className=`tk-card p-2 rounded-lg border bg-white dark:bg-slate-950 shadow-sm hover:shadow-md transition-all cursor-pointer ${overdue?'border-red-300 dark:border-red-900':'border-slate-200 dark:border-slate-800/80 hover:border-thansen-500/50'}`;
+    card.className=`tk-card p-2 rounded-lg border bg-white dark:bg-slate-950 shadow-sm transition-all cursor-pointer ${overdue?'border-red-300 dark:border-red-900':'border-slate-200 dark:border-slate-800/80 hover:border-thansen-500/50'}`;
     const time = task.due ? new Date(task.due).toLocaleTimeString('nb-NO',{hour:'2-digit',minute:'2-digit'}) : '';
-    let w=''; assigneesFor(task, task.due?new Date(task.due):new Date()).forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-6 h-5 rounded text-[9px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${esc(tag)}">${esc(tag)}</span>`; });
-    const dur = task.duration ? `<span class="text-[9px] text-slate-400">${fmtDur(task.duration)}</span>` : '';
+    let w=''; assigneesFor(task, task.due?new Date(task.due):new Date()).forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="asg-pill" style="border-bottom-color:${col(c.color)}" title="${esc(tag)}">${esc(tag)}</span>`; });
+    const dur = task.duration ? `<span class="mono text-[9px] text-slate-400">${fmtDur(task.duration)}</span>` : '';
     const desc = task.desc ? `<div class="mt-1 space-y-0.5 text-[11px]">${parseDescriptionToHTML(task.id, task.desc)}</div>` : '';
-    card.innerHTML=`<div class="flex items-center justify-between gap-1"><span class="text-[9px] font-bold text-slate-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${time?'kl. '+time:''}</span>${overdue?'<span class="text-[10px] text-red-500 font-extrabold">OVERTID</span>':dur}</div>
+    card.innerHTML=`<div class="flex items-center justify-between gap-1"><span class="mono text-[9px] font-bold text-slate-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${time?'kl. '+time:''}</span>${overdue?'<span class="mono text-[10px] text-red-500 font-extrabold">OVERTID</span>':dur}</div>
       <div class="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight mt-0.5">${esc(task.title)}</div>${desc}
       <div class="flex flex-wrap gap-1 mt-1">${w}</div>`;
     return card;
@@ -963,26 +1036,26 @@ function createTaskCard(task, weekly=false){
   card.addEventListener('dragleave',()=>card.classList.remove('ring-2','ring-thansen-500'));
   card.addEventListener('drop',e=>{ e.preventDefault(); card.classList.remove('ring-2','ring-thansen-500'); const d=e.dataTransfer.getData('text/plain'); if(d.startsWith('coworker:')) addAssigneeOn(task.id, boardDateFor(task), d.slice(9)); });
 
-  let pri = task.priority==='high'?`<span class="bg-red-100 text-red-700 dark:bg-red-950/45 dark:text-red-400 text-[9px] font-bold px-2 py-0.5 rounded uppercase">Kritisk</span>`
-           :task.priority==='medium'?`<span class="bg-amber-100 text-amber-700 dark:bg-amber-950/45 dark:text-amber-400 text-[9px] font-bold px-2 py-0.5 rounded uppercase">Middels</span>`
-           :`<span class="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/45 dark:text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded uppercase">Lav</span>`;
+  let pri = task.priority==='high'?`<span class="pri-tag text-red-700 dark:text-red-400">Kritisk</span>`
+           :task.priority==='medium'?`<span class="pri-tag text-amber-700 dark:text-amber-400">Middels</span>`
+           :`<span class="pri-tag text-emerald-700 dark:text-emerald-400">Lav</span>`;
   const FR={ once:{i:'fa-bullseye',d:'Én gang'},daily:{i:'fa-arrows-spin',d:'Daglig'},weekly:{i:'fa-rotate',d:'Ukentlig'},monthly:{i:'fa-calendar-days',d:'Månedlig'} };
   const fr=FR[task.frequency]||FR.once;
   const bdPeople=assigneesFor(task, boardDateFor(task));
   const assignHint = task.frequency==='once' ? 'Velg hvem som gjør dette' : 'Velg hvem som gjør dette i dag';
   let asg=`<div data-assign class="flex items-center gap-2 flex-wrap ${isAdmin?'cursor-pointer':''}" ${isAdmin?`onclick="event.stopPropagation();openAssigneePickerBoard('${task.id}')" title="${assignHint}"`:''}>`;
-  if(bdPeople.length){ bdPeople.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{name:tag,color:'#64748b'}; asg+=`<div ${isAdmin?`draggable="true" ondragstart="handleAssigneeDragStart(event,'${task.id}','${tag}')" ondragend="handleAssigneeDragEnd()"`:''} class="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-white text-[9px] shadow-sm ring-2 ring-slate-100 dark:ring-slate-900 ${isAdmin?'cursor-grab active:cursor-grabbing hover:scale-110':''} transition-transform relative group/pill" style="background-color:${col(c.color)}" title="${esc(c.name)}">${esc(tag)}${isAdmin?`<button onclick="event.stopPropagation();removeAssigneeBoard('${task.id}','${tag}')" aria-label="Fjern ${esc(tag)}" class="pill-x absolute -top-1 -right-1 hidden group-hover/pill:flex bg-thansen-red rounded-full w-3.5 h-3.5 items-center justify-center text-[8px] text-white">×</button>`:''}</div>`; }); }
+  if(bdPeople.length){ bdPeople.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{name:tag,color:'#64748b'}; asg+=`<div ${isAdmin?`draggable="true" ondragstart="handleAssigneeDragStart(event,'${task.id}','${tag}')" ondragend="handleAssigneeDragEnd()"`:''} class="asg-pill ${isAdmin?'cursor-grab active:cursor-grabbing hover:scale-110':''} transition-transform relative group/pill" style="border-bottom-color:${col(c.color)}" title="${esc(c.name)}">${esc(tag)}${isAdmin?`<button onclick="event.stopPropagation();removeAssigneeBoard('${task.id}','${tag}')" aria-label="Fjern ${esc(tag)}" class="pill-x absolute -top-1 -right-1 hidden group-hover/pill:flex bg-thansen-red rounded-full w-3.5 h-3.5 items-center justify-center text-[8px] text-white">×</button>`:''}</div>`; }); }
   else asg+=`<span class="text-[9px] text-slate-400 italic">${isAdmin?'+ sett opp ansvarlig':'Ingen tildelt'}</span>`;
   asg+='</div>';
 
   card.innerHTML=`<div class="flex flex-col space-y-2.5">
-    <div class="flex items-center justify-between"><div class="flex items-center space-x-1.5 flex-wrap">${pri}<span class="bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-[9px] font-medium px-1.5 py-0.5 rounded flex items-center space-x-1"><i class="fa-solid ${fr.i}"></i><span>${fr.d}</span></span></div>${overdue?'<span class="text-[9px] font-bold text-red-500 flex items-center space-x-1"><i class="fa-solid fa-triangle-exclamation"></i><span>OVERTID</span></span>':''}</div>
-    <div><h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight mb-2">${esc(task.title)}</h4><div class="space-y-1 mt-1">${parseDescriptionToHTML(task.id, task.desc)}</div></div>
-    <div class="pt-2 border-t border-slate-100 dark:border-slate-900 flex items-center justify-between">${asg}<div class="flex items-center space-x-1 text-slate-400 text-[10px]" title="Frist"><i class="fa-regular fa-clock text-[9px]"></i><span>${formatCardDate(task.due)}</span></div></div>
+    <div class="flex items-center justify-between"><div class="flex items-center gap-2 flex-wrap">${pri}<span class="freq-tag"><i class="fa-solid ${fr.i}"></i><span>${fr.d}</span></span></div>${overdue?'<span class="mono text-[9px] font-bold text-red-500 flex items-center space-x-1"><i class="fa-solid fa-triangle-exclamation"></i><span>OVERTID</span></span>':''}</div>
+    <div><h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight mb-2">${esc(task.title)}</h4><div class="space-y-1 mt-1">${parseDescriptionToHTML(task.id, task.desc)}</div></div>
+    <div class="pt-2 border-t border-slate-100 dark:border-slate-900 flex items-center justify-between">${asg}<div class="mono flex items-center space-x-1 text-slate-400 text-[10px]" title="Frist og varighet"><i class="fa-regular fa-clock text-[9px]"></i><span>${formatCardDate(task.due)}</span><span class="opacity-60">/ ${fmtDur(task.duration||30)}</span></div></div>
     <div class="flex lg:hidden items-center justify-between mt-1 pt-2 border-t border-slate-100 dark:border-slate-900">
-      <button onclick="moveStatusBy('${task.id}',-1)" ${STATUSES.indexOf(task.status)<=0?'disabled':''} class="w-10 h-8 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 disabled:opacity-30 flex items-center justify-center" title="Forrige status"><i class="fa-solid fa-chevron-left"></i></button>
+      <button onclick="moveStatusBy('${task.id}',-1)" ${STATUSES.indexOf(task.status)<=0?'disabled':''} class="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 disabled:opacity-30 flex items-center justify-center" title="Forrige status"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i></button>
       <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wide">${STATUS_LABEL[task.status]}</span>
-      <button onclick="moveStatusBy('${task.id}',1)" ${STATUSES.indexOf(task.status)>=STATUSES.length-1?'disabled':''} class="w-10 h-8 rounded-lg bg-thansen-500/10 text-thansen-500 dark:text-thansen-yellow disabled:opacity-30 flex items-center justify-center" title="Neste status"><i class="fa-solid fa-chevron-right"></i></button>
+      <button onclick="moveStatusBy('${task.id}',1)" ${STATUSES.indexOf(task.status)>=STATUSES.length-1?'disabled':''} class="w-10 h-10 rounded-lg bg-thansen-500/10 text-thansen-500 dark:text-thansen-yellow disabled:opacity-30 flex items-center justify-center" title="Neste status"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
     </div>
   </div>`;
   return card;
@@ -1008,7 +1081,7 @@ function isoWeek(date){ const d=new Date(Date.UTC(date.getFullYear(),date.getMon
 function fmtDur(m){ return m>=60 ? (m%60===0?(m/60)+' t':(m/60).toFixed(1).replace('.',',')+' t') : m+' min'; }
 function changeWeek(d){ weekOffset+=d; renderWeeklyPlannerView(); }
 function gotoThisWeek(){ weekOffset=0; renderWeeklyPlannerView(); }
-const NAVBTN="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-800";
+const NAVBTN="navbtn";   // hele className — skinnet ligger i .navbtn i <style>-blokken
 const ROWH=46;  // px per time-rad i ukesplanen
 function renderWeeklyPlannerView(){
   // husk swipe-posisjonen så realtime-/tick-oppdateringer ikke rykker brukeren tilbake til i dag
@@ -1025,10 +1098,10 @@ function renderWeeklyPlannerView(){
 
   const nav=document.createElement('div');
   nav.className='flex items-center justify-between mb-3 max-w-3xl mx-auto';
-  nav.innerHTML=`<button class="${NAVBTN}" onclick="changeWeek(-1)"><i class="fa-solid fa-chevron-left"></i></button>
-    <div class="text-center"><div class="text-sm font-bold">Uke ${isoWeek(monday)}${weekOffset===0?' · denne uken':''}</div>
-      <div class="text-[11px] text-slate-400">${dates[0].toLocaleDateString('nb-NO',{day:'numeric',month:'short'})} – ${dates[5].toLocaleDateString('nb-NO',{day:'numeric',month:'short'})}</div></div>
-    <div class="flex gap-2">${weekOffset!==0?`<button class="${NAVBTN}" onclick="gotoThisWeek()">I dag</button>`:''}<button class="${NAVBTN}" onclick="changeWeek(1)"><i class="fa-solid fa-chevron-right"></i></button></div>`;
+  nav.innerHTML=`<button class="${NAVBTN}" onclick="changeWeek(-1)" aria-label="Forrige uke"><i class="fa-solid fa-chevron-left"></i></button>
+    <div class="text-center"><div class="text-sm font-extrabold tracking-tight">Uke <span class="mono-90">${isoWeek(monday)}</span>${weekOffset===0?' <span class="text-[10px] font-semibold text-slate-400">· denne uken</span>':''}</div>
+      <div class="mono text-[10px] text-slate-400">${dates[0].toLocaleDateString('nb-NO',{day:'numeric',month:'short'})} – ${dates[5].toLocaleDateString('nb-NO',{day:'numeric',month:'short'})}</div></div>
+    <div class="flex gap-2">${weekOffset!==0?`<button class="${NAVBTN}" onclick="gotoThisWeek()">I dag</button>`:''}<button class="${NAVBTN}" onclick="changeWeek(1)" aria-label="Neste uke"><i class="fa-solid fa-chevron-right"></i></button></div>`;
   root.appendChild(nav);
 
   renderWeeklyMobile(root, D, dates);   // mobile (< lg): weekday chips + one-day-at-a-time swipe agenda
@@ -1063,22 +1136,22 @@ function renderWeeklyPlannerView(){
   });
 
   const grid=document.createElement('div');
-  grid.className='grid gap-px bg-slate-200/50 dark:bg-slate-800/50 rounded-xl overflow-hidden min-w-[760px]';
+  grid.className='wk-grid grid gap-px rounded-xl overflow-hidden min-w-[760px]';
   grid.style.gridTemplateColumns='48px repeat(6, minmax(120px,1fr))';
   grid.style.gridTemplateRows='auto repeat('+HOURS.length+', '+ROWH+'px)';
   const gset=(el,col,rowStart,rowSpan)=>{ el.style.gridColumn=String(col); el.style.gridRow= rowSpan?`${rowStart} / span ${rowSpan}`:String(rowStart); grid.appendChild(el); };
-  gset(Object.assign(document.createElement('div'),{className:'bg-slate-50 dark:bg-slate-950'}),1,1);
+  gset(Object.assign(document.createElement('div'),{className:'wk-head'}),1,1);
   dates.forEach((d,i)=>{
     const isToday=d.getTime()===today.getTime();
-    const hd=document.createElement('div'); hd.className='bg-slate-50 dark:bg-slate-950 p-2 '+(isToday?'border-b-2 border-thansen-500':'');
-    hd.innerHTML=`<div class="flex items-center justify-between"><span class="text-xs font-bold ${isToday?'text-thansen-500 dark:text-thansen-yellow':'text-slate-700 dark:text-slate-300'}">${D[i]} ${d.getDate()}.</span><div class="flex items-center gap-1.5">${me?`<button class="text-[10px] text-thansen-500" title="Registrer status (pause, lunsj, fravær …)" onclick="openStatusModal('${ymd(d)}')"><i class="fa-regular fa-clock"></i></button>`:''}${me?`<button class="text-[10px] text-thansen-500" title="Legg igjen notat" onclick="addPlannerNote(${i})"><i class="fa-solid fa-note-sticky"></i></button>`:''}</div></div><div class="th-avail mt-1 flex flex-wrap gap-1" data-day="${i}"></div><div class="th-notes mt-1 space-y-1" data-day="${i}"></div>`;
+    const hd=document.createElement('div'); hd.className='wk-head'+(isToday?' is-today':'');
+    hd.innerHTML=`<div class="flex items-center justify-between"><span class="wk-dayname${isToday?' is-today':''}">${D[i]} ${d.getDate()}.</span><div class="flex items-center gap-1.5">${me?`<button class="text-[10px] text-thansen-500" title="Registrer status (pause, lunsj, fravær …)" aria-label="Registrer status" onclick="openStatusModal('${ymd(d)}')"><i class="fa-regular fa-clock" aria-hidden="true"></i></button>`:''}${me?`<button class="text-[10px] text-thansen-500" title="Legg igjen notat" aria-label="Legg igjen notat" onclick="addPlannerNote(${i})"><i class="fa-solid fa-note-sticky" aria-hidden="true"></i></button>`:''}</div></div><div class="th-avail mt-1 flex flex-wrap gap-1" data-day="${i}"></div><div class="th-notes mt-1 space-y-1" data-day="${i}"></div>`;
     gset(hd,i+2,1);
   });
   HOURS.forEach((h,hi)=>{
-    const g=document.createElement('div'); g.className='bg-slate-50 dark:bg-slate-950 text-[10px] text-slate-400 font-bold text-right pr-1 pt-1'; g.textContent=String(h).padStart(2,'0'); gset(g,1,hi+2);
+    const g=document.createElement('div'); g.className='wk-hour'; g.textContent=String(h).padStart(2,'0'); gset(g,1,hi+2);
     dates.forEach((d,i)=>{
       const open=openRange(i,h);
-      const c=document.createElement('div'); c.className=(open?'bg-white dark:bg-slate-900/40':'bg-slate-100 dark:bg-slate-950/60');
+      const c=document.createElement('div'); c.className=(open?'wk-open':'wk-closed');
       if(open && isAdmin){
         c.addEventListener('dragover',ev=>{ ev.preventDefault(); c.classList.add('ring-2','ring-thansen-500','ring-inset'); });
         c.addEventListener('dragleave',()=>c.classList.remove('ring-2','ring-thansen-500','ring-inset'));
@@ -1105,7 +1178,7 @@ function renderWeeklyPlannerView(){
     const box=grid.querySelector(`.th-avail[data-day="${i}"]`); if(!box) return;
     statusesOn(d).filter(s=>s.allDay && (!filterTag || s.tag===filterTag)).forEach(s=>{
       const def=STATUS_DEF[s.kind], can=canEditStatus(s.tag);
-      const el=document.createElement('span'); el.className='inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded';
+      const el=document.createElement('span'); el.className='mono inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded';
       el.style.color=def.color; el.style.background=def.color+'1a';
       el.innerHTML=`<i class="fa-solid ${def.icon} text-[8px]"></i>${esc(s.tag)} · ${esc(def.label.toLowerCase())}${can?` <button onclick="deleteStaffStatus('${s.id}')" class="ml-0.5 hover:text-thansen-red" title="Fjern">✕</button>`:''}`;
       box.appendChild(el);
@@ -1115,7 +1188,7 @@ function renderWeeklyPlannerView(){
     const box=grid.querySelector(`.th-notes[data-day="${i}"]`); if(!box) return;
     state.notes.filter(n=>n.weekday===i).forEach(n=>{
       const canDel=me&&(n.author===me.tag||isAdmin);
-      const el=document.createElement('div'); el.className='rounded p-1 text-[10px] relative'; el.style.background=(n.color||'#ffd400')+'22'; el.style.border=`1px solid ${(n.color||'#ffd400')}55`;
+      const el=document.createElement('div'); el.className='wk-note rounded p-1 relative'; el.style.background=(n.color||'#ffd400')+'22'; el.style.border=`1px solid ${(n.color||'#ffd400')}55`;
       el.innerHTML=`<div class="text-slate-700 dark:text-slate-200 pr-3 whitespace-pre-wrap">${esc(n.body)}</div>${canDel?`<button onclick="deletePlannerNote('${n.id}')" aria-label="Slett notat" class="tap-x absolute top-0 right-0.5 text-slate-400 text-[10px]">✕</button>`:''}`;
       box.appendChild(el);
     });
@@ -1159,13 +1232,13 @@ function agendaTaskRow(t, dateObj, now){
   const dot=t.priority==='high'?'bg-red-500':t.priority==='medium'?'bg-amber-500':'bg-emerald-500';
   const overdue=t.due && new Date(t.due)<now && t.status!=='done';
   const ppl=assigneesFor(t, dateObj);
-  let pills=ppl.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="w-6 h-5 rounded text-[9px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`;}).join('');
+  let pills=ppl.map(tag=>{const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'};return `<span class="asg-pill" style="border-bottom-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`;}).join('');
   if(!ppl.length) pills=`<span class="text-[9px] text-slate-400 italic">${isAdmin?'+ sett opp ansvarlig':'Ingen tildelt'}</span>`;
   return `<div class="flex items-start gap-2 p-2 rounded-xl bg-white dark:bg-slate-950 border ${overdue?'border-red-300 dark:border-red-900':'border-slate-200 dark:border-slate-800/80'}" role="button" tabindex="0" onclick="openTaskDetailModal('${e(t.id)}')">
-    <div class="text-[11px] font-bold text-slate-400 w-9 shrink-0 pt-0.5">${e(time)}</div>
+    <div class="mono text-[10px] font-bold text-slate-400 w-9 shrink-0 pt-0.5">${e(time)}</div>
     <span class="w-1.5 h-1.5 rounded-full ${dot} mt-1.5 shrink-0"></span>
     <div class="min-w-0 flex-1">
-      <div class="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">${e(t.title)}${overdue?' <span class="text-[9px] font-bold text-red-500">OVERTID</span>':''}</div>
+      <div class="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">${e(t.title)}${overdue?' <span class="mono text-[9px] font-bold text-red-500">OVERTID</span>':''}</div>
       <div class="flex items-center gap-1 mt-1 flex-wrap ${isAdmin?'cursor-pointer':''}" ${isAdmin?`onclick="event.stopPropagation();openAssigneePickerYmd('${e(t.id)}','${ymd(dateObj)}')" title="Velg hvem som gjør dette"`:''}>${pills}</div>
     </div>
   </div>`;
@@ -1173,10 +1246,10 @@ function agendaTaskRow(t, dateObj, now){
 function agendaStatusRow(s){
   const e=T.esc, d=STATUS_DEF[s.kind], c=state.coworkers.find(x=>x.tag===s.tag)||{name:s.tag,color:'#64748b'}, can=canEditStatus(s.tag);
   return `<div class="flex items-center gap-2 p-2 rounded-xl border" style="border-color:${d.color}66;background:repeating-linear-gradient(45deg, ${d.color}10, ${d.color}10 6px, ${d.color}1f 6px, ${d.color}1f 12px)">
-    <div class="text-[11px] font-bold w-9 shrink-0" style="color:${d.color}">${e(fmtMin(s.startMin))}</div>
+    <div class="mono text-[10px] font-bold w-9 shrink-0" style="color:${d.color}">${e(fmtMin(s.startMin))}</div>
     <i class="fa-solid ${d.icon}" style="color:${d.color}"></i>
     <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">${e(d.label)}</span>
-    <span class="w-6 h-5 rounded text-[9px] font-bold text-white inline-flex items-center justify-center" style="background:${col(c.color)}" title="${e(c.name)}">${e(s.tag)}</span>
+    <span class="asg-pill" style="border-bottom-color:${col(c.color)}" title="${e(c.name)}">${e(s.tag)}</span>
     ${can?`<button onclick="deleteStaffStatus('${s.id}')" aria-label="Fjern status" class="tap-x ml-auto text-slate-400 hover:text-thansen-red text-xs" title="Fjern">✕</button>`:''}
   </div>`;
 }
@@ -1184,16 +1257,16 @@ function buildDayPage(dateObj, i, D){
   const isToday=ymd(dateObj)===ymd(new Date()), now=new Date();
   const page=document.createElement('section'); page.setAttribute('data-daypage', String(i));
   page.className='snap-center shrink-0 w-[85vw] max-w-sm bg-slate-100/40 dark:bg-slate-950/40 rounded-2xl p-3 border border-slate-200/60 dark:border-slate-800/50';
-  const pills=statusesOn(dateObj).filter(s=>s.allDay && (!filterTag||s.tag===filterTag)).map(s=>{ const d=STATUS_DEF[s.kind], can=canEditStatus(s.tag); return `<span class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded" style="color:${d.color};background:${d.color}1a"><i class="fa-solid ${d.icon} text-[8px]"></i>${esc(s.tag)} · ${esc(d.label.toLowerCase())}${can?` <button onclick="deleteStaffStatus('${s.id}')" aria-label="Fjern status" class="tap-x hover:text-thansen-red">✕</button>`:''}</span>`; }).join('');
-  const noteEls=state.notes.filter(n=>n.weekday===i).map(n=>{ const canDel=me&&(n.author===me.tag||isAdmin); return `<span class="inline-flex items-start gap-1 text-[10px] px-1.5 py-0.5 rounded" style="background:${col(n.color,'#ffd400')+'22'};border:1px solid ${col(n.color,'#ffd400')}55"><span class="whitespace-pre-wrap">${esc(n.body)}</span>${canDel?`<button onclick="deletePlannerNote('${n.id}')" aria-label="Slett notat" class="tap-x text-slate-400">✕</button>`:''}</span>`; }).join('');
+  const pills=statusesOn(dateObj).filter(s=>s.allDay && (!filterTag||s.tag===filterTag)).map(s=>{ const d=STATUS_DEF[s.kind], can=canEditStatus(s.tag); return `<span class="mono inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded" style="color:${d.color};background:${d.color}1a"><i class="fa-solid ${d.icon} text-[8px]"></i>${esc(s.tag)} · ${esc(d.label.toLowerCase())}${can?` <button onclick="deleteStaffStatus('${s.id}')" aria-label="Fjern status" class="tap-x hover:text-thansen-red">✕</button>`:''}</span>`; }).join('');
+  const noteEls=state.notes.filter(n=>n.weekday===i).map(n=>{ const canDel=me&&(n.author===me.tag||isAdmin); return `<span class="wk-note inline-flex items-start gap-1 px-1.5 py-0.5 rounded" style="background:${col(n.color,'#ffd400')+'22'};border:1px solid ${col(n.color,'#ffd400')}55"><span class="whitespace-pre-wrap">${esc(n.body)}</span>${canDel?`<button onclick="deletePlannerNote('${n.id}')" aria-label="Slett notat" class="tap-x text-slate-400">✕</button>`:''}</span>`; }).join('');
   const items=[ ...weekTasksForDay(dateObj).map(t=>({t})), ...statusesOn(dateObj).filter(s=>!s.allDay && (!filterTag||s.tag===filterTag)).map(s=>({status:s})) ].sort((a,b)=>weekItemTime(a,dateObj)-weekItemTime(b,dateObj));
   const body = items.length
     ? items.map(it=> it.status ? agendaStatusRow(it.status) : agendaTaskRow(it.t, dateObj, now)).join('')
     : `<div class="text-center text-slate-400 text-xs py-8"><i class="fa-regular fa-calendar-check text-2xl mb-1.5 block opacity-50"></i>Ingenting planlagt</div>`;
   page.innerHTML=`
     <div class="flex items-center justify-between mb-2">
-      <div class="text-sm font-bold ${isToday?'text-thansen-500 dark:text-thansen-yellow':'text-slate-800 dark:text-slate-100'}">${D[i]} ${dateObj.getDate()}. <span class="text-[10px] font-medium text-slate-400">${dateObj.toLocaleDateString('nb-NO',{month:'short'})}${isToday?' · i dag':''}</span></div>
-      ${me?`<div class="flex items-center gap-1"><button onclick="openStatusModal('${ymd(dateObj)}')" class="w-7 h-7 rounded-lg bg-white dark:bg-slate-900 text-thansen-500 border border-slate-200 dark:border-slate-800" title="Registrer status"><i class="fa-regular fa-clock text-xs"></i></button><button onclick="addPlannerNote(${i})" class="w-7 h-7 rounded-lg bg-white dark:bg-slate-900 text-thansen-500 border border-slate-200 dark:border-slate-800" title="Notat"><i class="fa-solid fa-note-sticky text-xs"></i></button></div>`:''}
+      <div class="text-sm font-bold ${isToday?'text-thansen-500 dark:text-thansen-yellow':'text-slate-800 dark:text-slate-100'}">${D[i]} <span class="mono-90">${dateObj.getDate()}.</span> <span class="text-[10px] font-medium text-slate-400">${dateObj.toLocaleDateString('nb-NO',{month:'short'})}${isToday?' · i dag':''}</span></div>
+      ${me?`<div class="flex items-center gap-1"><button onclick="openStatusModal('${ymd(dateObj)}')" class="w-10 h-10 rounded-lg bg-white dark:bg-slate-900 text-thansen-500 border border-slate-200 dark:border-slate-800" title="Registrer status" aria-label="Registrer status"><i class="fa-regular fa-clock text-xs" aria-hidden="true"></i></button><button onclick="addPlannerNote(${i})" class="w-10 h-10 rounded-lg bg-white dark:bg-slate-900 text-thansen-500 border border-slate-200 dark:border-slate-800" title="Notat" aria-label="Legg igjen notat"><i class="fa-solid fa-note-sticky text-xs" aria-hidden="true"></i></button></div>`:''}
     </div>
     ${(pills||noteEls)?`<div class="flex flex-wrap gap-1 mb-2">${pills}${noteEls}</div>`:''}
     <div class="space-y-2">${body}</div>`;
@@ -1203,7 +1276,7 @@ function renderWeeklyMobile(root, D, dates){
   clearTimeout(window.__wkChipT);   // cancel any pending chip-sync from a prior render
   const wrap=document.createElement('div'); wrap.className='lg:hidden';
   const chips=document.createElement('div'); chips.className='flex gap-1.5 mb-2 overflow-x-auto pb-1';
-  chips.innerHTML=D.map((dn,i)=>`<button data-daychip="${i}" onclick="weekGotoDay(${i})" class="shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300">${dn}<span class="opacity-60 ml-1">${dates[i].getDate()}</span></button>`).join('');
+  chips.innerHTML=D.map((dn,i)=>`<button data-daychip="${i}" onclick="weekGotoDay(${i})" class="shrink-0 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300">${dn}<span class="mono-90 opacity-60 ml-1">${dates[i].getDate()}</span></button>`).join('');
   wrap.appendChild(chips);
   const swipe=document.createElement('div'); swipe.id='weekly-swipe'; swipe.className='flex gap-3 overflow-x-auto snap-x-container scroll-smooth pb-2';
   dates.forEach((d,i)=> swipe.appendChild(buildDayPage(d,i,D)));
@@ -1233,14 +1306,14 @@ function createWeeklyBlock(t, span, cellDate){
   // NB: ikke kall denne 'col' — det skygger for den globale col()-fargevaskeren (krasjet ukesvisningen)
   const prio=t.priority==='high'?'#ef4444':t.priority==='medium'?'#f59e0b':'#10b981';
   const blk=document.createElement('div');
-  blk.className='relative overflow-hidden rounded-lg border bg-white dark:bg-slate-950 shadow-sm cursor-pointer';
+  blk.className='wk-blk relative overflow-hidden rounded-lg border cursor-pointer';
   if(t.priority==='high') blk.style.borderColor='#ef4444';   // prioritet vises ellers med prikken i headeren
   const people=assigneesFor(t, cellDate);
-  let w=''; people.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="w-6 h-5 rounded text-[9px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`; });
+  let w=''; people.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; w+=`<span class="asg-pill" style="border-bottom-color:${col(c.color)}" title="${e(tag)}">${e(tag)}</span>`; });
   if(!people.length && isAdmin) w='<span class="text-[10px] text-slate-400 italic">+ sett opp</span>';
   const md=t.desc?`<div class="mt-0.5 space-y-0.5 text-[10px] leading-tight">${parseDescriptionToHTML(t.id,t.desc)}</div>`:'';
   blk.innerHTML=`<div class="p-1.5">
-    <div class="flex items-center gap-1 text-[9px] font-bold text-slate-400"><span class="w-1.5 h-1.5 rounded-full" style="background-color:${prio}"></span>${String(startH).padStart(2,'0')}–${String(endH).padStart(2,'0')}</div>
+    <div class="mono flex items-center gap-1 text-[9px] font-bold text-slate-400"><span class="w-1.5 h-1.5 rounded-full" style="background-color:${prio}"></span>${String(startH).padStart(2,'0')}–${String(endH).padStart(2,'0')}</div>
     <div class="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">${e(t.title)}</div>${md}
     <div class="wk-assign flex flex-wrap gap-1 mt-1 ${isAdmin?'cursor-pointer':''}" title="${isAdmin?'Velg hvem som gjør dette denne dagen':''}">${w}</div>
   </div>${isAdmin?'<div class="wk-resize" title="Dra for å endre varighet"></div>':''}`;
@@ -1270,9 +1343,9 @@ function createStatusChip(s){
   el.style.borderColor=d.color+'66';
   el.style.background=`repeating-linear-gradient(45deg, ${d.color}14, ${d.color}14 6px, ${d.color}26 6px, ${d.color}26 12px)`;
   el.innerHTML=`<div class="p-1.5">
-    <div class="flex items-center gap-1 text-[9px] font-bold" style="color:${d.color}"><i class="fa-solid ${d.icon}"></i>${e(fmtMin(s.startMin))}</div>
+    <div class="mono flex items-center gap-1 text-[9px] font-bold" style="color:${d.color}"><i class="fa-solid ${d.icon}"></i>${e(fmtMin(s.startMin))}</div>
     <div class="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">${e(d.label)}</div>
-    <div class="flex flex-wrap gap-1 mt-1"><span class="w-6 h-5 rounded text-[9px] font-bold text-white inline-flex items-center justify-center" style="background-color:${col(c.color)}" title="${e(c.name)}">${e(s.tag)}</span></div>
+    <div class="flex flex-wrap gap-1 mt-1"><span class="asg-pill" style="border-bottom-color:${col(c.color)}" title="${e(c.name)}">${e(s.tag)}</span></div>
   </div>${can?`<button onclick="deleteStaffStatus('${s.id}')" aria-label="Fjern status" class="tap-x absolute top-0.5 right-0.5 text-slate-400 hover:text-thansen-red text-[10px] leading-none" title="Fjern">✕</button>`:''}`;
   return el;
 }
@@ -1309,10 +1382,10 @@ function openTaskDetailModal(taskId){
   const t=state.tasks.find(x=>x.id===taskId); if(!t) return; currentTaskId=taskId;
   document.getElementById('detail-task-title').innerText=t.title;
   document.getElementById('detail-task-due').innerText=formatCardDate(t.due);
-  const pb=document.getElementById('detail-task-priority'); pb.className="text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wide";
-  if(t.priority==='high'){ pb.innerText='Kritisk'; pb.classList.add('bg-red-100','text-red-700'); }
-  else if(t.priority==='medium'){ pb.innerText='Middels'; pb.classList.add('bg-amber-100','text-amber-700'); }
-  else { pb.innerText='Lav'; pb.classList.add('bg-emerald-100','text-emerald-700'); }
+  const pb=document.getElementById('detail-task-priority'); pb.className="pri-tag";
+  if(t.priority==='high'){ pb.innerText='Kritisk'; pb.classList.add('text-red-700','dark:text-red-400'); }
+  else if(t.priority==='medium'){ pb.innerText='Middels'; pb.classList.add('text-amber-700','dark:text-amber-400'); }
+  else { pb.innerText='Lav'; pb.classList.add('text-emerald-700','dark:text-emerald-400'); }
   const devDays=['','man','tir','ons','tor','fre','lør','søn'];
   const devs=Object.keys(t.dayTimes||{}).filter(k=>k!=='d').sort().map(k=>devDays[+k]+' '+t.dayTimes[k]).join(', ');
   document.getElementById('detail-task-frequency').innerText=(({once:'Én gang',daily:'Daglig',weekly:'Ukentlig',monthly:'Månedlig'}[t.frequency])||t.frequency)+' · '+fmtDur(t.duration||30)+(devs?' · '+devs:'');
@@ -1322,10 +1395,10 @@ function openTaskDetailModal(taskId){
   const bd=boardDateFor(t);
   const bdAsg=assigneesFor(t, bd);
   const bdLabel = ymd(bd)===ymd(new Date()) ? 'i dag' : bd.toLocaleDateString('nb-NO',{day:'numeric',month:'short'});
-  if(bdAsg.length) bdAsg.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{name:tag,color:'#64748b'}; const b=document.createElement('div'); b.className="px-3 py-1.5 rounded-lg text-white text-xs font-bold flex items-center space-x-1.5 shadow-sm"; b.style.backgroundColor=col(c.color); b.innerHTML=`<span>${esc(tag)}</span><span class="text-[10px] opacity-80">(${esc((c.name||tag).split(' ')[0])})</span>`; ac.appendChild(b); });
+  if(bdAsg.length) bdAsg.forEach(tag=>{ const c=state.coworkers.find(x=>x.tag===tag)||{name:tag,color:'#64748b'}; const b=document.createElement('div'); b.className="asg-chip"; b.style.borderBottomColor=col(c.color); b.innerHTML=`<span>${esc(tag)}</span><span class="text-[10px] opacity-80">(${esc((c.name||tag).split(' ')[0])})</span>`; ac.appendChild(b); });
   else ac.innerHTML=`<span class="text-xs text-slate-400 italic">Ingen satt opp ${esc(bdLabel)}.</span>`;
   document.getElementById('detail-assignee-hint').textContent =
-    (t.frequency==='once') ? 'Velg ansvarlige på tavla eller i ukesplanen.' : 'Ansvarlige settes per dag — endre i ukesplanen eller på tavla.';
+    (t.frequency==='once') ? 'Velg ansvarlige på tavla eller i ukesplanen.' : 'Ansvarlige settes per dag, endre i ukesplanen eller på tavla.';
   document.getElementById('detail-task-status-select').value=t.status;
   document.getElementById('detail-btn-delete').classList.toggle('hidden',!isAdmin);
   document.getElementById('detail-btn-edit').classList.toggle('hidden',!isAdmin);
@@ -1444,7 +1517,7 @@ function renderAlertsList(){
   if(!state.alerts.length){ l.innerHTML=`<div class="h-48 flex flex-col items-center justify-center text-center text-slate-400"><i class="fa-solid fa-square-check text-slate-300 dark:text-slate-800 text-3xl mb-2"></i><p class="text-xs font-bold text-slate-500">Alt er i rute!</p></div>`; return; }
   state.alerts.forEach(al=>{ const crit=al.type==='critical'; const c=document.createElement('div');
     c.className=`p-4 rounded-xl border flex flex-col space-y-2 ${crit?'bg-red-50/50 border-red-200 dark:bg-red-950/15 dark:border-red-900/40 pulse-alert':'bg-amber-50/50 border-amber-200 dark:bg-amber-950/15 dark:border-amber-900/40'}`;
-    let ah=''; (al.assignees||[]).forEach(tag=>{ const cw=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; ah+=`<div class="w-6 h-5 rounded text-[9px] font-bold text-white flex items-center justify-center" style="background-color:${col(cw.color)}">${esc(tag)}</div>`; });
+    let ah=''; (al.assignees||[]).forEach(tag=>{ const cw=state.coworkers.find(x=>x.tag===tag)||{color:'#64748b'}; ah+=`<div class="asg-pill" style="border-bottom-color:${col(cw.color)}">${esc(tag)}</div>`; });
     c.innerHTML=`<div class="flex items-center justify-between"><span class="text-[10px] font-bold uppercase tracking-wider ${crit?'text-red-600 dark:text-red-400':'text-amber-700 dark:text-amber-400'}">${esc(al.title)}</span><div class="flex items-center -space-x-1">${ah}</div></div><p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">${esc(al.message)}</p><div class="flex items-center justify-end pt-1"><button onclick="focusOnTaskCard('${al.taskId}')" class="text-[10px] text-thansen-500 dark:text-thansen-yellow font-bold hover:underline">Vis i plan</button></div>`;
     l.appendChild(c);
   });
@@ -1463,8 +1536,8 @@ function col(s, d='#004595'){ s=String(s==null?'':s).trim(); return /^#[0-9a-fA-
 function showToast(message, color='#004595'){
   const t=document.createElement('div');
   t.setAttribute('role','status');   // leses opp av skjermlesere
-  t.className="fixed bottom-5 left-5 z-50 glass border border-slate-200/80 dark:border-slate-800 shadow-2xl p-4 rounded-xl flex items-center space-x-3 transition-all duration-300 transform translate-y-20 opacity-0";
-  t.innerHTML=`<div class="w-2 h-2 rounded-full shrink-0" style="background-color:${col(color)}"></div><p class="text-xs font-bold text-slate-700 dark:text-slate-200">${esc(message)}</p>`;
+  t.className="tk-toast fixed bottom-5 left-5 z-50 flex items-center space-x-3 transition-all duration-300 transform translate-y-20 opacity-0";
+  t.innerHTML=`<div class="w-2 h-2 rounded-full shrink-0" style="background-color:${col(color)}"></div><p class="text-xs font-semibold text-slate-700 dark:text-slate-200">${esc(message)}</p>`;
   document.body.appendChild(t);
   setTimeout(()=>t.classList.remove('translate-y-20','opacity-0'),50);
   setTimeout(()=>{ t.classList.add('translate-y-20','opacity-0'); setTimeout(()=>t.remove(),300); },3500);

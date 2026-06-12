@@ -10,11 +10,11 @@ Ansatte i Thansen-butikken i Fredrikstad: butikkmedarbeidere, butikksjef og IT/d
 
 ## Product Purpose
 
-Thansen Verktøykasse er en intern verktøysuite på GitHub Pages med Supabase-backend: ButikkPlanlegger (oppgavetavle, ukesplan, fravær), Velodex (sykkelregister med strekkoder og Thansen-sync) og Kunnskapsbase (wiki + Snarveier for XAL-kommandoer og lenker). Suksess er at verktøyet forsvinner inn i arbeidsoppgaven: raskt, gjenkjennelig, til å stole på.
+Thansen Internverktøy (tidligere «Verktøykasse») er en intern verktøysuite på GitHub Pages med Supabase-backend: ButikkPlanlegger (oppgavetavle, ukesplan, fravær), Velodex (sykkelregister med strekkoder og Thansen-sync) og Kunnskapsbase (wiki + Snarveier for XAL-kommandoer og lenker). Suksess er at verktøyet forsvinner inn i arbeidsoppgaven: raskt, gjenkjennelig, til å stole på.
 
 ## Brand Personality
 
-Praktisk, presis, på-merket. Thansen-identiteten (blå #004595, gul #ffd400, rød #e30613) brukes funksjonelt, ikke dekorativt. Tonen er rolig og verktøyaktig; moderne følelse kommer fra presisjon og respons (mikro-interaksjoner), ikke fra effekter.
+Presis, mekanisk, pålitelig — «Teknisk presisjon» (verkstedstegningen som designspråk, redesign 2026-06-12). Thansen-identiteten (blå #004595, gul #ffd400, rød #e30613) brukes funksjonelt. To registre: hub-en (index.html) er merkevareflate med opplevelseslag (Three.js-skjemategning, GSAP-koreografi, levende data) — verktøyene skal nås på under ett sekund uansett; verktøysidene er rolige produktflater der moderne følelse kommer fra presisjon og respons (mikro-interaksjoner), ikke fra effekter.
 
 ## Anti-references
 

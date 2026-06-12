@@ -4,111 +4,207 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#004595">
-<title>Kunnskapsbase · Thansen Verktøykasse</title>
+<title>Kunnskapsbase · Thansen Internverktøy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800;900&family=Martian+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+  /* «Teknisk presisjon»: spesifikasjonsark-estetikk. Fargeverdiene speiler tokens i shared.js (kanonisk kilde). */
   :root{ --bg:#0f1318; --panel:#161b22; --card:#1b212a; --card-h:#222a35; --line:#2a323d;
-    --text:#f1f4f8; --muted:#97a3b2; --primary:#2684e6; --primary-700:#004595; --cta:#1aa64d; --yellow:#ffd400; }
+    --text:#f1f4f8; --muted:#97a3b2; --primary:#2684e6; --primary-700:#004595;
+    --yellow:#ffd400; --ok:#1aa64d;
+    --font-ui:'Schibsted Grotesk',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --font-mono:'Martian Mono',ui-monospace,'Cascadia Mono','Roboto Mono',monospace;
+    --radius:10px; --radius-lg:14px; --blue-line:rgba(38,132,230,.28); --grid:rgba(38,132,230,.07);
+    --dur:180ms; --dur-slow:240ms; --ease:cubic-bezier(.16,1,.3,1); }
   *{box-sizing:border-box;} html,body{margin:0;}
   body{background:var(--bg);color:var(--text);
-    font:400 16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh;}
+    font:400 15.5px/1.55 var(--font-ui);min-height:100vh;}
   .topbar{height:4px;background:var(--primary-700);position:sticky;top:0;z-index:11;}
-  header{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);
-    position:sticky;top:4px;background:var(--bg);z-index:10;}
-  .hub{color:var(--muted);text-decoration:none;font-weight:600;}.hub:hover{color:var(--text);}
-  .brand{font-weight:800;letter-spacing:.12em;}
+  /* tittelfelt-header: mono-indeks over displaynavn, blåkopi-rutenett i bakgrunnen */
+  header{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--line);
+    position:sticky;top:4px;background:var(--bg);z-index:10;flex-wrap:wrap;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:26px 26px;}
+  .hub{color:var(--muted);text-decoration:none;font:600 13px var(--font-ui);transition:color var(--dur);}
+  .hub:hover{color:var(--text);}
+  .brand-block{display:flex;flex-direction:column;gap:3px;min-width:0;}
+  .brand-idx{font:600 10px/1 var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+  .brand{font:800 19px/1 var(--font-ui);letter-spacing:.06em;}
   .sp{margin-left:auto;}
   button,input,select,textarea{font:inherit;}
-  .btn{background:var(--primary);color:#fff;border:0;border-radius:10px;padding:9px 14px;font-weight:700;font-size:14px;cursor:pointer;}
-  .btn.cta{background:var(--cta);} .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text);}
-  .chipbtn{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:6px 11px;font-size:13px;font-weight:600;cursor:pointer;}
+  button:not(:disabled){transition:background var(--dur),border-color var(--dur),color var(--dur),filter var(--dur),transform var(--dur) var(--ease),box-shadow var(--dur);}
+  button:not(:disabled):active{transform:scale(.98);}
+  .btn{background:var(--th-blue-btn,#1666c4);color:#fff;border:1px solid transparent;border-radius:var(--radius);padding:9px 15px;font:600 14px var(--font-ui);cursor:pointer;}
+  .btn:hover{filter:brightness(1.08);}
+  .btn.cta{background:var(--yellow);color:#10151b;font-weight:700;}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text);}
+  .btn.ghost:hover{filter:none;border-color:var(--primary);}
+  .chipbtn{display:inline-flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:6px 12px;font:600 13px var(--font-ui);cursor:pointer;}
   .chipbtn:hover{border-color:var(--primary);color:var(--text);}
-  main{max-width:860px;margin:0 auto;padding:22px 16px 70px;}
-  .search{display:flex;gap:10px;flex-wrap:wrap;}
-  .search input[type=search]{flex:1;min-width:200px;background:var(--panel);color:var(--text);border:1px solid var(--line);
-    border-radius:12px;padding:13px 16px;font-size:16px;}
-  .search input:focus,select:focus,textarea:focus,input:focus{outline:none;border-color:var(--primary);}
-  select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:0 12px;font-size:14px;}
-  .cats{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 6px;}
-  .cats .on{background:var(--primary);border-color:var(--primary);color:#fff;}
-  .results{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
-  .res{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer;
-    transition:background .12s,border-color .12s,transform .18s cubic-bezier(.16,1,.3,1);}
-  .res:hover{background:var(--card-h);border-color:#3a4656;transform:translateY(-1px);}
+  main{max-width:880px;margin:0 auto;padding:26px 16px 80px;}
+  /* søket er heltinnen på siden: stort felt med understrek som vokser ved fokus */
+  .search{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch;}
+  .q-wrap{position:relative;flex:1;min-width:230px;}
+  .q-ic{position:absolute;left:15px;top:50%;width:18px;height:18px;margin-top:-9px;color:var(--muted);pointer-events:none;transition:color var(--dur);}
+  .q-wrap:focus-within .q-ic{color:var(--primary);}
+  .q-wrap::after{content:"";position:absolute;left:2px;right:2px;bottom:0;height:2px;border-radius:2px;background:var(--primary);
+    transform:scaleX(0);transform-origin:left;transition:transform var(--dur-slow) var(--ease);pointer-events:none;}
+  .q-wrap:focus-within::after{transform:scaleX(1);}
+  .search input[type=search]{width:100%;background:var(--panel);color:var(--text);border:1px solid var(--line);
+    border-radius:var(--radius);padding:14px 16px 14px 44px;font:500 18px/1.4 var(--font-ui);transition:border-color var(--dur);}
+  .search input[type=search]::placeholder{color:var(--muted);font-weight:400;}
+  .search .btn{font-size:15px;padding:9px 18px;}
+  input:focus,select:focus,textarea:focus{outline:none;}
+  .search input[type=search]:focus{border-color:#3a4656;}
+  .cats{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 4px;}
+  .cats .on,.sc-cats .on{background:var(--th-blue-btn,#1666c4);border-color:var(--th-blue-btn,#1666c4);color:#fff;}
+  /* mono trefflinje, komponert som et lite tittelfelt med hårlinje */
+  .res-count{font:600 10.5px/1 var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    margin:14px 2px 0;min-height:11px;display:flex;align-items:center;gap:10px;}
+  .res-count:not(:empty)::after{content:"";flex:1;height:1px;background:var(--line);}
+  .results{display:flex;flex-direction:column;gap:10px;margin-top:12px;}
+  .res{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 44px 14px 16px;cursor:pointer;
+    transition:background var(--dur),border-color var(--dur),transform var(--dur) var(--ease);}
+  .res:hover{background:var(--card-h);border-color:#3a4656;transform:translateX(2px);}
+  .res::after{content:"";position:absolute;right:20px;top:50%;width:8px;height:8px;margin-top:-5px;
+    border-top:2px solid var(--primary);border-right:2px solid var(--primary);transform:rotate(45deg);
+    opacity:0;transition:opacity var(--dur),right var(--dur) var(--ease);}
+  .res:hover::after,.res:focus-visible::after{opacity:1;right:15px;}
   /* nye treff fader inn — tilstandsskifte, kort og avgrenset */
-  .results .res{animation:th-fade-up .18s cubic-bezier(.16,1,.3,1) backwards;}
+  .results .res{animation:th-fade-up .18s var(--ease) backwards;}
   .results .res:nth-child(2){animation-delay:25ms}.results .res:nth-child(3){animation-delay:50ms}
   .results .res:nth-child(4){animation-delay:75ms}.results .res:nth-child(5){animation-delay:100ms}
   .results .res:nth-child(6){animation-delay:125ms}.results .res:nth-child(7){animation-delay:150ms}
   .results .res:nth-child(n+8){animation:none;}
-  .res h3{margin:0 0 4px;font-size:16px;}
-  .res .cat{font-size:11px;color:#9ecbff;border:1px solid #1f3a5c;border-radius:999px;padding:1px 8px;}
-  .res .snip{color:var(--muted);font-size:13px;margin-top:6px;}
-  .res .snip mark{background:rgba(255,212,0,.22);color:var(--yellow);border-radius:3px;padding:0 2px;}
-  .empty{color:var(--muted);text-align:center;padding:40px 10px;}
-  /* article + markdown */
+  .res-top{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .res h3{margin:0;font:700 16px/1.3 var(--font-ui);min-width:0;}
+  .cat{font:600 10px/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:#9ecbff;
+    border:1px solid var(--blue-line);border-radius:5px;padding:3px 7px;flex-shrink:0;}
+  .res .snip{color:var(--muted);font-size:13px;margin-top:7px;line-height:1.5;}
+  .res .snip mark{background:rgba(255,212,0,.18);color:var(--yellow);border-radius:3px;padding:0 2px;}
+  .empty{color:var(--muted);text-align:center;padding:40px 10px;font-size:14px;}
+  .sk-row{height:62px;}
+  /* innloggingsporten: spesifikasjonspanel med hjørnemerker og rutenett */
+  .empty.gate{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);
+    padding:44px 20px 40px;display:flex;flex-direction:column;align-items:center;gap:10px;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:26px 26px;}
+  .empty.gate::before{content:"";position:absolute;top:10px;left:10px;width:14px;height:14px;border-top:1px solid var(--blue-line);border-left:1px solid var(--blue-line);pointer-events:none;}
+  .empty.gate::after{content:"";position:absolute;bottom:10px;right:10px;width:14px;height:14px;border-bottom:1px solid var(--blue-line);border-right:1px solid var(--blue-line);pointer-events:none;}
+  .gate-ic-box{width:46px;height:46px;border:1px solid var(--line);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--muted);background:var(--card);margin-bottom:4px;}
+  .gate-ic{font-size:22px;}
+  .empty.gate h3{margin:2px 0 0;font:700 18px/1.25 var(--font-ui);color:var(--text);}
+  .empty.gate p{margin:0 0 10px;max-width:42ch;}
+  /* modaler: ark med tittelfelt-hode og hjørnemerker (samme språk som .th-dialog) */
   .modal{position:fixed;inset:0;background:rgba(6,9,13,.72);display:none;align-items:center;justify-content:center;z-index:50;padding:14px;}
   .modal.show{display:flex;animation:th-fade-in .18s ease-out;}
-  .modal.show .sheet{animation:th-scale-in .24s cubic-bezier(.16,1,.3,1);}
-  button:not(:disabled){transition:background .12s,border-color .12s,color .12s,transform .12s;}
-  button:not(:disabled):active{transform:scale(.97);}
-  .sheet{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--primary);border-radius:18px;
-    width:100%;max-width:680px;max-height:92vh;overflow:auto;}
-  .sheet .hd{display:flex;align-items:flex-start;gap:10px;padding:18px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);}
-  .sheet .hd h2{margin:0;font-size:20px;flex:1;}
+  .modal.show .sheet{animation:th-scale-in .24s var(--ease);}
+  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);
+    width:100%;max-width:680px;max-height:92vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.55);}
+  .sheet .hd{display:flex;align-items:flex-start;gap:10px;padding:16px 20px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:2;}
+  .sheet .hd::before{content:"";position:absolute;top:8px;left:8px;width:12px;height:12px;border-top:1px solid var(--blue-line);border-left:1px solid var(--blue-line);pointer-events:none;}
+  .hd-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;}
+  .hd-k{display:flex;align-items:center;gap:8px;font:600 10px/1 var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+  .hd-k::after{content:"";flex:1;height:1px;background:var(--line);}
+  .sheet .hd h2{margin:0;font:700 19px/1.25 var(--font-ui);}
   .sheet .bd{padding:18px 20px;}
-  .sheet .ft{display:flex;gap:10px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--line);flex-wrap:wrap;}
-  .x{background:transparent;border:0;color:var(--muted);font-size:20px;cursor:pointer;}
-  .meta{color:var(--muted);font-size:12px;}
-  .md h2,.md h3,.md h4{margin:16px 0 6px;line-height:1.25;} .md h2{font-size:18px;} .md h3{font-size:16px;} .md h4{font-size:14px;color:var(--muted);}
-  .md p{margin:8px 0;} .md ul{margin:8px 0;padding-left:20px;} .md li{margin:3px 0;}
-  .md a{color:var(--primary);} .md code{background:#0c1422;padding:0 4px;border-radius:4px;font-size:13px;}
-  .md strong{color:#fff;}
-  .sources{margin-top:18px;border-top:1px solid var(--line);padding-top:12px;}
-  .sources h4{margin:0 0 8px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
-  .sources a{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:10px;
-    padding:7px 11px;margin:0 8px 8px 0;color:var(--primary);text-decoration:none;font-size:13px;font-weight:600;}
-  .sources a:hover{border-color:var(--primary);}
-  .row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
-  .row label{color:var(--muted);font-size:13px;}
-  .row input,.row select,.row textarea{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px;width:100%;}
-  .row textarea{resize:vertical;}
-  .note{background:#3a2a14;border:1px solid #7c5a1e;color:#f6d18f;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:12px;}
-  .sug{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;}
-  .sug .who{color:var(--muted);font-size:11px;margin-top:6px;}
-  .badge{background:var(--cta);color:#fff;border-radius:999px;font-size:11px;font-weight:700;padding:1px 7px;}
+  .sheet .ft{position:relative;display:flex;gap:10px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--line);flex-wrap:wrap;}
+  .sheet .ft::after{content:"";position:absolute;bottom:8px;right:8px;width:12px;height:12px;border-bottom:1px solid var(--blue-line);border-right:1px solid var(--blue-line);pointer-events:none;}
+  .x{background:transparent;border:1px solid transparent;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;
+    width:32px;height:32px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .x:hover{border-color:var(--line);color:var(--text);}
+  .meta{color:var(--muted);font-size:12.5px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+  .m-date{font:500 11px/1 var(--font-mono);letter-spacing:.04em;color:var(--muted);}
+  /* artikkelkropp: 68ch målbredde, rolig hierarki */
+  .md{max-width:68ch;}
+  .md h2,.md h3,.md h4,.md h5{margin:18px 0 6px;line-height:1.25;}
+  .md h2{font-size:19px;font-weight:800;padding-bottom:6px;border-bottom:1px solid var(--line);}
+  .md h3{font-size:16px;font-weight:700;}
+  .md h4{font-size:14px;font-weight:700;}
+  .md h5{font:600 11px/1.4 var(--font-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .md p{margin:8px 0;} .md ul{margin:8px 0;padding-left:22px;} .md li{margin:4px 0;}
+  .md li::marker{color:var(--primary);}
+  .md a{color:var(--primary);text-underline-offset:2px;}
+  .md code{font:500 12.5px var(--font-mono);background:#0c1422;border:1px solid var(--line);padding:1px 5px;border-radius:5px;}
+  .md strong{color:#fff;font-weight:700;}
+  /* kilder som punkterte ledelinjer: etikett ……… ÅPNE */
+  .sources{margin-top:20px;border-top:1px solid var(--line);padding-top:14px;max-width:68ch;}
+  .sources:empty{display:none;}
+  .sources h4{margin:0 0 8px;font:600 10.5px/1 var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+  .sources a{display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none;font:600 13.5px var(--font-ui);padding:8px 2px;border-radius:6px;}
+  .src-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color var(--dur);}
+  .src-dots{flex:1;min-width:20px;height:1px;border-bottom:1px dotted #3a4656;transform:translateY(3px);transition:border-color var(--dur);}
+  .src-go{display:inline-flex;align-items:center;gap:5px;font:600 10px/1 var(--font-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--primary);flex:none;}
+  .sources a:hover .src-label{color:#fff;}
+  .sources a:hover .src-dots{border-color:var(--primary);}
+  /* skjema: mono mikro-etiketter, felt som .th-f */
+  .row{display:flex;flex-direction:column;gap:6px;margin-bottom:13px;}
+  .row label{color:var(--muted);font:600 10.5px/1.3 var(--font-mono);letter-spacing:.09em;text-transform:uppercase;}
+  .row .hint{font:400 12px var(--font-ui);color:var(--muted);margin-top:-2px;}
+  .row input,.row select,.row textarea{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;font:400 15px var(--font-ui);width:100%;transition:border-color var(--dur),box-shadow var(--dur);}
+  .row input:focus,.row select:focus,.row textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(38,132,230,.18);}
+  .row textarea{resize:vertical;line-height:1.5;}
+  #fBody,#lkCmd{font:400 13px/1.6 var(--font-mono);}
+  #lkSort{font:500 13px var(--font-mono);}
+  .note{background:rgba(255,212,0,.07);border:1px solid rgba(255,212,0,.35);color:#f6d18f;border-radius:var(--radius);padding:10px 12px;font-size:13px;margin-bottom:12px;display:block;}
+  .sug{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:13px 15px;margin-bottom:10px;}
+  .sug .who{color:var(--muted);font:500 10.5px/1 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;margin-top:8px;}
+  .badge{background:var(--yellow);color:#10151b;border-radius:999px;font:700 10.5px/1 var(--font-mono);padding:3px 7px;}
   /* ---------- snarveier (interne verktøy: lenker + XAL-kommandoer) ---------- */
-  #shortcuts{margin:18px 0 6px;}
-  .sc-head{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
-  .sc-head h2,.arts-label{margin:0;font-size:13px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);}
-  .arts-label{display:block;margin-top:20px;}
-  .sc-cats{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 2px;}
-  .sc-cats .on{background:var(--primary);border-color:var(--primary);color:#fff;}
-  .sc-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));margin-top:10px;}
-  .sc-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;
-    transition:border-color .12s,transform .18s cubic-bezier(.16,1,.3,1);}
-  .sc-card:hover{border-color:#3a4656;transform:translateY(-1px);}
-  .sc-cmd.sc-ok{border-color:#1aa64d;color:#7ce0a3;}
-  .sc-cmd.sc-ok code{color:#7ce0a3;}
+  #shortcuts{margin:20px 0 6px;}
+  .sc-head{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+  .sc-head h2,.arts-label{margin:0;display:flex;align-items:center;gap:10px;font:800 14px/1 var(--font-ui);letter-spacing:.05em;text-transform:uppercase;color:var(--text);}
+  .sec-idx{font:600 10px/1 var(--font-mono);letter-spacing:.12em;color:var(--muted);}
+  .sc-head .sp{flex:1;height:1px;background:var(--line);margin-left:0;}
+  .arts-label{margin-top:26px;}
+  .arts-label::after{content:"";flex:1;height:1px;background:var(--line);}
+  .sc-cats{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px;}
+  .sc-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));margin-top:10px;}
+  .sc-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;display:flex;flex-direction:column;gap:9px;
+    transition:border-color var(--dur),transform var(--dur) var(--ease),box-shadow var(--dur);}
+  .sc-card:hover{border-color:#3a4656;transform:translateY(-1px);box-shadow:0 6px 18px -12px rgba(0,0,0,.6);}
   .sc-top{display:flex;align-items:center;gap:8px;}
-  .sc-title{font-weight:700;font-size:14px;flex:1;min-width:0;}
-  .sc-kind{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:999px;padding:1px 8px;border:1px solid #1f3a5c;color:#9ecbff;flex-shrink:0;}
-  .sc-desc{color:var(--muted);font-size:12.5px;line-height:1.45;flex:1;}
-  .sc-open{display:inline-flex;align-items:center;justify-content:center;gap:7px;color:var(--primary);text-decoration:none;font-size:13px;font-weight:600;border:1px solid var(--line);border-radius:9px;padding:9px 11px;min-height:40px;}
-  .sc-open:hover{border-color:var(--primary);}
-  .sc-cmd{display:flex;align-items:center;gap:8px;background:transparent;border:1px solid var(--line);border-radius:9px;padding:9px 11px;color:var(--text);cursor:pointer;min-height:40px;text-align:left;font:inherit;font-size:13px;}
+  .sc-title{font:700 14px/1.3 var(--font-ui);flex:1;min-width:0;}
+  .sc-kind{font:600 9.5px/1 var(--font-mono);letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--blue-line);color:#9ecbff;border-radius:5px;padding:3px 6px;flex-shrink:0;}
+  .sc-desc{color:var(--muted);font-size:12.5px;line-height:1.5;flex:1;}
+  .sc-open{display:inline-flex;align-items:center;justify-content:center;gap:7px;color:#7db8f0;text-decoration:none;font:600 13px var(--font-ui);border:1px solid var(--line);border-radius:8px;padding:9px 11px;min-height:40px;transition:border-color var(--dur),background var(--dur);}
+  .sc-open:hover{border-color:var(--primary);background:rgba(38,132,230,.07);}
+  /* kommandorad: mono-kommando bak et CSS-tegnet ledetegn (ikke del av det som kopieres) */
+  .sc-cmd{display:flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 12px;color:var(--text);cursor:pointer;min-height:40px;text-align:left;font:inherit;}
+  .sc-cmd::before{content:">";font:700 11px/1 var(--font-mono);color:var(--primary);flex:none;transition:color var(--dur);}
   .sc-cmd:hover{border-color:var(--primary);}
-  .sc-cmd code{font-family:ui-monospace,monospace;font-size:12.5px;background:#0c1422;border-radius:4px;padding:2px 6px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .sc-cmd .th-ic{color:var(--muted);flex-shrink:0;}
+  .sc-cmd code{font:500 12px/1.5 var(--font-mono);color:var(--text);background:transparent;padding:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sc-cmd .th-ic{color:var(--muted);flex-shrink:0;transition:color var(--dur);}
+  .sc-cmd:hover .th-ic{color:var(--primary);}
+  .sc-cmd.sc-ok{border-color:var(--ok);background:rgba(26,166,77,.08);}
+  .sc-cmd.sc-ok::before{color:var(--ok);}
+  .sc-cmd.sc-ok code{color:#7ce0a3;}
+  .sc-cmd.sc-ok .th-ic{color:#7ce0a3;}
+  .sc-cmd .ok-draw{stroke-dasharray:26;stroke-dashoffset:26;animation:th-draw .35s var(--ease) forwards;}
   .sc-edit{background:transparent;border:1px solid var(--line);color:var(--muted);width:30px;height:30px;border-radius:8px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
   .sc-edit:hover{border-color:var(--primary);color:var(--text);}
+  @media (hover:none){
+    .chipbtn{min-height:40px;padding:9px 14px}
+    .x,.sc-edit{min-width:40px;min-height:40px}
+  }
+  @media (max-width:640px){
+    header{gap:10px;padding:10px 14px;}
+    .brand{font-size:16px;}
+    main{padding:18px 12px 70px;}
+    .search input[type=search]{font-size:16px;padding:12px 14px 12px 42px;}
+  }
 </style>
 </head>
 <body>
 <div class="topbar"></div>
 <header>
   <a class="hub" href="index.html">‹ Hjem</a>
-  <span class="brand">KUNNSKAPSBASE</span>
+  <div class="brand-block">
+    <span class="brand-idx">03 / Wiki + snarveier</span>
+    <span class="brand">KUNNSKAPSBASE</span>
+  </div>
   <span class="sp"></span>
   <button id="sugBtn" class="chipbtn" style="display:none" onclick="openSuggestions()">Forslag <span id="sugCount" class="badge">0</span></button>
   <button id="lockBtn" class="chipbtn" onclick="toggleAuth()">Logg inn</button>
@@ -116,28 +212,35 @@
 
 <main>
   <div class="search">
-    <input type="search" id="q" placeholder="Søk i kunnskapsbasen — f.eks. «vindusvisker passform», «dekkmønster vinter», «takboks montering»…" autocomplete="off">
+    <div class="q-wrap">
+      <svg class="q-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="q" placeholder="Søk i kunnskapsbasen: «vindusvisker passform», «dekkmønster vinter», «takboks montering»…" autocomplete="off">
+    </div>
     <button class="btn" onclick="doSearch()">Søk</button>
     <button id="newBtn" class="btn cta" style="display:none" onclick="newEntry()">+ Ny</button>
   </div>
   <section id="shortcuts" hidden>
     <div class="sc-head">
-      <h2>Snarveier</h2>
+      <h2><span class="sec-idx">01 /</span> Snarveier</h2>
       <span class="sp"></span>
       <button id="scNew" class="chipbtn" style="display:none" onclick="openLinkEditor(null)">+ Ny snarvei</button>
     </div>
     <div class="sc-cats" id="scCats"></div>
     <div class="sc-grid" id="scGrid"></div>
-    <h2 class="arts-label">Artikler</h2>
+    <h2 class="arts-label"><span class="sec-idx">02 /</span> Artikler</h2>
   </section>
   <div class="cats" id="cats"></div>
+  <div class="res-count" id="resCount" aria-live="polite"></div>
   <div class="results" id="results"></div>
 </main>
 
 <!-- Article -->
 <div class="modal" role="dialog" aria-modal="true" id="articleModal">
   <div class="sheet">
-    <div class="hd"><h2 id="aTitle"></h2><button class="x" aria-label="Lukk" onclick="closeModal('articleModal')">✕</button></div>
+    <div class="hd">
+      <div class="hd-t"><span class="hd-k">Artikkel</span><h2 id="aTitle"></h2></div>
+      <button class="x" aria-label="Lukk" onclick="closeModal('articleModal')">✕</button>
+    </div>
     <div class="bd">
       <div class="meta" id="aMeta"></div>
       <div class="md" id="aBody" style="margin-top:12px"></div>
@@ -150,14 +253,17 @@
 <!-- Editor (manager) -->
 <div class="modal" role="dialog" aria-modal="true" id="editModal">
   <div class="sheet">
-    <div class="hd"><h2 id="eTitle">Ny artikkel</h2><button class="x" aria-label="Lukk" onclick="closeModal('editModal')">✕</button></div>
+    <div class="hd">
+      <div class="hd-t"><span class="hd-k">Redigering</span><h2 id="eTitle">Ny artikkel</h2></div>
+      <button class="x" aria-label="Lukk" onclick="closeModal('editModal')">✕</button>
+    </div>
     <div class="bd">
       <div class="note" id="eNote" style="display:none"></div>
       <div class="row"><label for="fTitle">Tittel</label><input type="text" id="fTitle"></div>
       <div class="row"><label for="fCat">Kategori</label><select id="fCat"></select></div>
       <div class="row"><label for="fTags">Tagger (komma)</label><input type="text" id="fTags" placeholder="dekk, vinter, pigg"></div>
-      <div class="row"><label for="fBody">Innhold (markdown: # overskrift, **fet**, - punkt, [tekst](lenke))</label><textarea id="fBody" rows="10"></textarea></div>
-      <div class="row"><label for="fSources">Kilder — én per linje: «Tittel | https://…»</label><textarea id="fSources" rows="3" placeholder="Produsentens monteringsguide | https://…"></textarea></div>
+      <div class="row"><label for="fBody">Innhold</label><span class="hint">Markdown: # overskrift, **fet**, - punktliste, [tekst](lenke)</span><textarea id="fBody" rows="10"></textarea></div>
+      <div class="row"><label for="fSources">Kilder</label><span class="hint">Én per linje: «Tittel | https://…»</span><textarea id="fSources" rows="3" placeholder="Produsentens monteringsguide | https://…"></textarea></div>
     </div>
     <div class="ft"><button class="btn ghost" onclick="closeModal('editModal')">Avbryt</button><button class="btn" onclick="saveArticle()">Lagre</button></div>
   </div>
@@ -166,10 +272,13 @@
 <!-- Suggest (others) -->
 <div class="modal" role="dialog" aria-modal="true" id="sugModal">
   <div class="sheet" style="max-width:520px">
-    <div class="hd"><h2 id="sgTitle">Foreslå endring</h2><button class="x" aria-label="Lukk" onclick="closeModal('sugModal')">✕</button></div>
+    <div class="hd">
+      <div class="hd-t"><span class="hd-k">Forslag</span><h2 id="sgTitle">Foreslå endring</h2></div>
+      <button class="x" aria-label="Lukk" onclick="closeModal('sugModal')">✕</button>
+    </div>
     <div class="bd">
       <p class="meta" id="sgFor"></p>
-      <div class="row"><label for="sgBody">Ditt forslag (hva bør legges til / endres?)</label><textarea id="sgBody" rows="6" placeholder="Beskriv forslaget — gjerne med lenker til kilder."></textarea></div>
+      <div class="row"><label for="sgBody">Ditt forslag</label><span class="hint">Hva bør legges til eller endres? Gjerne med lenker til kilder.</span><textarea id="sgBody" rows="6" placeholder="Beskriv forslaget her."></textarea></div>
     </div>
     <div class="ft"><button class="btn ghost" onclick="closeModal('sugModal')">Avbryt</button><button class="btn cta" onclick="submitSuggest()">Send forslag</button></div>
   </div>
@@ -178,7 +287,10 @@
 <!-- Suggestions list (manager) -->
 <div class="modal" role="dialog" aria-modal="true" id="sugListModal">
   <div class="sheet" style="max-width:560px">
-    <div class="hd"><h2>Innsendte forslag</h2><button class="x" aria-label="Lukk" onclick="closeModal('sugListModal')">✕</button></div>
+    <div class="hd">
+      <div class="hd-t"><span class="hd-k">Til vurdering</span><h2>Innsendte forslag</h2></div>
+      <button class="x" aria-label="Lukk" onclick="closeModal('sugListModal')">✕</button>
+    </div>
     <div class="bd" id="sugList"></div>
   </div>
 </div>
@@ -186,7 +298,10 @@
 <!-- Link editor (manager) -->
 <div class="modal" role="dialog" aria-modal="true" id="linkModal">
   <div class="sheet" style="max-width:520px">
-    <div class="hd"><h2 id="lkTitle">Ny snarvei</h2><button class="x" aria-label="Lukk" onclick="closeModal('linkModal')">✕</button></div>
+    <div class="hd">
+      <div class="hd-t"><span class="hd-k">Snarvei</span><h2 id="lkTitle">Ny snarvei</h2></div>
+      <button class="x" aria-label="Lukk" onclick="closeModal('linkModal')">✕</button>
+    </div>
     <div class="bd">
       <div class="row"><label for="lkName">Tittel</label><input type="text" id="lkName" placeholder="f.eks. Lagerstatus i XAL"></div>
       <div class="row"><label for="lkKind">Type</label><select id="lkKind" onchange="linkKindChange()"><option value="url">Lenke (nettside)</option><option value="xal">XAL-kommando</option></select></div>
@@ -200,7 +315,7 @@
   </div>
 </div>
 
-<script src="shared.js?v=15"></script>
+<script src="shared.js?v=16"></script>
 <script>
 const T=window.THelper, $=id=>document.getElementById(id), esc=s=>T.esc(s);
 const CATS=['Bildeler','Dekk','Sykkel','Bilvask','Barneseter','Takbokser','Takstativ','Vindusviskere','Verktøy','MC','Internt','XAL','Generelt'];
@@ -281,10 +396,10 @@ async function copyCmd(id, btn){
   const l=links.find(x=>x.id===id); if(!l||!l.command) return;
   try{ await navigator.clipboard.writeText(l.command); }
   catch(e){ const ta=document.createElement('textarea'); ta.value=l.command; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
-  // gledespunkt: knappen kvitterer med grønn hake et øyeblikk
+  // gledespunkt: knappen kvitterer med grønn ramme og en hake som tegnes opp (th-draw)
   if(btn && !btn.dataset.flash){
     const orig=btn.innerHTML; btn.dataset.flash='1'; btn.classList.add('sc-ok');
-    btn.innerHTML=`<code>${esc(l.command)}</code><svg class="th-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>`;
+    btn.innerHTML=`<code>${esc(l.command)}</code><svg class="th-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="ok-draw" d="M4 12.5l5 5L20 6.5"/></svg>`;
     setTimeout(()=>{ btn.classList.remove('sc-ok'); btn.innerHTML=orig; delete btn.dataset.flash; },1200);
   }
   T.toast('Kopiert: '+l.command);
@@ -329,16 +444,25 @@ function debounce(){ clearTimeout(tmr); tmr=setTimeout(doSearch,250); }
 async function doSearch(){
   renderLinks();   // snarveiene filtreres av samme søkefelt, klient-side
   if(!T.getUser()){
-    $('results').innerHTML=`<div class="empty">Kunnskapsbasen er intern — <button class="btn" onclick="toggleAuth().then(doSearch)">Logg inn</button> for å lese.</div>`;
+    $('resCount').textContent='';
+    $('results').innerHTML=`<div class="empty gate">
+      <span class="gate-ic-box" aria-hidden="true">${T.icon('lock','gate-ic')}</span>
+      <span class="th-kicker">Intern tilgang</span>
+      <h3>Kunnskapsbasen er intern</h3>
+      <p>Logg inn med ansattkoden din for å lese artikler og snarveier.</p>
+      <button class="btn" onclick="toggleAuth().then(doSearch)">Logg inn</button>
+    </div>`;
     return;
   }
+  if(!$('results').childElementCount){ $('results').innerHTML='<div class="th-skel sk-row"></div><div class="th-skel sk-row"></div><div class="th-skel sk-row"></div>'; }
   const q=$('q').value; let data;
   try{ data = await T.rpcAuth('wiki_search',{ p_q:q, p_category:cat||null }); }
-  catch(error){ if(error.message==='no-auth') return; $('results').innerHTML=`<div class="empty">${/function|does not exist|schema/i.test(error.message)?'Kjør wiki_v2.sql i Supabase først.':esc(error.message)}</div>`; return; }
+  catch(error){ if(error.message==='no-auth') return; $('resCount').textContent=''; $('results').innerHTML=`<div class="empty">${/function|does not exist|schema/i.test(error.message)?'Kjør wiki_v2.sql i Supabase først.':esc(error.message)}</div>`; return; }
   const rows=data||[];
+  $('resCount').textContent = rows.length + ((q.trim()||cat) ? ' treff' : ' artikler');
   if(!rows.length){ $('results').innerHTML='<div class="empty">Ingen treff. Prøv et annet søkeord'+(canManage?' eller lag en ny artikkel.':', eller foreslå en ny artikkel.')+'</div>'; return; }
   $('results').innerHTML = rows.map(r=>`<div class="res" role="button" tabindex="0" onclick="openArticle('${r.id}')">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h3>${esc(r.title)}</h3><span class="cat">${esc(r.category)}</span></div>
+    <div class="res-top"><h3>${esc(r.title)}</h3><span class="cat">${esc(r.category)}</span></div>
     <div class="snip">${highlight(r.snippet)}</div></div>`).join('');
 }
 
@@ -347,10 +471,10 @@ async function openArticle(id){
   let a=articles[id];
   if(!a){ try{ a=await T.rpcAuth('get_article',{p_id:id}); articles[id]=a; }catch(e){ if(e.message!=='no-auth') T.toast('Feil: '+e.message); return; } }
   $('aTitle').textContent=a.title;
-  $('aMeta').innerHTML=`<span class="cat">${esc(a.category)}</span> · Sist endret ${new Date(a.updated_at).toLocaleDateString('nb-NO',{day:'numeric',month:'short',year:'numeric'})}${a.updated_by?' av '+esc(a.updated_by):''}`;
+  $('aMeta').innerHTML=`<span class="cat">${esc(a.category)}</span><span class="m-date">Sist endret ${new Date(a.updated_at).toLocaleDateString('nb-NO',{day:'numeric',month:'short',year:'numeric'})}</span>${a.updated_by?`<span>av ${esc(a.updated_by)}</span>`:''}`;
   $('aBody').innerHTML=md(a.body);
   const src=Array.isArray(a.sources)?a.sources:[];
-  $('aSources').innerHTML = src.length ? `<h4>Gode kilder</h4>`+src.map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener">${T.icon('external')} ${esc(s.label||s.url)}</a>`).join('') : '';
+  $('aSources').innerHTML = src.length ? `<h4>Gode kilder</h4>`+src.map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener"><span class="src-label">${esc(s.label||s.url)}</span><span class="src-dots" aria-hidden="true"></span><span class="src-go">Åpne ${T.icon('external')}</span></a>`).join('') : '';
   $('aActions').innerHTML = canManage
     ? `<button class="btn ghost" onclick="delArticle('${a.id}')" style="color:#ff9b9b">Slett</button><button class="btn" onclick="openEditor('${a.id}')">Rediger</button>`
     : `<button class="btn cta" onclick="openSuggest('${a.id}')">Foreslå endring</button>`;
@@ -388,7 +512,7 @@ function openSuggest(articleId){
   suggestForId=articleId||null;
   const a=articleId?articles[articleId]:null; suggestForTitle=a?a.title:null;
   $('sgTitle').textContent = articleId ? 'Foreslå endring' : 'Foreslå ny artikkel';
-  $('sgFor').textContent = articleId ? ('Gjelder: '+(a?a.title:'')) : 'Ny artikkel — beskriv hva den bør inneholde.';
+  $('sgFor').textContent = articleId ? ('Gjelder: '+(a?a.title:'')) : 'Ny artikkel: beskriv hva den bør inneholde.';
   $('sgBody').value=''; closeModal('articleModal'); show('sugModal'); setTimeout(()=>$('sgBody').focus(),30);
 }
 async function submitSuggest(){

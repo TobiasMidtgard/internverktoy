@@ -3,114 +3,689 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#004595">
-<title>Thansen Verktøykasse</title>
+<meta name="theme-color" content="#06101f">
+<title>Thansen Internverktøy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800;900&family=Martian+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/DrawSVGPlugin.min.js"></script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.min.js"}}</script>
+<script>
+/* Intro-flagget settes FØR første maling, så preloaderen dekker heroen uten blink.
+   Vises kun ved første besøk per økt (sessionStorage 'th.intro'), aldri ved redusert bevegelse. */
+(function(){
+  var reduce=false; try{reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+  var seen=false; try{seen=sessionStorage.getItem('th.intro')==='1';}catch(e){}
+  window.__thReduce=reduce;
+  window.__thIntro=!seen&&!reduce;
+  if(window.__thIntro){ try{sessionStorage.setItem('th.intro','1');}catch(e){} document.documentElement.classList.add('intro'); }
+})();
+</script>
 <style>
-  :root{
-    --bg:#0f1318; --panel:#161b22; --card:#1b212a; --card-h:#222a35;
-    --line:#2a323d; --text:#f1f4f8; --muted:#97a3b2;
-    --primary:#2684e6; --primary-700:#004595; --cta:#1aa64d; --yellow:#ffd400;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;height:100%;}
-  body{
-    background:var(--bg);
-    color:var(--text);font:400 16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-    min-height:100%;display:flex;flex-direction:column;
-  }
-  .topbar{height:4px;background:var(--primary-700);}
-  .adminbar{display:flex;justify-content:flex-end;padding:10px 14px 0;}
-  .admin-chip{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:999px;
-    padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
-    transition:border-color .12s,color .12s,transform .12s;}
-  .admin-chip:active{transform:scale(.97);}
-  .admin-chip:hover{border-color:var(--primary);color:var(--text);}
-  .admin-chip.on{border-color:var(--cta);color:#9be0b0;}
-  .admin-chip .lo{color:var(--muted);font-weight:500;}
-  header{padding:14px 22px 12px;text-align:center;}
-  .brand{font-weight:800;letter-spacing:.08em;font-size:20px;display:inline-flex;align-items:center;gap:2px;}
-  .brand .sep{color:var(--yellow);}
-  .brand .k{color:var(--muted);font-weight:700;}
-  .tag{color:var(--muted);font-size:14px;margin-top:6px;}
-  main{flex:1;width:100%;max-width:920px;margin:0 auto;padding:24px 18px 60px;}
-  .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));}
-  .tool{
-    display:flex;flex-direction:column;gap:8px;text-decoration:none;color:inherit;
-    background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;
-    position:relative;overflow:hidden;
-    transition:transform .18s cubic-bezier(.16,1,.3,1),background .12s ease,border-color .12s ease;
-    animation:th-fade-up .22s cubic-bezier(.16,1,.3,1) backwards;
-  }
-  .tool:nth-child(2){animation-delay:40ms;} .tool:nth-child(3){animation-delay:80ms;}
-  .tool:active{transform:translateY(0) scale(.99);}
-  .tool::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--primary);
-    opacity:0;transition:opacity .12s ease;}
-  .tool:hover{transform:translateY(-2px);background:var(--card-h);border-color:#3a4656;}
-  .tool:hover::before{opacity:1;}
-  .tool .ico{line-height:1;}
-  .tool .ico svg{width:30px;height:30px;color:var(--primary);}
-  .tool .name{font-weight:700;font-size:18px;}
-  .tool .desc{color:var(--muted);font-size:14px;}
-  .tool .go{margin-top:auto;color:var(--primary);font-size:13px;font-weight:700;transition:transform .18s cubic-bezier(.16,1,.3,1);}
-  .tool:hover .go{transform:translateX(3px);}
-  .tool.soon{opacity:.5;pointer-events:none;border-style:dashed;}
-  footer{text-align:center;color:var(--muted);font-size:12px;padding:18px;}
-  @media(max-width:520px){ .grid{grid-template-columns:1fr;} }
+/* Malingskritiske token-fallbacks: shared.js lastes nederst i body og kan henge på nett —
+   preloader/hero må ha riktige farger ved aller første maling. shared.js' injiserte
+   :root (lagt til sist i head) overstyrer disse når den er klar. */
+:root{--th-brand:#004595;--th-brand-2:#2684e6;--th-yellow:#ffd400;--th-bg:#0f1318;--th-panel:#161b22;
+  --th-line:#2a323d;--th-text:#f1f4f8;--th-muted:#97a3b2;--th-blue-btn:#1666c4;--th-blue-deep:#06101f;
+  --th-blue-line:rgba(38,132,230,.28);--th-grid:rgba(38,132,230,.07);--th-radius:10px;--th-radius-lg:14px;
+  --th-font-ui:'Schibsted Grotesk',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --th-font-mono:'Martian Mono',ui-monospace,'Cascadia Mono','Roboto Mono',monospace;
+  --th-dur:180ms;--th-dur-slow:240ms;--th-ease:cubic-bezier(0.16,1,0.3,1)}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--th-bg,#0f1318);color:var(--th-text,#f1f4f8);font:400 16px/1.55 var(--th-font-ui,system-ui,sans-serif);-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--th-font-mono)}
+
+/* hopp-lenke */
+.skip{position:fixed;top:10px;left:10px;z-index:100001;background:var(--th-yellow);color:#06101f;font:700 13px var(--th-font-ui);padding:11px 16px;border-radius:8px;text-decoration:none;transform:translateY(-300%);transition:transform var(--th-dur) var(--th-ease)}
+.skip:focus-visible{transform:none}
+
+/* ---------- preloader (ren CSS/rAF, GSAP er aldri en forutsetning) ---------- */
+#preloader{position:fixed;inset:0;z-index:99990;display:none}
+html.intro #preloader{display:block}
+#preloader .pre-half{position:absolute;left:0;right:0;height:50.5%;background:var(--th-blue-deep);transition:transform .55s cubic-bezier(.76,0,.24,1)}
+.pre-top{top:0}.pre-bot{bottom:0}
+.pre-core{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;transition:opacity .28s ease}
+#preloader.pre-done .pre-top{transform:translateY(-101%)}
+#preloader.pre-done .pre-bot{transform:translateY(101%)}
+#preloader.pre-done .pre-core{opacity:0}
+#preloader.pre-gone{display:none!important}
+.pre-svg{width:118px;height:118px;color:var(--th-brand-2)}
+.pre-svg .pd{stroke-dasharray:100;stroke-dashoffset:100}
+#preloader.pre-run .pre-svg .pd{animation:th-draw 1s var(--th-ease) forwards}
+.pre-row{display:flex;align-items:baseline;gap:14px}
+.pre-label{font:600 10px var(--th-font-mono);letter-spacing:.14em;color:var(--th-muted);text-transform:uppercase}
+.pre-pct{font:600 13px var(--th-font-mono);color:var(--th-yellow);letter-spacing:.08em;min-width:5ch;text-align:right}
+
+/* ---------- toppstripe ---------- */
+.hub-top{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px clamp(16px,4vw,44px)}
+.wordmark{font:800 15px/1 var(--th-font-ui);letter-spacing:.1em;text-decoration:none;color:var(--th-text)}
+.wordmark .dot{color:var(--th-yellow)}
+.wordmark .k{color:var(--th-muted)}
+.top-right{display:flex;align-items:center;gap:16px}
+.clockbox{display:flex;align-items:center;gap:10px;font:500 12px var(--th-font-mono);color:var(--th-muted);letter-spacing:.06em;white-space:nowrap}
+.clockbox b{color:var(--th-text);font-weight:600}
+#clockS{display:inline-block;min-width:2ch}
+.clock-sep{width:1px;height:12px;background:var(--th-line)}
+.admin-chip{background:transparent;border:1px solid var(--th-line);color:var(--th-muted);border-radius:999px;padding:9px 15px;min-height:40px;font:600 12.5px var(--th-font-ui);cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:border-color var(--th-dur),color var(--th-dur),transform var(--th-dur)}
+.admin-chip:hover{border-color:var(--th-brand-2);color:var(--th-text)}
+.admin-chip:active{transform:scale(.97)}
+.admin-chip.on{border-color:var(--th-yellow);color:var(--th-text)}
+.admin-chip .lo{color:var(--th-muted);font-weight:500}
+
+/* ---------- hero ---------- */
+.hero{position:relative;min-height:100svh;background:var(--th-blue-deep);display:flex;flex-direction:column;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--th-grid) 1px,transparent 1px),linear-gradient(90deg,var(--th-grid) 1px,transparent 1px);background-size:56px 56px;pointer-events:none}
+.hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:130px;background:linear-gradient(transparent,var(--th-bg));pointer-events:none}
+#bikeCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#bikeFallback{position:absolute;right:3vw;top:14vh;width:min(54vw,660px);height:auto;color:var(--th-brand-2);opacity:.42;pointer-events:none}
+.hero-inner{position:relative;z-index:5;padding:clamp(86px,15vh,150px) clamp(16px,4vw,44px) 0}
+.kicker{display:flex;align-items:center;gap:14px;margin:0 0 16px;font:600 11px var(--th-font-mono);letter-spacing:.14em;color:var(--th-muted);text-transform:uppercase}
+.kicker::after{content:"";width:72px;height:1px;background:var(--th-blue-line)}
+h1.headline{margin:0;font:900 clamp(32px,9.5vw,150px)/.95 var(--th-font-ui);letter-spacing:-.02em;color:var(--th-text)}
+.hero-sub{margin:18px 0 0;max-width:50ch;color:var(--th-muted);font-size:clamp(15px,1.25vw,18px)}
+
+/* ---------- verktøyportaler (asymmetrisk 12-kolonners komposisjon) ---------- */
+.portals{position:relative;z-index:5;margin-top:auto;display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:auto auto;gap:14px;padding:clamp(28px,5vh,60px) clamp(16px,4vw,44px) clamp(22px,4vh,44px)}
+.portal{position:relative;display:flex;flex-direction:column;gap:8px;text-decoration:none;color:inherit;background:rgba(15,24,40,.78);border:1px solid rgba(38,132,230,.14);border-radius:var(--th-radius-lg);padding:clamp(18px,2vw,28px);overflow:hidden;transition:transform var(--th-dur) var(--th-ease),border-color var(--th-dur),background var(--th-dur);will-change:transform}
+.portal:hover{transform:translateY(-2px);border-color:var(--th-blue-line);background:rgba(18,29,48,.85)}
+.portal:active{transform:scale(.985)}
+.portal::before,.portal::after{content:"";position:absolute;width:14px;height:14px;pointer-events:none;transition:border-color var(--th-dur)}
+.portal::before{top:9px;left:9px;border-top:1px solid var(--th-blue-line);border-left:1px solid var(--th-blue-line)}
+.portal::after{bottom:9px;right:9px;border-bottom:1px solid var(--th-blue-line);border-right:1px solid var(--th-blue-line)}
+.portal:hover::before,.portal:hover::after,.portal:focus-visible::before,.portal:focus-visible::after{border-color:var(--th-yellow)}
+.p-velodex{grid-column:1/8;grid-row:1/3;justify-content:flex-end;min-height:clamp(250px,32vh,360px)}
+.p-tasks{grid-column:8/13;grid-row:1}
+.p-wiki{grid-column:8/13;grid-row:2}
+.p-index{font:600 11px var(--th-font-mono);letter-spacing:.12em;color:var(--th-brand-2)}
+.p-name{margin:2px 0 0;font:800 clamp(22px,2.4vw,34px)/1.05 var(--th-font-ui);letter-spacing:-.01em}
+.p-velodex .p-name{font-size:clamp(30px,3.4vw,48px)}
+.p-desc{margin:0;color:var(--th-muted);font-size:14px;max-width:44ch}
+.p-live{margin:4px 0 0;font:500 12px var(--th-font-mono);color:var(--th-muted);letter-spacing:.02em;min-height:16px}
+.p-live b{color:var(--th-yellow);font-weight:600}
+.p-open{margin-top:10px;display:inline-flex;align-items:center;gap:8px;width:max-content;color:var(--th-yellow);font:700 13px var(--th-font-ui);padding-bottom:3px;background:linear-gradient(var(--th-yellow),var(--th-yellow)) left bottom/0% 1px no-repeat;transition:background-size var(--th-dur-slow) var(--th-ease)}
+.portal:hover .p-open,.portal:focus-visible .p-open{background-size:100% 1px}
+.p-open .th-ic{transition:transform var(--th-dur) var(--th-ease)}
+.portal:hover .p-open .th-ic{transform:translateX(3px)}
+.p-motif{position:absolute;top:16px;right:16px;width:clamp(64px,7vw,104px);height:auto;color:var(--th-brand-2);opacity:.75;pointer-events:none}
+.p-velodex .p-motif{width:clamp(120px,15vw,200px);top:20px;right:22px}
+.p-motif .mln{stroke-dasharray:100;stroke-dashoffset:100;transition:stroke-dashoffset .9s var(--th-ease)}
+.portal:hover .p-motif .mln,.portal:focus-visible .p-motif .mln{stroke-dashoffset:0}
+/* når GSAP-magnetikk styrer transform, må CSS ikke ease den samtidig */
+html.magnet .portal{transition:border-color var(--th-dur),background var(--th-dur)}
+
+/* ---------- «Om verktøyene» ---------- */
+.om{position:relative;background:var(--th-bg)}
+.om-wrap{max-width:1180px;margin:0 auto;padding:clamp(56px,10vh,110px) clamp(16px,4vw,44px)}
+.tblock{margin-bottom:clamp(26px,5vh,50px)}
+.tblock .top{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+.tblock .idx{font:600 11px var(--th-font-mono);letter-spacing:.12em;color:var(--th-brand-2)}
+.tblock .rule{flex:1;height:1px;background:var(--th-line)}
+.tblock h2{margin:0;font:800 clamp(26px,3.2vw,42px)/1.05 var(--th-font-ui);letter-spacing:-.01em}
+.om-stage{position:relative}
+.om-panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(24px,4vw,64px);align-items:center;padding:clamp(26px,5vh,44px) 0}
+.om-panel + .om-panel{border-top:1px solid var(--th-line)}
+.om-art{width:100%;height:auto;color:var(--th-brand-2);opacity:.85}
+.om-art .acc{stroke:var(--th-yellow)}
+.om-num{font:600 11px var(--th-font-mono);letter-spacing:.12em;color:var(--th-brand-2)}
+.om-copy h3{margin:8px 0 12px;font:800 clamp(24px,2.6vw,38px)/1.05 var(--th-font-ui);letter-spacing:-.01em}
+.om-copy p{margin:0 0 18px;color:var(--th-muted);max-width:46ch}
+.om-meta{display:flex;align-items:baseline;font:500 11px var(--th-font-mono);letter-spacing:.06em;color:var(--th-muted);margin-bottom:18px;max-width:340px}
+.om-meta .lead{flex:1;border-bottom:1px dotted var(--th-line);margin:0 10px;transform:translateY(-3px)}
+.om-link{display:inline-flex;align-items:center;gap:8px;color:var(--th-yellow);font:700 14px var(--th-font-ui);text-decoration:none;padding-bottom:3px;background:linear-gradient(var(--th-yellow),var(--th-yellow)) left bottom/0% 1px no-repeat;transition:background-size var(--th-dur-slow) var(--th-ease)}
+.om-link:hover{background-size:100% 1px}
+/* pin-modus (settes av GSAP når ScrollTrigger er klar) */
+html.om-pin .om-stage{height:min(62vh,560px)}
+html.om-pin .om-panel{position:absolute;inset:0;padding:0;align-content:center;border-top:0}
+
+/* ---------- bunntekst ---------- */
+.hub-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:26px clamp(16px,4vw,44px);border-top:1px solid var(--th-line);color:var(--th-muted);font-size:13px}
+.hub-foot .stamp{font:500 11px var(--th-font-mono);letter-spacing:.08em}
+
+/* ---------- sideskifte-sluse ---------- */
+#wipe{position:fixed;inset:0;z-index:99980;pointer-events:none;visibility:hidden}
+#wipe .w{position:absolute;left:0;right:0;height:50.5%;background:linear-gradient(var(--th-blue-deep),var(--th-brand) 240%);transition:transform .42s cubic-bezier(.76,0,.24,1)}
+#wipe .w1{top:0;transform:translateY(-101%)}
+#wipe .w2{bottom:0;transform:translateY(101%);background:linear-gradient(var(--th-brand) -140%,var(--th-blue-deep))}
+#wipe.run{visibility:visible}
+#wipe.run .w{transform:none}
+
+/* ---------- egendefinert peker (kun hover:hover + pointer:fine + full bevegelse) ---------- */
+#curDot,#curRing{position:fixed;top:0;left:0;pointer-events:none;border-radius:50%;display:none;z-index:99970}
+#curDot{width:6px;height:6px;background:var(--th-yellow);margin:-3px 0 0 -3px}
+#curRing{width:28px;height:28px;border:1px solid rgba(38,132,230,.75);margin:-14px 0 0 -14px;transition:border-color var(--th-dur)}
+#curRing.hov{border-color:var(--th-yellow)}
+html.th-cursor #curDot,html.th-cursor #curRing{display:block}
+html.th-cursor body,html.th-cursor a,html.th-cursor button{cursor:none}
+html.th-cursor input,html.th-cursor select,html.th-cursor textarea,html.th-cursor .th-ov,html.th-cursor .th-ov *{cursor:auto}
+
+/* ---------- inngang uten GSAP / ved retur (600ms ro) ---------- */
+.settle .hero-inner>*{animation:th-fade-up .6s var(--th-ease) backwards}
+.settle .hero-inner>*:nth-child(2){animation-delay:.06s}
+.settle .hero-inner>*:nth-child(3){animation-delay:.12s}
+.settle .portal{animation:th-fade-up .6s var(--th-ease) backwards}
+.settle .p-tasks{animation-delay:.08s}
+.settle .p-wiki{animation-delay:.16s}
+
+@media(max-width:860px){
+  .portals{grid-template-columns:1fr;grid-template-rows:none}
+  .p-velodex,.p-tasks,.p-wiki{grid-column:1/-1;grid-row:auto;min-height:0}
+  .om-panel{grid-template-columns:1fr}
+  .om-art{max-width:380px}
+}
+@media(max-width:640px){
+  .clockbox .wk,.clock-sep{display:none}
+  .hero-inner{padding-top:96px}
+  #bikeFallback{width:88vw;opacity:.25;top:10vh}
+}
 </style>
 </head>
 <body>
-<div class="topbar"></div>
-<div class="adminbar">
-  <button class="admin-chip" id="adminBtn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Logg inn som admin</button>
+<a class="skip" href="#verktoy">Hopp til verktøyene</a>
+
+<!-- Preloader: kjedering/hjul tegnes opp, mono-prosent teller, to-panels sluse åpner -->
+<div id="preloader" aria-hidden="true">
+  <div class="pre-half pre-top"></div>
+  <div class="pre-half pre-bot"></div>
+  <div class="pre-core">
+    <svg class="pre-svg" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+      <circle class="pd" cx="60" cy="60" r="50" pathLength="100"/>
+      <circle class="pd" cx="60" cy="60" r="43" pathLength="100" style="animation-delay:.1s"/>
+      <circle class="pd" cx="60" cy="60" r="7" pathLength="100" style="animation-delay:.2s"/>
+      <line class="pd" x1="60" y1="53" x2="60" y2="17" pathLength="100" style="animation-delay:.25s"/>
+      <line class="pd" x1="60" y1="67" x2="60" y2="103" pathLength="100" style="animation-delay:.3s"/>
+      <line class="pd" x1="53" y1="60" x2="17" y2="60" pathLength="100" style="animation-delay:.35s"/>
+      <line class="pd" x1="67" y1="60" x2="103" y2="60" pathLength="100" style="animation-delay:.4s"/>
+      <line class="pd" x1="55" y1="55" x2="30" y2="30" pathLength="100" style="animation-delay:.45s"/>
+      <line class="pd" x1="65" y1="65" x2="90" y2="90" pathLength="100" style="animation-delay:.5s"/>
+      <line class="pd" x1="65" y1="55" x2="90" y2="30" pathLength="100" style="animation-delay:.55s"/>
+      <line class="pd" x1="55" y1="65" x2="30" y2="90" pathLength="100" style="animation-delay:.6s"/>
+    </svg>
+    <div class="pre-row"><span class="pre-label">Laster internverktøy</span><span class="pre-pct" id="prePct">000%</span></div>
+  </div>
 </div>
-<header>
-  <div class="brand">THANSEN<span class="sep">·</span><span class="k">VERKTØYKASSE</span></div>
-  <div class="tag">Interne verktøy</div>
+
+<header class="hub-top">
+  <a class="wordmark" href="index.html">THANSEN<span class="dot">·</span><span class="k">INTERNVERKTØY</span></a>
+  <div class="top-right">
+    <div class="clockbox"><b id="clock">--:--:<span id="clockS">--</span></b><span class="clock-sep"></span><span class="wk" id="week">UKE --</span></div>
+    <button class="admin-chip" id="adminBtn">Logg inn</button>
+  </div>
 </header>
 
 <main>
-  <div class="grid">
-    <a class="tool" href="bikes.html">
-      <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg></div>
-      <div class="name">Velodex</div>
-      <div class="desc">Sykkelregister — søkbare kort, spesifikasjoner, strekkoder og reservedeler.</div>
-      <div class="go">Åpne →</div>
-    </a>
-
-    <a class="tool" href="tasks.html">
-      <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 5v11"/><path d="M12 5v6"/><path d="M18 5v14"/></svg></div>
-      <div class="name">ButikkPlanlegger</div>
-      <div class="desc">Oppgavetavle (Kanban) og ukesplan — tildel ansatte, prioritet, frister og varsler.</div>
-      <div class="go">Åpne →</div>
-    </a>
-
-    <a class="tool" href="wiki.html">
-      <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
-      <div class="name">Kunnskapsbase</div>
-      <div class="desc">Søkbar wiki — bildeler, dekk, sykkel, takstativ, verktøy, MC og mer, med gode kilder.</div>
-      <div class="go">Åpne →</div>
-    </a>
-
+<section class="hero" id="hero">
+  <canvas id="bikeCanvas" aria-hidden="true"></canvas>
+  <!-- Statisk skjema-fallback: vises ved redusert bevegelse, manglende WebGL eller importfeil -->
+  <svg id="bikeFallback" viewBox="0 0 480 280" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true" hidden>
+    <circle cx="120" cy="200" r="70"/><circle cx="120" cy="200" r="64"/>
+    <circle cx="360" cy="200" r="70"/><circle cx="360" cy="200" r="64"/>
+    <path d="M120 200l64 0M120 200l32 55M120 200l-32 55M120 200l-64 0M120 200l-32 -55M120 200l32 -55"/>
+    <path d="M360 200l64 0M360 200l32 55M360 200l-32 55M360 200l-64 0M360 200l-32 -55M360 200l32 -55"/>
+    <path d="M230 212L178 115L315 112L324 142L230 212L120 200M178 115L120 200M324 142L360 200"/>
+    <path d="M178 115L172 92M147 90L197 87M315 112L354 103L354 97L372 97M372 97L378 122L366 132"/>
+    <circle cx="230" cy="212" r="18"/><path d="M230 182L230 242M223 182L237 182M223 242L237 242"/>
+  </svg>
+  <div class="hero-inner">
+    <p class="kicker">Thansen / Fredrikstad</p>
+    <h1 class="headline" id="headline">INTERNVERKTØY</h1>
+    <p class="hero-sub">Tre presise verktøy for butikken: sykkelregister, ukesplan og kunnskapsbase. Bygget internt, alltid klare.</p>
   </div>
+  <nav class="portals" id="verktoy" aria-label="Verktøy">
+    <a class="portal p-velodex" href="bikes.html">
+      <svg class="p-motif" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <circle class="mln" cx="60" cy="60" r="50" pathLength="100"/>
+        <circle class="mln" cx="60" cy="60" r="6" pathLength="100"/>
+        <line class="mln" x1="60" y1="60" x2="60" y2="12" pathLength="100"/>
+        <line class="mln" x1="60" y1="60" x2="103" y2="83" pathLength="100"/>
+        <line class="mln" x1="60" y1="60" x2="17" y2="83" pathLength="100"/>
+        <line class="mln" x1="60" y1="60" x2="103" y2="37" pathLength="100"/>
+        <line class="mln" x1="60" y1="60" x2="17" y2="37" pathLength="100"/>
+        <line class="mln" x1="60" y1="60" x2="60" y2="108" pathLength="100"/>
+      </svg>
+      <span class="p-index">01 / SYKKELREGISTER</span>
+      <h2 class="p-name">Velodex</h2>
+      <p class="p-desc">Hele utvalget som flyttbare kort på ett lerret: spesifikasjoner, strekkoder og reservedeler.</p>
+      <p class="p-live" id="liveVelodex" data-static="Søkbart register med skannevennlige strekkoder.">Søkbart register med skannevennlige strekkoder.</p>
+      <span class="p-open">Åpne <svg class="th-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+    </a>
+    <a class="portal p-tasks" href="tasks.html">
+      <svg class="p-motif" viewBox="0 0 120 80" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <rect class="mln" x="6" y="10" width="108" height="60" rx="4" pathLength="100"/>
+        <line class="mln" x1="6" y1="26" x2="114" y2="26" pathLength="100"/>
+        <line class="mln" x1="42" y1="10" x2="42" y2="70" pathLength="100"/>
+        <line class="mln" x1="78" y1="10" x2="78" y2="70" pathLength="100"/>
+        <rect class="mln" x="48" y="34" width="24" height="12" pathLength="100"/>
+        <rect class="mln" x="12" y="50" width="24" height="12" pathLength="100"/>
+      </svg>
+      <span class="p-index">02 / UKESPLAN</span>
+      <h2 class="p-name">ButikkPlanlegger</h2>
+      <p class="p-desc">Oppgavetavle og ukesplan: tildeling per dag, frister og vaktstatus.</p>
+      <p class="p-live" id="liveTasks" data-static="Kanban, ukesrutenett og varsler.">Kanban, ukesrutenett og varsler.</p>
+      <span class="p-open">Åpne <svg class="th-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+    </a>
+    <a class="portal p-wiki" href="wiki.html">
+      <svg class="p-motif" viewBox="0 0 120 80" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect class="mln" x="6" y="8" width="108" height="64" rx="6" pathLength="100"/>
+        <polyline class="mln" points="22,30 36,40 22,50" pathLength="100"/>
+        <line class="mln" x1="46" y1="40" x2="76" y2="40" pathLength="100"/>
+        <line class="mln" x1="22" y1="58" x2="60" y2="58" pathLength="100"/>
+      </svg>
+      <span class="p-index">03 / KUNNSKAPSBASE</span>
+      <h2 class="p-name">Kunnskapsbase</h2>
+      <p class="p-desc">Søkbar intern wiki med gode kilder og XAL-snarveier.</p>
+      <p class="p-live" id="liveWiki" data-static="Artikler, kilder og kommandoer.">Artikler, kilder og kommandoer.</p>
+      <span class="p-open">Åpne <svg class="th-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+    </a>
+  </nav>
+</section>
+
+<section class="om" id="om">
+  <div class="om-wrap">
+    <div class="tblock">
+      <div class="top"><span class="idx">04 / OM VERKTØYENE</span><span class="rule"></span></div>
+      <h2>Ett verksted, tre verktøy</h2>
+    </div>
+    <div class="om-stage" id="omStage">
+      <article class="om-panel">
+        <svg class="om-art" viewBox="0 0 480 280" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">
+          <circle class="dd" cx="120" cy="200" r="70"/><circle class="dd" cx="360" cy="200" r="70"/>
+          <path class="dd" d="M120 200l64 0M120 200l-64 0M120 200l0 -64M120 200l0 64M120 200l45 -45M120 200l-45 45"/>
+          <path class="dd" d="M360 200l64 0M360 200l-64 0M360 200l0 -64M360 200l0 64M360 200l45 -45M360 200l-45 45"/>
+          <path class="dd" d="M230 212L178 115L315 112L324 142L230 212L120 200M178 115L120 200M324 142L360 200"/>
+          <path class="dd" d="M178 115L172 92M147 90L197 87M315 112L354 103L354 97L372 97M372 97L378 122L366 132"/>
+          <circle class="dd" cx="230" cy="212" r="18"/><path class="dd" d="M230 182L230 242"/>
+        </svg>
+        <div class="om-copy">
+          <span class="om-num">01 / VELODEX</span>
+          <h3>Registeret</h3>
+          <p>Hele sykkelutvalget ligger som flyttbare kort på ett uendelig lerret. Dobbelttrykk gir fullt spesifikasjonsark, og strekkoden kan vises i skannevennlig fullskjerm rett ved kassen.</p>
+          <div class="om-meta"><span>FIL</span><span class="lead"></span><span>bikes.html</span></div>
+          <a class="om-link" href="bikes.html">Åpne Velodex <svg class="th-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+        </div>
+      </article>
+      <article class="om-panel">
+        <svg class="om-art" viewBox="0 0 480 280" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
+          <rect class="dd" x="40" y="40" width="400" height="200" rx="6"/>
+          <line class="dd" x1="40" y1="84" x2="440" y2="84"/>
+          <line class="dd" x1="140" y1="40" x2="140" y2="240"/>
+          <line class="dd" x1="240" y1="40" x2="240" y2="240"/>
+          <line class="dd" x1="340" y1="40" x2="340" y2="240"/>
+          <rect class="dd" x="56" y="100" width="68" height="28"/>
+          <rect class="dd" x="256" y="142" width="68" height="28"/>
+          <rect class="dd acc" x="156" y="184" width="68" height="28"/>
+          <line class="dd" x1="56" y1="58" x2="96" y2="58"/>
+          <line class="dd" x1="156" y1="58" x2="196" y2="58"/>
+          <line class="dd" x1="256" y1="58" x2="296" y2="58"/>
+          <line class="dd" x1="356" y1="58" x2="396" y2="58"/>
+        </svg>
+        <div class="om-copy">
+          <span class="om-num">02 / BUTIKKPLANLEGGER</span>
+          <h3>Planen</h3>
+          <p>Kanban for dagens gjøremål og rutenett for hele uken. Tildel ansatte per dag, følg frister med varsler og registrer pauser og fravær der planen faktisk legges.</p>
+          <div class="om-meta"><span>FIL</span><span class="lead"></span><span>tasks.html</span></div>
+          <a class="om-link" href="tasks.html">Åpne ButikkPlanlegger <svg class="th-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+        </div>
+      </article>
+      <article class="om-panel">
+        <svg class="om-art" viewBox="0 0 480 280" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect class="dd" x="60" y="50" width="360" height="180" rx="8"/>
+          <line class="dd" x1="60" y1="82" x2="420" y2="82"/>
+          <circle class="dd" cx="80" cy="66" r="3"/><circle class="dd" cx="94" cy="66" r="3"/>
+          <polyline class="dd" points="90,120 112,136 90,152"/>
+          <line class="dd" x1="126" y1="136" x2="250" y2="136"/>
+          <line class="dd" x1="90" y1="176" x2="300" y2="176"/>
+          <line class="dd" x1="90" y1="200" x2="220" y2="200"/>
+          <rect class="dd acc" x="258" y="128" width="10" height="16"/>
+        </svg>
+        <div class="om-copy">
+          <span class="om-num">03 / KUNNSKAPSBASE</span>
+          <h3>Kunnskapen</h3>
+          <p>Intern wiki for bildeler, dekk, sykkel og mer, med kilder du kan stole på. XAL-kommandoer ligger klare som snarveier og kopieres med ett trykk.</p>
+          <div class="om-meta"><span>FIL</span><span class="lead"></span><span>wiki.html</span></div>
+          <a class="om-link" href="wiki.html">Åpne Kunnskapsbase <svg class="th-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
 </main>
 
-<footer>Thansen Verktøykasse</footer>
+<footer class="hub-foot">
+  <span>Thansen Internverktøy</span>
+  <span class="stamp">REV A / 2026-06-12 / SHARED V16</span>
+</footer>
 
-<script src="shared.js?v=15"></script>
+<div id="wipe" aria-hidden="true"><div class="w w1"></div><div class="w w2"></div></div>
+<div id="curDot" aria-hidden="true"></div>
+<div id="curRing" aria-hidden="true"></div>
+
+<script src="shared.js?v=16"></script>
 <script>
-  const T = window.THelper;
-  const btn = document.getElementById('adminBtn');
-  function paint(){
-    const u = T.getUser();
-    btn.classList.toggle('on', !!u);
-    btn.innerHTML = u ? `${T.icon('unlock')} ${T.esc(u.tag)} · <span class="lo">Logg ut</span>` : T.icon('lock')+' Logg inn';
+(function(){
+'use strict';
+const T = window.THelper || null;   /* feilet shared.js skal aldri fryse siden (introen kjører uansett) */
+const reduced = !!window.__thReduce;
+
+/* ---------- admin-chip (eksakt oppførsel fra forrige hub) ---------- */
+const btn = document.getElementById('adminBtn');
+function paint(){
+  if (!T){ btn.hidden = true; return; }
+  const u = T.getUser();
+  btn.classList.toggle('on', !!u);
+  btn.innerHTML = u ? `${T.icon('unlock')} ${T.esc(u.tag)} · <span class="lo">Logg ut</span>` : T.icon('lock')+' Logg inn';
+}
+btn.addEventListener('click', async () => {
+  if (!T) return;
+  if (T.getUser()) { T.clearSession(); paint(); T.toast('Logget ut'); loadWiki(); }
+  else { const u = await T.ensureUser(); if (u) { paint(); T.toast('Logget inn som '+(u.name||u.tag)); loadWiki(); } }
+});
+paint();
+
+/* ---------- klokke + ISO-uke (sekundsifferet tikker med th-tick-pop) ---------- */
+const elC = document.getElementById('clock'), elS = document.getElementById('clockS'), elW = document.getElementById('week');
+const p2 = n => String(n).padStart(2,'0');
+function isoWeek(d){
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - day);
+  const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  return Math.ceil(((t - y0) / 864e5 + 1) / 7);
+}
+function tick(){
+  const d = new Date();
+  elC.childNodes[0].nodeValue = p2(d.getHours())+':'+p2(d.getMinutes())+':';
+  const s = p2(d.getSeconds());
+  if (elS.textContent !== s){
+    elS.textContent = s;
+    if (!reduced){ elS.style.animation='none'; void elS.offsetWidth; elS.style.animation='th-tick-pop 160ms var(--th-ease)'; }
   }
-  btn.addEventListener('click', async () => {
-    if (T.getUser()) { T.clearSession(); paint(); T.toast('Logget ut'); }
-    else { const u = await T.ensureUser(); if (u) { paint(); T.toast('Logget inn som '+(u.name||u.tag)); } }
+  elW.textContent = 'UKE '+p2(isoWeek(d));
+}
+tick(); setInterval(tick, 1000);
+
+/* ---------- live data (kun lesing, feiler stille, 4s frist) ---------- */
+const TMO = (p, ms) => Promise.race([Promise.resolve(p), new Promise((_, rej) => setTimeout(() => rej(new Error('tidsavbrudd')), ms))]);
+function fallback(el){ el.textContent = el.dataset.static; }
+function countTo(el, n, label){
+  el.innerHTML = '<b data-n>0</b> ' + label;
+  const b = el.querySelector('[data-n]');
+  if (reduced){ b.textContent = n; return; }
+  const t0 = performance.now(), dur = 900;
+  (function step(t){
+    const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    b.textContent = Math.round(n * e);
+    if (k < 1) requestAnimationFrame(step);
+  })(t0);
+}
+async function loadCounts(){
+  const v = document.getElementById('liveVelodex'), k = document.getElementById('liveTasks');
+  if (!T || !T.sb){ fallback(v); fallback(k); return; }
+  try {
+    const r = await TMO(T.sb.from('bikes').select('uid', {count:'exact', head:true}).eq('display_status','on_display'), 4000);
+    if (r.error || r.count == null) fallback(v);
+    else countTo(v, r.count, r.count === 1 ? 'sykkel på utstilling' : 'sykler på utstilling');
+  } catch(e){ fallback(v); }
+  try {
+    const r = await TMO(T.sb.from('tasks').select('id', {count:'exact', head:true}).neq('status','done'), 4000);
+    if (r.error || r.count == null) fallback(k);
+    else countTo(k, r.count, r.count === 1 ? 'åpen oppgave' : 'åpne oppgaver');
+  } catch(e){ fallback(k); }
+}
+let wikiSeq = 0;   /* rask inn/utlogging: et svar underveis får ikke overskrive nyere tilstand */
+async function loadWiki(){
+  const w = document.getElementById('liveWiki');
+  const seq = ++wikiSeq;
+  if (!T || !T.getUser() || !T.sb){ w.textContent = 'Intern: logg inn for innhold'; return; }
+  try {
+    const l = await TMO(T.rpcAuth('get_links'), 4000);
+    if (seq !== wikiSeq) return;
+    const n = Array.isArray(l) ? l.length : 0;
+    countTo(w, n, n === 1 ? 'snarvei klar' : 'snarveier klare');
+  } catch(e){ if (seq === wikiSeq) fallback(w); }   /* dekker også 'no-auth'-avvisning, stille */
+}
+loadCounts(); loadWiki();
+
+/* ---------- portalklikk: 450ms blå sluse, kun rene venstreklikk ---------- */
+const wipe = document.getElementById('wipe');
+document.querySelectorAll('a.portal, a.om-link').forEach(a => {
+  a.addEventListener('click', e => {
+    if (reduced || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target === '_blank') return;
+    e.preventDefault();
+    wipe.classList.add('run');
+    setTimeout(() => { location.href = a.href; }, 450);
+    setTimeout(() => wipe.classList.remove('run'), 4000);   /* vaktbikkje: avbrutt navigasjon skal ikke etterlate slusen */
   });
-  paint();
+});
+window.addEventListener('pageshow', e => { if (e.persisted) wipe.classList.remove('run'); });
+
+/* ---------- preloader-sekvens (rAF + CSS, GSAP er valgfri forsterkning) ---------- */
+const pre = document.getElementById('preloader');
+let introDone = !window.__thIntro;
+function finishIntro(){
+  if (introDone) return; introDone = true;
+  pre.classList.add('pre-done');
+  setTimeout(() => pre.classList.add('pre-gone'), 620);
+  heroEnter(true);
+}
+function runIntro(){
+  pre.classList.add('pre-run');
+  const pct = document.getElementById('prePct');
+  const t0 = performance.now(), dur = 1050;
+  (function step(t){
+    const k = Math.min(1, (t - t0) / dur);
+    const e = k < .5 ? 2*k*k : 1 - Math.pow(-2*k + 2, 2) / 2;
+    pct.textContent = String(Math.round(e * 100)).padStart(3,'0') + '%';
+    if (k < 1) requestAnimationFrame(step);
+    else setTimeout(finishIntro, 140);
+  })(t0);
+  setTimeout(finishIntro, 3000);   /* sikkerhetsnett: aldri sitte fast */
+}
+
+/* ---------- hero-inngang: SplitText-stagger, ellers CSS-ro ---------- */
+function heroEnter(full){
+  if (reduced) return;
+  if (!full){ document.body.classList.add('settle'); return; }   /* retur i samme økt: 600ms ro */
+  if (window.gsap && window.SplitText){
+    try {
+      gsap.registerPlugin(SplitText);
+      const split = new SplitText('#headline', { type:'chars' });
+      gsap.from(split.chars, { yPercent:108, autoAlpha:0, duration:.9, ease:'expo.out', stagger:.04 });
+      gsap.from('.kicker', { autoAlpha:0, y:14, duration:.7, ease:'expo.out' });
+      gsap.from('.hero-sub', { autoAlpha:0, y:14, duration:.7, delay:.25, ease:'expo.out' });
+      gsap.from('.portal', { autoAlpha:0, y:22, duration:.8, ease:'expo.out', stagger:.09, delay:.15, clearProps:'all' });
+    } catch(e){ document.body.classList.add('settle'); }
+  } else {
+    document.body.classList.add('settle');
+  }
+}
+
+/* ---------- GSAP-ekstra: magnetiske portaler, egen peker, pinnet «Om»-seksjon ---------- */
+function initGsapExtras(){
+  if (reduced || !window.gsap) return;
+  const hov = matchMedia('(hover:hover)').matches;
+  const fine = matchMedia('(hover:hover) and (pointer:fine)').matches;
+
+  if (hov){
+    document.documentElement.classList.add('magnet');
+    document.querySelectorAll('.portal').forEach(p => {
+      const qx = gsap.quickTo(p, 'x', { duration:.4, ease:'power3' });
+      const qy = gsap.quickTo(p, 'y', { duration:.4, ease:'power3' });
+      p.addEventListener('mousemove', e => {
+        const r = p.getBoundingClientRect();
+        qx(((e.clientX - r.left) / r.width - .5) * 16);   /* maks ±8px */
+        qy(((e.clientY - r.top) / r.height - .5) * 16);
+      });
+      p.addEventListener('mouseleave', () => { qx(0); qy(0); });
+    });
+  }
+
+  if (fine){
+    document.documentElement.classList.add('th-cursor');
+    const dot = document.getElementById('curDot'), ring = document.getElementById('curRing');
+    const dx = gsap.quickTo(dot, 'x', { duration:.08, ease:'power2' }), dy = gsap.quickTo(dot, 'y', { duration:.08, ease:'power2' });
+    const rx = gsap.quickTo(ring, 'x', { duration:.32, ease:'power3' }), ry = gsap.quickTo(ring, 'y', { duration:.32, ease:'power3' });
+    window.addEventListener('mousemove', e => { dx(e.clientX); dy(e.clientY); rx(e.clientX); ry(e.clientY); }, { passive:true });
+    document.addEventListener('mouseover', e => {
+      const i = e.target.closest('a,button,[role=button]');
+      ring.classList.toggle('hov', !!i);
+      gsap.to(ring, { scale: i ? .58 : 1, duration:.25, ease:'power3' });
+    });
+  }
+
+  /* Pinnet seksjon kun på brede flater: på mobil overstiger stablede paneler 62vh-scenen,
+     så små skjermer beholder den statiske listelayouten. */
+  if (window.ScrollTrigger && matchMedia('(min-width:861px)').matches){
+    gsap.registerPlugin(ScrollTrigger);
+    if (window.DrawSVGPlugin) gsap.registerPlugin(DrawSVGPlugin);
+    const panels = gsap.utils.toArray('.om-panel');
+    document.documentElement.classList.add('om-pin');
+    gsap.set(panels.slice(1), { autoAlpha:0 });
+    const tl = gsap.timeline({ scrollTrigger:{ trigger:'#om', start:'top top', end:'+=260%', pin:true, scrub:.5 } });
+    panels.forEach((p, i) => {
+      const at = i * 10;
+      if (i > 0) tl.fromTo(p, { autoAlpha:0, y:70 }, { autoAlpha:1, y:0, duration:3, ease:'none' }, at);
+      if (window.DrawSVGPlugin) tl.fromTo(p.querySelectorAll('.om-art .dd'), { drawSVG:'0%' }, { drawSVG:'100%', duration:4, stagger:.4, ease:'none' }, at + (i ? 1.5 : 0));
+      if (i < panels.length - 1) tl.to(p, { autoAlpha:0, y:-70, duration:3, ease:'none' }, at + 7);
+    });
+  }
+}
+
+/* Introen starter UMIDDELBART (preloader-DOM-en ligger over dette skriptet):
+   DOMContentLoaded venter på defer-GSAP fra CDN, og preloaderen skal aldri
+   være gissel for nettet. Kun GSAP-ekstraene venter på DOMContentLoaded. */
+if (window.__thIntro) runIntro(); else heroEnter(false);
+function init(){ initGsapExtras(); }
+if (document.readyState !== 'loading') init();
+else document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+<script type="module">
+/* Tre.js-scene: «skjemategningen våkner». Prosedyrisk wireframe-sykkel, ingen ekstern modell.
+   Feiler STILLE på alt (import, WebGL, redusert bevegelse) og viser statisk SVG-skjema i stedet. */
+function showFallback(){
+  const f = document.getElementById('bikeFallback'); if (f) f.hidden = false;
+  const c = document.getElementById('bikeCanvas'); if (c) c.remove();
+}
+try {
+  if (window.__thReduce || !window.WebGLRenderingContext) throw new Error('ingen-3d');
+  const THREE = await import('three');
+
+  const hero = document.getElementById('hero');
+  const canvas = document.getElementById('bikeCanvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(40, 1, .1, 50);
+  cam.position.set(0, .55, 4.8);
+
+  const mat = new THREE.LineBasicMaterial({ color:0x2684e6, transparent:true, opacity:0, blending:THREE.AdditiveBlending });
+  const bike = new THREE.Group();
+
+  const circleLoop = (r, seg) => {
+    const pts = [];
+    for (let i = 0; i < seg; i++){ const a = i / seg * Math.PI * 2; pts.push(new THREE.Vector3(Math.cos(a)*r, Math.sin(a)*r, 0)); }
+    return new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), mat);
+  };
+  const segs = pts => new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts.map(p => new THREE.Vector3(p[0], p[1], p[2] || 0))), mat);
+
+  /* hjul: felg + 14 eiker + nav */
+  const wheel = () => {
+    const w = new THREE.Group();
+    w.add(circleLoop(.7, 48), circleLoop(.64, 48), circleLoop(.05, 16));
+    const sp = [];
+    for (let i = 0; i < 14; i++){ const a = i / 14 * Math.PI * 2; sp.push([Math.cos(a)*.05, Math.sin(a)*.05], [Math.cos(a)*.64, Math.sin(a)*.64]); }
+    w.add(segs(sp));
+    return w;
+  };
+  const rw = wheel(); rw.position.x = -1.2;
+  const fw = wheel(); fw.position.x = 1.2;
+  bike.add(rw, fw);
+
+  /* diamantramme med landeveisproporsjoner: akselavstand 2.4, hjulradius .7 */
+  const BB = [-.1, -.12], ST = [-.62, .85], HT = [.75, .88], HB = [.84, .58], RA = [-1.2, 0], FA = [1.2, 0];
+  bike.add(segs([
+    BB, ST,  ST, HT,  HT, HB,  HB, BB,          /* setroer, overroer, styrelager, underroer */
+    BB, RA,  ST, RA,  HB, FA,                   /* kjedestag, setestag, gaffel */
+    ST, [-.68, 1.08],                           /* setepinne */
+    [-.93, 1.1], [-.46, 1.13],                  /* sete */
+    HT, [.95, .97],  [.95, .97], [1.14, .97],   /* stem + styre */
+    [1.14, .97], [1.18, .78],  [1.18, .78], [1.06, .68],  /* bukkestyre-drop */
+  ]));
+
+  /* krank: kjedering + krankarmer med pedaler (roterer) */
+  const crank = new THREE.Group();
+  crank.add(circleLoop(.18, 32));
+  crank.add(segs([[0, .3], [0, -.3], [-.07, .3], [.09, .3], [-.09, -.3], [.07, -.3]]));
+  crank.position.set(BB[0], BB[1], 0);
+  bike.add(crank);
+  scene.add(bike);
+
+  /* støvfelt: 250 punkter, blå/gul blanding, langsom drift */
+  const N = 250, pos = new Float32Array(N*3), col = new Float32Array(N*3);
+  const cb = new THREE.Color(0x2684e6), cy = new THREE.Color(0xffd400);
+  for (let i = 0; i < N; i++){
+    pos[i*3] = (Math.random()-.5)*9; pos[i*3+1] = (Math.random()-.5)*5; pos[i*3+2] = (Math.random()-.5)*4 - .5;
+    const c = Math.random() < .18 ? cy : cb;
+    col[i*3] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b;
+  }
+  const pg = new THREE.BufferGeometry();
+  pg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  pg.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const dust = new THREE.Points(pg, new THREE.PointsMaterial({ size:.02, vertexColors:true, transparent:true, opacity:.8, blending:THREE.AdditiveBlending, depthWrite:false }));
+  scene.add(dust);
+
+  /* størrelse + mobiltilpasning */
+  let fit = 1;
+  function size(){
+    const w = hero.clientWidth, h = hero.clientHeight;
+    renderer.setSize(w, h, false);
+    cam.aspect = w / h; cam.updateProjectionMatrix();
+    const mob = w < 700;
+    fit = mob ? .6 : 1;
+    bike.position.x = mob ? 0 : .85;
+  }
+  size(); addEventListener('resize', size);
+  if (window.ResizeObserver) new ResizeObserver(size).observe(hero);   /* dekker også layout-endringer uten window-resize */
+
+  /* pause når heroen er ute av syne eller fanen er skjult */
+  let tx = 0, run = true, inView = true, raf = 0;
+  hero.addEventListener('pointermove', e => { tx = (e.clientX / innerWidth - .5) * .4; }, { passive:true });
+  let last = performance.now(), elapsed = 0;
+  function toggle(){
+    const should = inView && !document.hidden;
+    if (should && !run){ run = true; last = performance.now(); raf = requestAnimationFrame(loop); }
+    else if (!should && run){ run = false; cancelAnimationFrame(raf); }
+  }
+  new IntersectionObserver(en => { inView = en[0].isIntersecting; toggle(); }).observe(hero);
+  document.addEventListener('visibilitychange', toggle);
+
+  let born = 0;
+  function loop(){
+    if (!run) return;
+    raf = requestAnimationFrame(loop);
+    const now = performance.now(), dt = Math.min((now - last) / 1000, .05);
+    last = now; elapsed += dt;
+    const t = elapsed;
+    born = Math.min(1, born + dt / 1.2);
+    const e = 1 - Math.pow(1 - born, 3);                  /* inngang: skaler + ton inn over ~1.2s */
+    mat.opacity = .55 * e;
+    bike.scale.setScalar((.92 + .08 * e) * fit);
+    rw.rotation.z -= dt * .7; fw.rotation.z -= dt * .7; crank.rotation.z -= dt * .35;
+    bike.rotation.y += (tx - bike.rotation.y) * .04;      /* yaw ±0.2 rad mot peker, lerpet */
+    bike.position.y = Math.sin(t * .8) * .04 - .15;       /* rolig duving */
+    dust.rotation.y += dt * .02;
+    renderer.render(scene, cam);
+  }
+  raf = requestAnimationFrame(loop);
+} catch (e) {
+  showFallback();
+}
 </script>
 </body>
 </html>
