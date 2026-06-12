@@ -116,6 +116,7 @@
   /* ---------- Sykkelkort (spesifikasjonsark) ---------- */
   .card{
     position:absolute;width:300px;
+    height:648px;display:flex;flex-direction:column;   /* alle kort like høye; strekkoden festes i bunn */
     background:var(--panel);
     border:1px solid var(--line);border-radius:var(--radius);
     box-shadow:var(--shadow);
@@ -133,7 +134,15 @@
   .grip i{width:14px;height:1px;background:var(--muted);opacity:.75;display:block;}
   .card-title{font-weight:700;font-size:14.5px;flex:1;line-height:1.25;}
   .swatch{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.22);flex-shrink:0;}
-  .card-body{padding:13px 14px 14px;display:flex;flex-direction:column;gap:11px;}
+  .card-body{padding:13px 14px 14px;display:flex;flex-direction:column;gap:11px;flex:1;min-height:0;}
+  /* lik høyde: tekstseksjoner klippes på kortet (alt vises i detaljarket), strekkoden krymper aldri */
+  .card-body>*{flex-shrink:0;}
+  .card-body .desc{flex-shrink:1;min-height:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .card-body .badges{max-height:22px;overflow:hidden;}
+  .card-body .spec-row{max-height:25px;overflow:hidden;}
+  .card-body .items{flex-shrink:1;min-height:0;overflow:hidden;}
+  .card-body .items .item:nth-child(n+3){display:none;}
+  .card-body .barcode-box{margin-top:auto;}
   .price-row{display:flex;align-items:baseline;gap:8px;}
   .price-k{font:600 10px/1 var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
   .price-lead{flex:1;min-width:14px;border-bottom:1px dotted var(--line);transform:translateY(-3px);}
@@ -174,7 +183,10 @@
   .parts-btn .parts-count{font:600 11px/1 var(--font-mono);color:var(--ink);}
   .parts-btn:hover .parts-count{color:var(--accent-2);}
   .parts-btn .parts-arrow{font-size:12px;opacity:.7;display:flex;transition:transform var(--dur) var(--ease);}
-  .card-img{width:100%;height:160px;object-fit:contain;background:#fff;border-bottom:1px solid var(--line);display:block;padding:8px;-webkit-user-drag:none;user-select:none;}
+  .card-img{width:100%;height:160px;flex:none;object-fit:contain;background:#fff;border-bottom:1px solid var(--line);display:block;padding:8px;-webkit-user-drag:none;user-select:none;}
+  /* manglende/feilet produktbilde: skjema-plassholder med samme høyde, så kortene forblir like */
+  .card-img-ph{display:flex;align-items:center;justify-content:center;background:rgba(38,132,230,.05);color:rgba(38,132,230,.4);}
+  .card-img-ph svg{width:55%;height:auto;}
   /* skjulte / utgåtte / ikke-utstilte sykler bor i Sykler-menyen, ikke på lerretet */
   .card.is-hidden{display:none;}
 
@@ -731,6 +743,10 @@ function partsButtonHtml(b){
   const label = count>0 ? `<b class="parts-count">${count}</b> reservedeler funnet` : 'Se reservedeler på Thansen';
   return `<button class="parts-btn" data-parts><span class="parts-icon">${window.THelper.icon('wrench')}</span><span class="parts-label">${label}</span><span class="parts-arrow">${window.THelper.icon('chevron-right')}</span></button>`;
 }
+/* lik korthøyde: manglende/feilet produktbilde får skjema-plassholder i stedet for å fjernes */
+const IMG_PH_SVG='<svg viewBox="0 0 480 280" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" aria-hidden="true"><circle cx="120" cy="200" r="70"/><circle cx="360" cy="200" r="70"/><path d="M230 212L178 115L315 112L324 142L230 212L120 200M178 115L120 200M324 142L360 200"/><path d="M178 115L172 92M147 90L197 87M315 112L354 103L354 97L372 97"/></svg>';
+function imgPlaceholder(){const d=document.createElement('div');d.className='card-img card-img-ph';d.innerHTML=IMG_PH_SVG;return d;}
+
 function makeCard(b){
   const el = document.createElement('div');
   const isNonDisplay = b.displayStatus === 'non_display';
@@ -744,7 +760,7 @@ function makeCard(b){
               + (b.outlet?'<span class="badge flag">Outlet</span>':'')
               + (b.discontinued?'<span class="badge flag">Utgått</span>':'');
   el.innerHTML=`
-    ${b.image_url?`<img class="card-img" src="${esc(b.image_url)}" alt="" loading="lazy" draggable="false" onerror="this.remove()">`:''}
+    ${b.image_url?`<img class="card-img" src="${esc(b.image_url)}" alt="" loading="lazy" draggable="false" onerror="this.replaceWith(imgPlaceholder())">`:`<div class="card-img card-img-ph">${IMG_PH_SVG}</div>`}
     <div class="card-head">
       <div class="grip"><i></i><i></i><i></i></div>
       <div class="card-title">${esc(b.name)}</div>
@@ -898,6 +914,10 @@ async function rpcDelete(uid){
   const {error}=await sb.rpc('delete_bike',{p_passcode:EDIT_PASS,p_uid:uid});
   if(error)throw error;
 }
+async function rpcClone(uid,frame){
+  const {data,error}=await sb.rpc('clone_bike',{p_passcode:EDIT_PASS,p_uid:uid,p_frame:frame});
+  if(error)throw error;return fromRow(data);
+}
 
 /* ---------------- Display actions (remove / add / permanent delete) ---------------- */
 async function softRemove(uid){
@@ -927,6 +947,25 @@ async function addToDisplay(uid){
   }catch(err){
     b.displayStatus=prev;if(cardEl(uid))rebuildCard(b);cacheSave();refreshLibrary();
     handleWriteError(err,'Innlegging');
+  }
+}
+/* To fysiske sykler av samme modell (samme varenummer, ulikt rammenummer) kan stå på
+   utstilling samtidig: kopien er frikoblet fra Thansen-synken (source=null), så kun
+   originalen får automatiske pris-/lageroppdateringer fra importen. */
+async function cloneBike(uid){
+  const src=bikes.find(x=>x.uid===uid); if(!src) return;
+  const frame=prompt('Rammenummer for den nye sykkelen (kan stå tomt):','');
+  if(frame===null) return;
+  try{
+    const nb=await rpcClone(uid, frame.trim());
+    pendingSaves.add(nb.uid); setTimeout(()=>pendingSaves.delete(nb.uid),1500);
+    localUpsert(nb);
+    closeDetail();
+    focusCard(nb,true);
+    toast('Sykkel duplisert ✓',true);
+  }catch(err){
+    if(/clone_bike/i.test((err&&err.message)||'')) toast('Kjør bikes_v3.sql i Supabase først.');
+    else handleWriteError(err,'Duplisering');
   }
 }
 async function doDelete(uid){
@@ -1257,6 +1296,7 @@ function openDetail(b){
         ${b.source_url?`<a class="btn" href="${esc(b.source_url)}" target="_blank" rel="noopener">${window.THelper.icon('external')} Åpne hos Thansen</a>`:''}
         ${b.source_url?`<button class="btn" data-d-parts>${window.THelper.icon('wrench')} Reservedeler</button>`:''}
         ${isEditing()?`<button class="btn" data-d-edit>${window.THelper.icon('pencil')} Rediger</button>`:''}
+        ${isEditing()?`<button class="btn" data-d-clone title="Lag kort for enda en fysisk sykkel av samme modell">${window.THelper.icon('plus')} Dupliser</button>`:''}
       </div>
     </div>`;
   const cur=()=>bikes.find(x=>x.uid===b.uid)||b;
@@ -1268,6 +1308,7 @@ function openDetail(b){
   }
   const pp=detailModal.querySelector('[data-d-parts]');   if(pp) pp.onclick=()=>{closeDetail();openPartsPanel(cur());};
   const ed=detailModal.querySelector('[data-d-edit]');    if(ed) ed.onclick=()=>{closeDetail();openEditor(cur());};
+  const cl=detailModal.querySelector('[data-d-clone]');   if(cl) cl.onclick=()=>cloneBike(b.uid);
   detailModal.classList.add('show');
 }
 function closeDetail(){detailModal.classList.remove('show');}
