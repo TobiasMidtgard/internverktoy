@@ -1,4 +1,6 @@
-/* Thansen Verktøykasse — delt konfig + konto-innlogging (roller: dev > manager > coworker). */
+/* Thansen Internverktøy — delt konfig + konto-innlogging (roller: dev > manager > coworker).
+   v16: «Teknisk presisjon»-redesign — nye tokens (fonter, flater, bevegelse), re-skinnet
+   modal/toast/knapper. DOM-kontrakten (klasser, data-attributter, keyframe-navn) er uendret. */
 window.THelper = (function () {
   const SB_URL = 'https://tfjvgvrqngevsiuueixf.supabase.co';
   const SB_KEY = 'sb_publishable_O-gjCbc7E1pX-I0o9DawbQ_xbnV6uJY';
@@ -37,6 +39,10 @@ window.THelper = (function () {
     copy:    '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
     terminal:'<polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>',
     sync:    '<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>',
+    clock:   '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>',
+    calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    search:  '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+    'arrow-right': '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>',
   };
   function icon(name, cls = ''){
     return `<svg class="th-ic${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${ICONS[name] || ''}</svg>`;
@@ -74,9 +80,15 @@ window.THelper = (function () {
     const st = document.createElement('style'); st.id = 'th-shared-css';
     st.textContent = `
       /* Felles designtokens for hele suiten — nye sider/komponenter bør bruke disse
-         i stedet for å hardkode farger (kanonisk kilde for merkevarefargene). */
+         i stedet for å hardkode farger (kanonisk kilde for merkevarefargene).
+         «Teknisk presisjon»: Schibsted Grotesk (UI/display) + Martian Mono (måledata). */
       :root{ --th-brand:#004595; --th-brand-2:#2684e6; --th-yellow:#ffd400; --th-red:#e30613;
              --th-bg:#0f1318; --th-panel:#161b22; --th-line:#2a323d; --th-text:#f1f4f8; --th-muted:#97a3b2;
+             --th-blue-btn:#1666c4; /* fylte knapper: hvit tekst = 5.6:1 (AA), flate mot panel = 3.1:1 */
+             --th-blue-deep:#06101f; --th-blue-line:rgba(38,132,230,.28); --th-grid:rgba(38,132,230,.07);
+             --th-font-ui:'Schibsted Grotesk',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+             --th-font-mono:'Martian Mono',ui-monospace,'Cascadia Mono','Roboto Mono',monospace;
+             --th-radius:10px; --th-radius-lg:14px; --th-shadow:0 6px 18px -8px rgba(0,0,0,.5);
              --th-dur:180ms; --th-dur-slow:240ms; --th-ease:cubic-bezier(0.16,1,0.3,1); }
       .th-ic{width:1em;height:1em;vertical-align:-0.125em;display:inline-block;flex:none;}
       /* Delte bevegelsesbyggesteiner — tilstand, ikke pynt (DESIGN.md) */
@@ -85,31 +97,40 @@ window.THelper = (function () {
       @keyframes th-fade-in{from{opacity:0}to{opacity:1}}
       @keyframes th-slide-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
       @keyframes th-shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
-      .th-skel{border-radius:10px;background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.09) 50%,rgba(255,255,255,.04) 75%);
+      @keyframes th-tick-pop{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+      @keyframes th-draw{to{stroke-dashoffset:0}}
+      .th-skel{border-radius:var(--th-radius);background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.09) 50%,rgba(255,255,255,.04) 75%);
         background-size:200% 100%;animation:th-shimmer 1.4s linear infinite;}
+      /* Mono mikro-etikett — måledata-språket i hele suiten */
+      .th-kicker{font:600 11px/1 var(--th-font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--th-muted);}
       @media (prefers-reduced-motion: reduce){
         *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important;}
       }
       .th-toast-wrap{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:99999;align-items:center;pointer-events:none;}
-      .th-toast{background:#11151b;color:#f1f4f8;border:1px solid #2a323d;border-radius:12px;padding:10px 14px;font:500 14px/1.3 system-ui;box-shadow:0 10px 34px rgba(0,0,0,.5);display:flex;align-items:center;gap:10px;pointer-events:auto;max-width:90vw;animation:th-slide-up var(--th-dur-slow) var(--th-ease);transition:opacity var(--th-dur),transform var(--th-dur);}
+      .th-toast{background:var(--th-panel);color:var(--th-text);border:1px solid var(--th-line);border-radius:var(--th-radius);padding:10px 14px;font:500 14px/1.3 var(--th-font-ui);box-shadow:var(--th-shadow);display:flex;align-items:center;gap:10px;pointer-events:auto;max-width:90vw;animation:th-slide-up var(--th-dur-slow) var(--th-ease);transition:opacity var(--th-dur),transform var(--th-dur);}
       .th-toast.th-out{opacity:0;transform:translateY(8px);}
-      .th-toast::before{content:"";width:8px;height:8px;border-radius:50%;background:#2684e6;flex:none;}
+      .th-toast::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--th-brand-2);flex:none;}
       .th-ov{position:fixed;inset:0;background:rgba(6,9,13,.72);display:flex;align-items:center;justify-content:center;z-index:100000;padding:16px;animation:th-fade-in var(--th-dur) var(--th-ease);}
-      .th-dialog{background:#161b22;border:1px solid #2a323d;border-top:3px solid #2684e6;border-radius:18px;padding:20px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.55);color:#f1f4f8;font:400 15px/1.5 system-ui;animation:th-scale-in var(--th-dur-slow) var(--th-ease);}
-      .th-tabs{display:flex;gap:6px;margin-bottom:14px;background:#0f1318;border:1px solid #2a323d;border-radius:10px;padding:3px;}
-      .th-tabs button{flex:1;background:transparent;color:#97a3b2;border:0;border-radius:8px;padding:8px;font:600 13px system-ui;cursor:pointer;}
-      .th-tabs button.on{background:#2684e6;color:#fff;}
-      .th-f{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
-      .th-f label{color:#97a3b2;font-size:12px;}
-      .th-f input,.th-f select{background:#0f1318;color:#f1f4f8;border:1px solid #2a323d;border-radius:10px;padding:10px 12px;font-size:15px;}
-      .th-f input:focus,.th-f select:focus{outline:none;border-color:#2684e6;}
+      .th-dialog{background:var(--th-panel);border:1px solid var(--th-line);border-radius:var(--th-radius-lg);padding:20px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.55);color:var(--th-text);font:400 15px/1.5 var(--th-font-ui);animation:th-scale-in var(--th-dur-slow) var(--th-ease);position:relative;}
+      .th-dialog::before{content:"";position:absolute;top:10px;left:10px;width:14px;height:14px;border-top:1px solid var(--th-blue-line);border-left:1px solid var(--th-blue-line);pointer-events:none;}
+      .th-dialog::after{content:"";position:absolute;bottom:10px;right:10px;width:14px;height:14px;border-bottom:1px solid var(--th-blue-line);border-right:1px solid var(--th-blue-line);pointer-events:none;}
+      .th-dialog-head{font:600 11px/1 var(--th-font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--th-muted);display:flex;align-items:center;gap:8px;margin:2px 2px 14px;}
+      .th-dialog-head::after{content:"";flex:1;height:1px;background:var(--th-line);}
+      .th-tabs{display:flex;gap:6px;margin-bottom:14px;background:var(--th-bg);border:1px solid var(--th-line);border-radius:var(--th-radius);padding:3px;}
+      .th-tabs button{flex:1;background:transparent;color:var(--th-muted);border:0;border-radius:8px;padding:8px;font:600 13px var(--th-font-ui);cursor:pointer;transition:color var(--th-dur),background var(--th-dur);}
+      .th-tabs button.on{background:var(--th-blue-btn);color:#fff;}
+      .th-f{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+      .th-f label{color:var(--th-muted);font:600 10.5px/1 var(--th-font-mono);letter-spacing:.1em;text-transform:uppercase;}
+      .th-f input,.th-f select{background:var(--th-bg);color:var(--th-text);border:1px solid var(--th-line);border-radius:var(--th-radius);padding:10px 12px;font:400 15px var(--th-font-ui);transition:border-color var(--th-dur),box-shadow var(--th-dur);}
+      .th-f input:focus,.th-f select:focus{outline:none;border-color:var(--th-brand-2);box-shadow:0 0 0 3px rgba(38,132,230,.18);}
       .th-err{color:#ff9b9b;font-size:13px;min-height:16px;margin:2px 0 8px;}
       .th-row{display:flex;gap:10px;justify-content:flex-end;}
-      .th-btn{background:#2684e6;color:#fff;border:0;border-radius:10px;padding:10px 16px;font:600 15px system-ui;cursor:pointer;transition:filter var(--th-dur),transform var(--th-dur);}
+      .th-btn{background:var(--th-blue-btn);color:#fff;border:0;border-radius:var(--th-radius);padding:10px 16px;font:600 15px var(--th-font-ui);cursor:pointer;transition:filter var(--th-dur),transform var(--th-dur);}
       .th-btn:hover{filter:brightness(1.08);}
       .th-btn:active{transform:scale(.97);}
-      .th-btn.ghost{background:transparent;border:1px solid #2a323d;color:#f1f4f8;}
-      .th-btn.ghost:hover{filter:none;border-color:#2684e6;}`;
+      .th-btn.ghost{background:transparent;border:1px solid var(--th-line);color:var(--th-text);}
+      .th-btn.ghost:hover{filter:none;border-color:var(--th-brand-2);}
+      :where(button,a,input,select,textarea,[role=button]):focus-visible{outline:2px solid var(--th-yellow);outline-offset:2px;}`;
     document.head.appendChild(st);
   }
 
@@ -141,6 +162,7 @@ window.THelper = (function () {
       const ov = document.createElement('div'); ov.className = 'th-ov';
       ov.innerHTML = `
         <div class="th-dialog" role="dialog" aria-modal="true" aria-label="Innlogging">
+          <div class="th-dialog-head">Internverktøy · Konto</div>
           <div class="th-tabs"><button data-t="login">Logg inn</button><button data-t="reg">Ny konto</button><button data-t="pw">Bytt passord</button></div>
           <div data-pane="login">
             <div class="th-f"><label for="thi-tag">Ansattkode (4 bokstaver)</label><input id="thi-tag" class="thi-tag" maxlength="4" autocomplete="username" placeholder="MORT" style="text-transform:uppercase"></div>
