@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#004595">
+<title>Kasseoppgjør · Thansen Internverktøy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800;900&family=Martian+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  /* «Teknisk presisjon»: spesifikasjonsark-estetikk. Fargeverdiene speiler tokens i shared.js (kanonisk kilde). */
+  :root{ --bg:#0f1318; --panel:#161b22; --card:#1b212a; --card-h:#222a35; --line:#2a323d;
+    --text:#f1f4f8; --muted:#97a3b2; --primary:#2684e6; --primary-700:#004595;
+    --yellow:#ffd400; --red:#e30613; --ok:#1aa64d;
+    --font-ui:'Schibsted Grotesk',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --font-mono:'Martian Mono',ui-monospace,'Cascadia Mono','Roboto Mono',monospace;
+    --radius:10px; --radius-lg:14px; --blue-line:rgba(38,132,230,.28); --grid:rgba(38,132,230,.07);
+    --dur:180ms; --dur-slow:240ms; --ease:cubic-bezier(.16,1,.3,1); }
+  *{box-sizing:border-box;} html,body{margin:0;}
+  /* Flere komponentklasser her (.chipbtn, .ro-note, .tb-item …) setter display
+     ubetinget. Uten dette taper nettleserens [hidden]-regel mot dem — samme
+     opprinnelse-rangering («author» slår «user agent» uansett spesifisitet —
+     ikke en spesifisitetssak i det hele tatt), så et element JS skjuler
+     (.hidden = true) ville blitt stående synlig likevel. */
+  [hidden]{display:none!important;}
+  /* Skjemafelt i denne fila (.sb-f/.in/.note-f/.dn-row input:focus) bytter shared.js
+     sin globale gule :focus-visible-ring ut med border-color + blå box-shadow —
+     bevisst, ikke en glipp: DESIGN.md §Components dokumenterer nettopp
+     «ring-fokus (0 0 0 3px rgba(38,132,230,.18))» som konvensjonen for
+     skjemafelter (samme mønster som wiki.html sin .row input:focus). Den globale
+     regelen i shared.js bruker :where(...):focus-visible nettopp for å ha null
+     spesifisitet og tape mot denne typen sidespesifikk erstatning. */
+  body{background:var(--bg);color:var(--text);font:400 15.5px/1.55 var(--font-ui);min-height:100vh;
+    padding-bottom:calc(var(--tb-h, 96px) + 16px);}
+  .topbar{height:4px;background:var(--primary-700);position:sticky;top:0;z-index:11;}
+  header{display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--line);
+    position:sticky;top:4px;background:var(--bg);z-index:10;flex-wrap:wrap;
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:26px 26px;}
+  .hub{color:var(--muted);text-decoration:none;font:600 13px var(--font-ui);transition:color var(--dur);}
+  .hub:hover{color:var(--text);}
+  .brand-block{display:flex;flex-direction:column;gap:3px;min-width:0;}
+  .brand-idx{font:600 10px/1 var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+  .brand{font:800 19px/1 var(--font-ui);letter-spacing:.06em;}
+  .sp{margin-left:auto;}
+  button,input,select,textarea{font:inherit;}
+  button:not(:disabled){transition:background var(--dur),border-color var(--dur),color var(--dur),filter var(--dur),transform var(--dur) var(--ease),box-shadow var(--dur);}
+  button:not(:disabled):active{transform:scale(.98);}
+  .btn{background:var(--th-blue-btn,#1666c4);color:#fff;border:1px solid transparent;border-radius:var(--radius);padding:11px 18px;font:600 15px var(--font-ui);cursor:pointer;min-height:44px;}
+  .btn:hover{filter:brightness(1.08);}
+  .btn.cta{background:var(--yellow);color:#10151b;font-weight:700;}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text);}
+  .btn.ghost:hover{border-color:var(--primary);filter:none;}
+  .btn:disabled{opacity:.5;cursor:default;}
+  .chipbtn{display:inline-flex;align-items:center;gap:7px;background:transparent;border:1px solid var(--line);color:var(--muted);
+    border-radius:999px;padding:8px 14px;font:600 13px var(--font-ui);cursor:pointer;min-height:40px;}
+  .chipbtn:hover{color:var(--text);border-color:#3a4656;}
+  .chipbtn.on{background:var(--th-blue-btn,#1666c4);border-color:var(--th-blue-btn,#1666c4);color:#fff;}
+  main{max-width:900px;margin:0 auto;padding:18px 16px 8px;}
+
+  /* ---------- øktstripe ---------- */
+  .sessbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;}
+  .sb-f{display:flex;flex-direction:column;gap:4px;}
+  .sb-f input{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:var(--radius);
+    padding:9px 11px;font:500 16px var(--font-mono);min-height:44px;}
+  .sb-f input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(38,132,230,.18);}
+  .sb-who{font:500 13px var(--font-ui);color:var(--muted);}
+  .chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 11px;
+    font:600 11px var(--font-mono);letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--line);color:var(--muted);}
+  .chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;}
+  .chip.st-saved{color:#7db8f0;border-color:var(--blue-line);}
+  .chip.st-verified{color:var(--yellow);border-color:rgba(255,212,0,.35);}
+
+  /* ---------- faner ---------- */
+  .tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+
+  /* ---------- telletabell ---------- */
+  .grp{margin-bottom:18px;}
+  .grp-hd{margin:0 2px 8px;display:flex;align-items:center;gap:10px;}
+  .grp-hd::after{content:"";flex:1;height:1px;background:var(--line);}
+  .row{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"label lead val" "in in in" "units units warn";
+    gap:6px 12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:12px 14px;margin-bottom:8px;transition:border-color var(--dur);}
+  .row:focus-within{border-color:var(--blue-line);}
+  .r-label{grid-area:label;font:600 15px var(--font-mono);letter-spacing:-.02em;}
+  .lead{grid-area:lead;height:1px;border-bottom:1px dotted #37414f;align-self:center;margin-top:6px;}
+  .r-val{grid-area:val;font:700 16px var(--font-mono);letter-spacing:-.03em;white-space:nowrap;}
+  .r-val.pop{animation:th-tick-pop var(--dur-slow) var(--ease);}
+  .r-in{grid-area:in;display:flex;gap:10px;flex-wrap:wrap;}
+  .in{display:flex;flex-direction:column;gap:4px;flex:1 1 120px;min-width:0;}
+  .in input{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:var(--radius);
+    padding:10px 12px;font:500 16px var(--font-mono);min-height:44px;transition:border-color var(--dur),box-shadow var(--dur);}
+  .in input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(38,132,230,.18);}
+  .in input.derived{color:#7db8f0;border-style:dashed;}
+  .r-units{grid-area:units;font:500 11px var(--font-mono);color:var(--muted);letter-spacing:.06em;}
+  .r-warn{grid-area:warn;justify-self:end;text-align:right;font:600 11px/1.3 var(--font-mono);color:var(--yellow);letter-spacing:.04em;}
+  .r-retired{margin-left:8px;padding:2px 6px;border:1px solid var(--line);border-radius:999px;color:var(--muted);vertical-align:middle;}
+
+  /* ---------- oppsummering ---------- */
+  .summary{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px 16px;margin:22px 0 16px;}
+  .sum-row{display:flex;align-items:baseline;gap:12px;padding:5px 0;}
+  .sum-row .lead{flex:1;grid-area:auto;}
+  .sum-row b{font:700 15px var(--font-mono);letter-spacing:-.02em;}
+  .sum-row.change{border-top:1px solid var(--line);margin-top:6px;padding-top:10px;}
+  .sum-row.change b{color:var(--muted);}
+
+  /* ---------- handlinger ---------- */
+  .note-f{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+  .note-f textarea{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:var(--radius);
+    padding:10px 12px;font:400 16px/1.5 var(--font-ui);resize:vertical;}
+  .note-f textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(38,132,230,.18);}
+  .act-row{display:flex;gap:10px;flex-wrap:wrap;}
+
+  /* ---------- fast summeringslinje ---------- */
+  .totalbar{position:fixed;left:0;right:0;bottom:0;z-index:12;background:var(--panel);border-top:1px solid var(--line);
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom));}
+  .tb-inner{position:relative;max-width:900px;margin:0 auto;display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:2px 6px;}
+  .tb-inner::before,.tb-inner::after{content:"";position:absolute;width:10px;height:10px;pointer-events:none;}
+  .tb-inner::before{top:-2px;left:-2px;border-top:1px solid var(--blue-line);border-left:1px solid var(--blue-line);}
+  .tb-inner::after{bottom:-2px;right:-2px;border-bottom:1px solid var(--blue-line);border-right:1px solid var(--blue-line);}
+  .tb-item{display:flex;flex-direction:column;gap:2px;}
+  .tb-item b{font:700 18px var(--font-mono);letter-spacing:-.03em;}
+  /* --red (#e30613) er ~3.54:1 mot panelflaten som tekst i denne størrelsen/vekten
+     — under DESIGN.md sitt ≥4.5:1-krav. --red er dokumentert for flater/kanter
+     («kun fare»-bruk), ikke tekst; suitens etablerte feiltekst-rød er #ff9b9b
+     (.th-err i shared.js), som måler ~8:1 her. Samme fiks i .hist-diff. */
+  .tb-item.diff b{color:#ff9b9b;}
+  .tb-item.diff.ok b{color:#7db8f0;}
+  .tb-check{width:18px;height:18px;color:var(--yellow);opacity:0;}
+  .tb-check.on{opacity:1;}
+  .tb-check path{stroke-dasharray:24;stroke-dashoffset:24;}
+  .tb-check.on path{animation:th-draw var(--dur-slow) var(--ease) forwards;}
+
+  /* ---------- historikk ---------- */
+  .hist-row{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:13px 16px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    transition:background var(--dur),border-color var(--dur),transform var(--dur) var(--ease);}
+  .hist-row:hover{background:var(--card-h);border-color:#3a4656;transform:translateX(2px);}
+  .hist-date{font:700 15px var(--font-mono);letter-spacing:-.02em;}
+  .hist-who{font:500 13px var(--font-ui);color:var(--muted);}
+  .hist-sums{margin-left:auto;display:flex;gap:14px;font:500 12px var(--font-mono);color:var(--muted);}
+  .hist-diff{font:700 12px var(--font-mono);color:#ff9b9b;}
+  .hist-diff.ok{color:#7db8f0;}
+  .empty{color:var(--muted);text-align:center;padding:40px 10px;}
+  .ro-note{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;
+    font:500 14px var(--font-ui);color:var(--muted);display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+
+  /* ---------- valørark ---------- */
+  .modal{position:fixed;inset:0;background:rgba(6,9,13,.72);display:none;align-items:center;justify-content:center;z-index:50;padding:14px;}
+  .modal.open{display:flex;}
+  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);width:100%;max-width:640px;
+    max-height:88vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.55);}
+  .sheet .hd{display:flex;align-items:center;gap:10px;padding:16px 20px 14px;border-bottom:1px solid var(--line);
+    position:sticky;top:0;background:var(--panel);z-index:2;}
+  .hd-k{font:600 11px/1 var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    display:flex;align-items:center;gap:8px;flex:1;}
+  .hd-k::after{content:"";flex:1;height:1px;background:var(--line);}
+  .x{background:transparent;border:1px solid transparent;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;
+    border-radius:8px;width:40px;height:40px;}
+  .x:hover{color:var(--text);border-color:var(--line);}
+  .sheet .bd{padding:16px 20px 20px;}
+  .dn-row{display:grid;grid-template-columns:1.4fr repeat(3,1fr) auto;gap:8px;align-items:end;margin-bottom:10px;}
+  .dn-row input{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:var(--radius);
+    padding:9px 10px;font:500 16px var(--font-mono);min-height:42px;}
+  .dn-row input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(38,132,230,.18);}
+  .dn-row .f{display:flex;flex-direction:column;gap:4px;min-width:0;}
+  .dn-row .tog{min-height:42px;}
+  .sheet-err{color:#ff9b9b;font-size:13px;min-height:18px;margin:6px 0 10px;}
+  .sheet-act{display:flex;gap:10px;justify-content:flex-end;}
+
+  @media (max-width:560px){
+    main{padding:14px 12px 8px;}
+    .row{grid-template-columns:auto 1fr auto;}
+    .in{flex:1 1 100%;}
+    .tb-inner{gap:12px;}
+    .tb-item b{font-size:16px;}
+    .hist-sums{margin-left:0;width:100%;}
+    .dn-row{grid-template-columns:1fr 1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="topbar"></div>
+<header>
+  <a class="hub" href="index.html">‹ Hjem</a>
+  <div class="brand-block">
+    <span class="brand-idx">04 / Safe + kasse</span>
+    <span class="brand">KASSEOPPGJØR</span>
+  </div>
+  <span class="sp"></span>
+  <button id="histBtn" class="chipbtn">Historikk</button>
+  <button id="lockBtn" class="chipbtn">Logg inn</button>
+</header>
+
+<main>
+  <!-- ---------- tellevisning ---------- -->
+  <section id="countView">
+    <div class="ro-note" id="roNote" hidden>
+      <span id="roText">Skrivebeskyttet — lagret oppgjør.</span>
+      <button class="chipbtn" id="backToHist">‹ Tilbake til historikk</button>
+    </div>
+
+    <div class="sessbar">
+      <label class="sb-f"><span class="th-kicker">Dato</span><input type="date" id="sessDate"></label>
+      <span class="chip st-draft" id="statusChip">Utkast</span>
+      <span class="sb-who" id="counterName"></span>
+      <span class="sp"></span>
+      <button class="chipbtn" id="denomBtn" hidden>Valører</button>
+      <button class="chipbtn" id="newBtn">Ny telling</button>
+    </div>
+
+    <div class="tabs" id="tabs" role="tablist" aria-label="Del av oppgjøret">
+      <button class="chipbtn on" role="tab" id="tab-safe" data-kind="safe" aria-selected="true" aria-controls="tableWrap">Safe</button>
+      <button class="chipbtn" role="tab" id="tab-opening" data-kind="opening" aria-selected="false" aria-controls="tableWrap">Åpning</button>
+      <button class="chipbtn" role="tab" id="tab-closing" data-kind="closing" aria-selected="false" aria-controls="tableWrap">Lukking</button>
+    </div>
+
+    <div id="tableWrap" role="tabpanel" tabindex="0" aria-labelledby="tab-safe"></div>
+
+    <section class="summary" aria-label="Oppsummering">
+      <div class="sum-row"><span class="th-kicker">Safe</span><span class="lead"></span><b id="sumSafe">0 kr</b></div>
+      <div class="sum-row"><span class="th-kicker">Åpning</span><span class="lead"></span><b id="sumOpening">0 kr</b></div>
+      <div class="sum-row"><span class="th-kicker">Lukking</span><span class="lead"></span><b id="sumClosing">0 kr</b></div>
+      <div class="sum-row change"><span class="th-kicker">Endring i kassen</span><span class="lead"></span><b id="sumChange">0 kr</b></div>
+    </section>
+
+    <div class="actions" id="actions">
+      <label class="note-f">
+        <span class="th-kicker">Notat</span>
+        <textarea id="note" rows="2" placeholder="Valgfritt — f.eks. «to 10-kroner manglet i rull»"></textarea>
+      </label>
+      <div class="act-row">
+        <button class="btn" id="saveBtn">Lagre oppgjør</button>
+        <button class="btn cta" id="verifyBtn" hidden>Godkjenn</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- historikk ---------- -->
+  <section id="historyView" hidden aria-labelledby="historyHeading">
+    <div class="sessbar">
+      <h2 class="th-kicker" id="historyHeading" tabindex="-1" style="margin:0">Historikk</h2>
+      <span class="sp"></span>
+      <button class="chipbtn" id="backToCount">‹ Tilbake til telling</button>
+    </div>
+    <div id="histList"></div>
+  </section>
+</main>
+
+<div class="totalbar" id="totalBar">
+  <!-- Dette er verktøyets faktiske utdata — summen og avviket telleren leser av —
+       og oppdateres på hvert tastetrykk. aria-live="polite" så skjermleser hører
+       tallet endre seg uten å måtte flytte fokus dit selv (se DESIGN.md §Accessibility
+       og samme mønster i wiki.html sin #resCount). Radverdiene i selve tabellen
+       har bevisst IKKE hver sin live-region: å annonsere alle ni på hvert tastetrykk
+       ville druknet nettopp det ene tallet brukeren endret akkurat nå. -->
+  <div class="tb-inner" role="status" aria-live="polite" aria-atomic="true">
+    <span class="th-kicker" id="tbLabel">Safe</span>
+    <span class="tb-item"><span class="th-kicker">Sum</span><b id="tbSum">0 kr</b></span>
+    <span class="tb-item" id="tbTargetWrap"><span class="th-kicker">Mål</span><b id="tbTarget">10 000 kr</b></span>
+    <span class="tb-item diff" id="tbDiffWrap"><span class="th-kicker">Avvik</span><b id="tbDiff">0 kr</b></span>
+    <svg class="tb-check" id="tbCheck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5.5 5.5L20 6.5"/></svg>
+  </div>
+</div>
+
+<!-- ---------- valørark (manager+) ---------- -->
+<div class="modal" id="denomModal">
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="Valører">
+    <div class="hd"><span class="hd-k">Valører · vekt og rullstørrelse</span><button class="x" id="denomClose" aria-label="Lukk">×</button></div>
+    <div class="bd">
+      <div id="denomRows"></div>
+      <p class="sheet-err" id="denomErr"></p>
+      <div class="sheet-act">
+        <button class="btn ghost" id="denomCancel">Avbryt</button>
+        <button class="btn" id="denomSave">Lagre valører</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script src="kasse-domain.js"></script>
+<script src="kasse-store.js"></script>
+<script>
+/* ---------- Kasseoppgjør — visning. All pengematematikk ligger i KasseDomain,
+   all lagring i KasseStore. Denne filen gjør DOM og hendelser, ikke noe annet. ---------- */
+const T = window.THelper, K = window.KasseDomain, S = window.KasseStore;
+const $ = id => document.getElementById(id);
+
+const state = { denoms:[], session:null, tab:'safe', readonly:false };
+
+const todayIso = () => {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+};
+
+/* Et utkast/en lagret økt er brukbar bare når alle tre deler finnes og har en
+   lines-liste AV LINJEOBJEKTER — det er nøyaktig formen resten av siden antar
+   uten videre sjekk (updateTotals leser sections.opening.total_ore direkte,
+   renderTable leser sections[kind].lines direkte og gir hver linje videre til
+   K.unitsFor/K.denomById). En grunnere sjekk («har draft.sections i det hele
+   tatt») lot en økt med bare sections.safe komme gjennom: renderAll skrev
+   sumSafe, kastet så på sections.opening.total_ore — sumOpening/sumClosing sto
+   igjen med tallet fra forrige render, statuschipen viste fanen som ble byttet
+   til mens de gamle radene ble stående, og autolagring stoppet stille
+   (queueDraft ligger etter updateTotals i inntastingskjeden).
+   To presiseringer lagt til etter kodegjennomgangen: (1) `Array.isArray(lines)`
+   alene godtar `lines:[null]` — hver linje sjekkes nå til å faktisk være et
+   objekt med en denom_id-streng, ellers kaster renderTable/K.unitsFor midt i en
+   allerede påbegynt tilstandsendring (funn 4). (2) status sjekkes mot
+   K.STATUSES her også — samme whitelist finalizeSession selv håndhever — for
+   en økt med en ukjent status (f.eks. en håndredigert `"partial"`) skal
+   forkastes NÅR den hentes/gjenopprettes, ikke først når brukeren har talt et
+   helt oppgjør og finalizeSession kaster ved lagring (funn 5).
+   Ikke en try/catch som svelger det — en eksplisitt formsjekk før økten i det
+   hele tatt tas i bruk. */
+function isPlausibleSession(obj){
+  if (!obj || typeof obj !== 'object' || !obj.sections || typeof obj.sections !== 'object') return false;
+  if (!K.STATUSES.includes(obj.status)) return false;
+  return K.KINDS.every(kind => {
+    const section = obj.sections[kind];
+    return !!section && Array.isArray(section.lines) &&
+      section.lines.every(l => l && typeof l === 'object' && typeof l.denom_id === 'string');
+  });
+}
+
+async function boot(){
+  /* Datalaget kaster hellere enn å levere skadede pengedata videre. Her skal
+     verktøyet likevel åpne: fall tilbake til standardvalørene og si fra. */
+  let denoms;
+  try {
+    denoms = await S.getDenominations();
+  } catch (err){
+    denoms = K.DEFAULT_DENOMS.map(d => Object.assign({}, d));
+    T.toast('Lagret valørliste var skadet — bruker standardoppsettet.');
+  }
+  let draft = null;
+  try { draft = S.getDraft(); } catch { draft = null; }
+  let session;
+  if (draft && isPlausibleSession(draft)){
+    session = K.syncLines(draft, denoms);
+  } else {
+    if (draft) T.toast('Utkastet så skadet ut og ble forkastet — startet en ny telling.');
+    session = K.newSession(denoms, todayIso());
+  }
+  /* enterView (definert lenger ned, ved resetToSafeTab) er eneste stedet som
+     skriver session/denoms/readonly sammen — se kommentaren ved dens egen
+     definisjon for hvorfor. Kallet her fungerer uansett tekstlig rekkefølge:
+     enterView er en function-deklarasjon (heist), og boot() kjører uansett
+     først etter DOMContentLoaded, lenge etter at hele scriptet er lastet. */
+  enterView({ session, denoms, readonly:false });
+}
+
+function renderAll(){
+  renderTable();
+  renderStatus();
+  updateTotals();
+}
+
+function renderAuth(){
+  const u = T.getUser();
+  $('lockBtn').textContent = u ? u.tag : 'Logg inn';
+  $('counterName').textContent = state.session && state.session.counted_by
+    ? 'Talt av ' + state.session.counted_by.name
+    : (u ? 'Innlogget som ' + u.name : '');
+  /* isLocked(), ikke bare state.readonly: en økt som ble godkjent I SAMME
+     visning (ikke via historikk) har readonly:false men status:'verified' —
+     isLocked() er det eneste stedet i fila som kjenner begge grunnene til at
+     en økt er låst, og «Valører» skal være utilgjengelig for begge (kodegjennom-
+     gangens funn 3). «Valører»-knappen sitter i sessbaren, som er del av
+     #countView og forblir synlig der uansett låsetilstand (i motsetning til
+     #actions, som isLocked() allerede skjuler) — uten denne linja ville arket
+     kunne åpne på state.denoms slik den akkurat nå er (en historisk økts FROSNE
+     denom_snapshot, se openSaved, ELLER — uten isLocked() — en levende, men
+     låst økts konfigurasjon som ikke skal kunne endres retroaktivt), og en
+     lagring derfra ville forfremmet et gammelt/låst øyeblikksbilde til å bli
+     dagens levende konfigurasjon. Se guarden i openDenomSheet for samme
+     resonnement, og denomSave for hvorfor ALDRI å regne om en låst økt. */
+  $('denomBtn').hidden = !T.canManage() || isLocked();
+  $('verifyBtn').hidden = !(T.canManage() && state.session && state.session.status === 'saved');
+}
+
+$('lockBtn').addEventListener('click', async () => {
+  if (T.getUser()){ T.clearSession(); renderAuth(); T.toast('Logget ut.'); return; }
+  await T.authModal('login');
+  renderAuth();
+});
+
+/* ---------- telletabell ---------- */
+
+const lineFor = (section, denomId) => section.lines.find(l => l.denom_id === denomId) || null;
+const esc = s => T.esc(s);
+
+/* Låst = enten en historikkvisning, eller et godkjent oppgjør. Datalaget nekter
+   å lagre over et godkjent oppgjør, så skjermen skal ikke invitere til endringer
+   den ikke får lov til å gjennomføre. */
+const isLocked = () => state.readonly || (state.session && state.session.status === 'verified');
+
+/* Veide rader viser gramtallet ved siden av antallet, så telleren ser hva vekta sa. */
+function unitsText(units, line, d, kind){
+  if (!units) return '';
+  const weighed = kind !== 'safe' && d.kind === 'coin' && line.source === 'weight';
+  return weighed ? units + ' stk · ' + K.formatGrams(line.grams) : units + ' stk';
+}
+
+function rowHtml(d, kind, line){
+  const isSafe = kind === 'safe';
+  const coin = d.kind === 'coin';
+  const units = K.unitsFor(line, d, kind);
+  const warn = K.weightWarning(line, d, kind);
+  const disabled = isLocked() ? ' disabled' : '';
+  /* Fanger opp navnet på advarselselementet slik at gramfeltet kan peke på det
+     via aria-describedby — uten dette har skjermleserbrukere ingen kobling
+     mellom feltet og advarselsteksten (se punkt 6 i kodegjennomgangen). */
+  const warnId = 'rw-' + esc(d.id) + '-' + esc(kind);
+
+  /* Verdiene under kommer fra lagret/gjenopprettet tilstand (utkast i dag,
+     denom_snapshot/sections fra en fremtidig Supabase-rad senere) og skal
+     aldri limes rått inn i markup: Number(...) tvinger dem til trygge tall
+     før esc() i tillegg HTML-escaper resultatet — samme to-lags forsvar som
+     resten av siden bruker for d.id/d.label. En lagret streng som
+     `1" onfocus="…` skal bli tallet 0, ikke en levende hendelseshandler på et
+     felt telleren trykker på i det den lastes. */
+  const looseVal = K.toCount(line.loose);
+  const rollsVal = K.toCount(line.rolls);
+  const gramsVal = line.grams == null ? 0 : K.toGrams(line.grams);
+  /* Norsk komma i redisplay, ikke bare ved inntasting — et tall lagret som
+     103.5 skal vises «103,5», ikke slå om til punktum bare fordi det gikk
+     gjennom en re-rendering (fanebytte, reload). */
+  const gramsDisplay = gramsVal > 0 ? String(gramsVal).replace('.', ',') : '';
+
+  const looseLabel = isSafe ? 'Løse' : 'Antall';
+  const derived = (!isSafe && line.source === 'weight' && coin) ? ' derived' : '';
+  /* type="text", IKKE type="number" — kodegjennomgangens funn 9: et number-felt
+     kan la ett enkelt ugyldig tegn (typisk et feilplassert komma) forsvinne
+     midt i inntastingen mens sifrene rundt det består og slås sammen —
+     «12,5» blir stille «125», ti ganger for mye (2 500 kr i stedet for
+     240 kr på en 20-kroning), UTEN at input-eventet noensinne ser det rå,
+     feilaktige innholdet, fordi nettleseren luker bort tegnet før JavaScript
+     får se verdien. Regelen i denne fila er nå absolutt: INGEN numerisk felt
+     er type="number" noe sted på siden (se også data-k="roll" i
+     denomRowHtml). Parsing skjer som før gjennom K.toCount. */
+  let inputs =
+    `<label class="in"><span class="th-kicker">${esc(looseLabel)}</span>` +
+    `<input type="text" inputmode="numeric" pattern="[0-9]*" data-f="loose" class="${esc(derived.trim())}"` +
+    ` value="${esc(looseVal || '')}" placeholder="0" aria-label="${esc(d.label)} ${esc(looseLabel.toLowerCase())}"${disabled}></label>`;
+
+  if (coin && isSafe){
+    inputs += `<label class="in"><span class="th-kicker">Ruller ×${esc(Number(d.units_per_roll) || 0)}</span>` +
+      `<input type="text" inputmode="numeric" pattern="[0-9]*" data-f="rolls"` +
+      ` value="${esc(rollsVal || '')}" placeholder="0" aria-label="${esc(d.label)} ruller"${disabled}></label>`;
+  } else if (coin && !isSafe){
+    /* type="text", IKKE type="number": et number-felt forkaster desimalkomma
+       («103,5» blir «1035», deretter tolket som 1035 g — ti ganger for mye,
+       stille) før JavaScript i det hele tatt får se verdien. inputmode="decimal"
+       gir likevel numerisk/desimal-tastatur på mobil. Selve normaliseringen
+       (komma → punktum) skjer i K.toGrams, testet ett sted. */
+    inputs += `<label class="in"><span class="th-kicker">Gram</span>` +
+      `<input type="text" inputmode="decimal" pattern="[0-9]+([.,][0-9]+)?" enterkeyhint="next" data-f="grams"` +
+      ` value="${esc(gramsDisplay)}" placeholder="0" aria-label="${esc(d.label)} gram"` +
+      `${warn ? ` aria-describedby="${warnId}"` : ''}${disabled}></label>`;
+  }
+
+  /* En avslått valør vises bare når linja fortsatt har tall i seg — merket, så
+     det er tydelig at den ikke lenger er en del av standardoppsettet. */
+  const retired = d.active === false ? ' <span class="r-retired th-kicker">utgått</span>' : '';
+
+  return `<div class="row" data-denom="${esc(d.id)}">
+    <span class="r-label">${esc(d.label)}${retired}</span>
+    <span class="lead"></span>
+    <b class="r-val" data-val>${K.formatOre(K.valueOre(units, d))}</b>
+    <div class="r-in">${inputs}</div>
+    <span class="r-units" data-units>${esc(unitsText(units, line, d, kind))}</span>
+    <span class="r-warn" id="${warnId}" data-warn${warn ? '' : ' hidden'} aria-live="polite">Vekten gir ikke et helt antall mynt</span>
+  </div>`;
+}
+
+function renderTable(){
+  const kind = state.tab;
+  const section = state.session.sections[kind];
+  const groups = [['note', 'Sedler'], ['coin', 'Mynt']];
+  $('tableWrap').innerHTML = groups.map(([g, title]) => {
+    /* Rendres fra øktens linjer, ikke fra valørlista. En valør som blir slått av
+       mens noen teller beholder linja si så lenge det står tall i den (se syncLines),
+       og de pengene skal være synlige på skjermen — ikke telles i det skjulte. */
+    const rows = section.lines
+      .map(l => ({ line:l, d: K.denomById(state.denoms, l.denom_id) }))
+      .filter(x => x.d && x.d.kind === g)
+      .map(x => rowHtml(x.d, kind, x.line))
+      .join('');
+    if (!rows) return '';
+    const hint = (g === 'coin' && kind === 'safe') ? ' · løse + uåpnede ruller'
+               : (g === 'coin') ? ' · antall eller vekt' : '';
+    return `<div class="grp"><div class="grp-hd th-kicker">${title}${hint}</div>${rows}</div>`;
+  }).join('');
+}
+
+/* ---------- faner ---------- */
+
+$('tabs').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-kind]');
+  if (!btn) return;
+  state.tab = btn.dataset.kind;
+  [...$('tabs').children].forEach(b => {
+    const on = b === btn;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  /* tableWrap er ett delt panel som bytter innhold i stedet for tre separate
+     paneler — gyldig etter WAI-ARIA sitt tabs-mønster så lenge det peker på
+     hvilken fane som faktisk styrer det til enhver tid. */
+  $('tableWrap').setAttribute('aria-labelledby', btn.id);
+  renderTable();
+  updateTotals();
+});
+
+/* ---------- status ---------- */
+
+const STATUS_TEXT = { draft:'Utkast', saved:'Lagret', verified:'Godkjent' };
+
+/* renderStatus() rører IKKE tabellen (verken direkte eller betinget) — det var
+   nettopp den betingede «bare når låsetilstanden endret seg»-logikken
+   kodegjennomgangen fant to problemer med (funn 13): den lot renderAll()
+   rendre tabellen to ganger på enhver overgang (renderTable() øverst i
+   renderAll, så en gang til her inne fordi isLocked() hadde endret seg), OG
+   — omvendt — den lot en NY økt/valørliste med SAMME låsetilstand som forrige
+   (f.eks. to historiske oppslag på rad, begge skrivebeskyttet) beholde forrige
+   økts rader på skjermen, fordi «låsetilstanden» ikke hadde endret seg selv om
+   INNHOLDET hadde det.
+   Ansvaret er nå entydig fordelt: renderAll() er det eneste stedet som
+   garantert rendrer tabellen fersk (kalles når session/denoms/tab kan ha
+   endret identitet — se enterView). renderStatus() alene brukes kun av
+   saveBtn (der isLocked() aldri endrer seg av en lagring) og av verifyBtn
+   (som nå kaller renderAll(), ikke renderStatus() alene, nettopp fordi
+   godkjenning ER en låseovergang — se verifyBtn-handleren). */
+function renderStatus(){
+  const s = state.session;
+  const chip = $('statusChip');
+  /* s.status kommer fra lagret/gjenopprettet tilstand og skal ikke limes rått
+     inn i et className uten å være sjekket mot den kjente statusvokabularen
+     K.STATUSES — samme whitelist-prinsipp finalizeSession selv håndhever. */
+  const status = K.STATUSES.includes(s.status) ? s.status : 'draft';
+  chip.className = 'chip st-' + status;
+  chip.textContent = STATUS_TEXT[status];
+  $('actions').hidden = isLocked();
+  $('roNote').hidden = !isLocked();
+  $('roText').textContent = status === 'verified'
+    ? 'Godkjent av ' + ((s.verified_by && s.verified_by.name) || 'butikksjef') + ' — låst.'
+    : 'Skrivebeskyttet — lagret oppgjør.';
+  $('newBtn').hidden = state.readonly;
+  $('sessDate').disabled = isLocked();
+  $('note').disabled = isLocked();
+  renderAuth();
+}
+
+/* ---------- inntasting ----------
+   Tabellen re-rendres aldri på et tastetrykk; det ville revet fokus vekk midt i
+   tellingen. Vi oppdaterer den berørte raden og summene, ingenting annet. */
+
+$('tableWrap').addEventListener('input', e => {
+  const input = e.target.closest('input[data-f]');
+  if (!input || isLocked()) return;
+  const rowEl = input.closest('.row');
+  const d = K.denomById(state.denoms, rowEl.dataset.denom);
+  const line = lineFor(state.session.sections[state.tab], rowEl.dataset.denom);
+  if (!d || !line) return;
+
+  if (input.dataset.f === 'grams'){
+    /* K.toGrams gjør normaliseringen (komma → punktum) og klampingen — samme
+       testede funksjon domenet selv bruker, ikke en egen kopi her (se
+       kasse-domain.js). Gramfeltet er type="text" nettopp for at det rå,
+       komma-holdige innholdet skal nå helt hit uforvrengt. */
+    const g = K.toGrams(input.value);
+    const looseInput = rowEl.querySelector('input[data-f="loose"]');
+    if (g > 0){
+      line.grams = g;
+      line.source = 'weight';
+      line.loose = K.unitsFor(line, d, state.tab);
+      looseInput.value = line.loose || '';
+      looseInput.classList.add('derived');
+    } else {
+      /* 0 g er «ingen vekt registrert» i K.toGrams sin egen kontrakt (samme
+         grense som weightWarning/unitsFor bruker) — ikke «null mynt». Et
+         tomt eller nullstilt gramfelt skal derfor IKKE røre et allerede
+         manuelt talt antall i løse-feltet (kodegjennomgangsfunn: å sette
+         loose=0 her slettet en reell telling bare fordi noen rørte
+         gramfeltet ved et uhell). */
+      line.grams = null;
+      line.source = 'manual';
+      looseInput.classList.remove('derived');
+    }
+  } else {
+    line[input.dataset.f] = K.toCount(input.value);
+    if (input.dataset.f === 'loose'){
+      line.source = 'manual';
+      input.classList.remove('derived');
+      const gramInput = rowEl.querySelector('input[data-f="grams"]');
+      if (gramInput) gramInput.value = '';
+      line.grams = null;
+    }
+  }
+
+  updateRow(rowEl, d, line);
+  updateTotals();
+  queueDraft();
+});
+
+/* Enter flytter til neste felt — telling går raskere med én hånd på tastaturet. */
+$('tableWrap').addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const inputs = [...$('tableWrap').querySelectorAll('input')];
+  const i = inputs.indexOf(e.target);
+  if (i >= 0 && i < inputs.length - 1){ e.preventDefault(); inputs[i + 1].focus(); inputs[i + 1].select(); }
+});
+
+function updateRow(rowEl, d, line){
+  const units = K.unitsFor(line, d, state.tab);
+  const valEl = rowEl.querySelector('[data-val]');
+  const next = K.formatOre(K.valueOre(units, d));
+  if (valEl.textContent !== next){
+    valEl.textContent = next;
+    valEl.classList.remove('pop');
+    void valEl.offsetWidth;      /* tvinger omstart av animasjonen */
+    valEl.classList.add('pop');
+  }
+  rowEl.querySelector('[data-units]').textContent = unitsText(units, line, d, state.tab);
+  const warn = K.weightWarning(line, d, state.tab);
+  const warnEl = rowEl.querySelector('[data-warn]');
+  warnEl.hidden = !warn;
+  /* rowHtml setter aria-describedby kun ved en full rendering — tabellen
+     re-rendres aldri på et tastetrykk (se toppen av filen), så uten dette
+     ville advarselen dukke opp visuelt mens gramfeltets kobling til den
+     (og dermed skjermleserens eneste varsel om at vekten ikke traff et helt
+     antall mynt) sto igjen fra før advarselen fantes — typisk «ingen». */
+  const gramsInput = rowEl.querySelector('input[data-f="grams"]');
+  if (gramsInput){
+    if (warn) gramsInput.setAttribute('aria-describedby', warnEl.id);
+    else gramsInput.removeAttribute('aria-describedby');
+  }
+}
+
+/* ---------- summer ---------- */
+
+function updateTotals(){
+  K.recalc(state.session, state.denoms);
+  const s = state.session;
+  /* Samme forsvarsmønster som K.safeDiffOre/K.dayChangeOre selv bruker
+     («manglende seksjon gir 0, ikke en kastet feil») — ett lag bak
+     boot() sin formsjekk av utkastet (isPlausibleSession), ikke i stedet
+     for den. Uten dette ville sections.safe.total_ore lest fint mens
+     sections.opening.total_ore kastet rett etterpå, og latt sumSafe stå med
+     et tall mens resten av linja aldri ble skrevet. */
+  const safeSec = s.sections.safe || {}, openingSec = s.sections.opening || {}, closingSec = s.sections.closing || {};
+
+  $('sumSafe').textContent    = K.formatOre(safeSec.total_ore);
+  $('sumOpening').textContent = K.formatOre(openingSec.total_ore);
+  $('sumClosing').textContent = K.formatOre(closingSec.total_ore);
+  $('sumChange').textContent  = K.formatDiffOre(K.dayChangeOre(s));
+
+  const kind = state.tab;
+  const isSafe = kind === 'safe';
+  const section = s.sections[kind] || {};
+  $('tbLabel').textContent = { safe:'Safe', opening:'Åpning', closing:'Lukking' }[kind];
+  $('tbSum').textContent = K.formatOre(section.total_ore);
+  $('tbTargetWrap').hidden = !isSafe;
+  $('tbDiffWrap').hidden = !isSafe;
+
+  if (isSafe){
+    const diff = K.safeDiffOre(s);
+    $('tbTarget').textContent = K.formatOre(section.target_ore);
+    $('tbDiff').textContent = K.formatDiffOre(diff);
+    const ok = diff === 0 && section.total_ore > 0;
+    $('tbDiffWrap').classList.toggle('ok', diff === 0);
+    $('tbCheck').classList.toggle('on', ok);
+  } else {
+    $('tbCheck').classList.remove('on');
+  }
+}
+
+/* Summeringslinjen nederst er fast posisjonert og kan bli 1–3 linjer høy
+   avhengig av tallenes bredde og skjermbredde (kodegjennomgangsfunn: en
+   hardkodet padding-bottom på body traff feil så snart linja vokste utover
+   én rad). Måler den faktiske høyden og skriver den til en CSS-variabel body
+   sin padding-bottom leser, i stedet for å gjette en konstant. Samme
+   ResizeObserver-mønster som bikes.html bruker for lerretsstørrelse. */
+const totalBarEl = $('totalBar');
+if (typeof ResizeObserver !== 'undefined' && totalBarEl){
+  const syncTotalBarHeight = () => {
+    document.documentElement.style.setProperty('--tb-h', totalBarEl.offsetHeight + 'px');
+  };
+  new ResizeObserver(syncTotalBarHeight).observe(totalBarEl);
+}
+
+/* ---------- utkast ---------- */
+
+let draftTimer = null;
+/* Utkastet dekker KUN en økt UTEN id ennå. Kodegjennomgangens funn 1: en
+   lokal «kladd» og den faktiske, lagrede posten kan ellers gli fra hverandre —
+   godkjenning skjer på DEN LAGREDE posten (via id, se KasseStore.verifySession),
+   ikke på et lokalt utkast. Uten denne sjekken skrev ett tastetrykk etter en
+   vellykket lagring et utkast som fortsatt bar øktens ekte id og status:'saved'
+   — og en godkjenning som skjedde RETT ETTERPÅ (samme visning) rørte den
+   lagrede posten, ikke det utkastet. Ved neste sideinnlasting hentet boot()
+   likevel det gamle utkastet (fortsatt 'saved', fortsatt med id-en) og viste et
+   REDIGERBART oppgjør som i virkeligheten var godkjent og låst — telleren
+   kunne telle om hele safen og først da få «Oppgjøret er godkjent og kan ikke
+   lagres over». Har økten en id, er den allerede varig lagret ett sted; å ikke
+   lokalt kladde videre-redigering av den er en bevisst avveining (en krasjet
+   telefon kan miste de siste, ikke-lagrede endringene på en allerede lagret
+   økt) mot alternativet, som er verre: en lokal kopi som kan motsi den
+   faktiske, lagrede/godkjente sannheten. */
+function queueDraft(){
+  if (isLocked() || state.session.id) return;
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(() => {
+    draftTimer = null;
+    /* Tilstanden kan ha endret seg i løpet av de 400ms — f.eks. en godkjenning
+       som kom inn et annet sted, eller (se cancelPendingDraft) en økt som ble
+       byttet ut mens denne timeren ventet men rakk å fyre likevel. Skriv ikke
+       et utkast for en økt som ikke lenger skal ha ett. */
+    if (isLocked() || state.session.id) return;
+    state.session.note = $('note').value;
+    state.session.session_date = $('sessDate').value || state.session.session_date;
+    /* saveDraft svarer true/false synkront (se kasse-store.js) — en telefon som
+       låser seg midt i tellingen skal ikke koste en ny telling, så en mislykket
+       skriving her skal si fra, ikke stille anta at utkastet ble lagret. */
+    if (S.saveDraft(state.session) !== true){
+      T.toast('Kunne ikke lagre utkastet automatisk — nettleseren har trolig ikke mer lagringsplass.');
+    }
+  }, 400);
+}
+
+/* Nullstiller en ventende autolagring uten å kjøre den. Må kalles overalt
+   S.clearDraft() kalles (i dag: «Ny telling»; senere «Lagre oppgjør», se
+   Task 11) — ellers kan en timer som allerede var i gang når utkastet ble
+   slettet, fyre 400ms senere og skrive akkurat det utkastet tilbake. Det er
+   ufarlig ved «Ny telling» i dag (skriver bare den nye, tomme økten), men blir
+   reelt en gang «Lagre oppgjør» lander: en gammel timer ville da gjenopplivet
+   et allerede lagret oppgjør (status:'saved', ekte id) som et rediger-bart
+   utkast boot() henter tilbake neste gang siden lastes. */
+function cancelPendingDraft(){
+  clearTimeout(draftTimer);
+  draftTimer = null;
+}
+
+$('note').addEventListener('input', queueDraft);
+$('sessDate').addEventListener('change', () => {
+  state.session.session_date = $('sessDate').value || todayIso();
+  queueDraft();
+});
+
+$('newBtn').addEventListener('click', () => {
+  cancelPendingDraft();
+  enterView({ session: K.newSession(state.denoms, todayIso()), denoms: state.denoms, readonly:false });
+  S.clearDraft();
+  T.toast('Ny telling startet.');
+});
+
+/* ---------- lagring ----------
+   Tellingen kan starte uten innlogging; kravet inntreffer først her, slik at
+   verktøyet er i gang i det sekundet siden åpner. T.ensureUser() åpner den delte
+   innloggingsmodalen og gir null tilbake ved avbrutt — «ingenting skjer» er riktig
+   respons her, ikke en feilmelding, og finally-blokken slår knappen på igjen uansett
+   hvilken vei funksjonen returnerer. */
+
+$('saveBtn').addEventListener('click', async () => {
+  if (isLocked()) return;   // knappen er skjult da (se renderStatus), men UI-et skal ikke stoles blindt på
+  const btn = $('saveBtn');
+  btn.disabled = true;
+  try {
+    const user = await T.ensureUser();
+    if (!user) return;
+    state.session.note = $('note').value.trim();
+    state.session.session_date = $('sessDate').value || todayIso();
+    const finalized = K.finalizeSession(state.session, state.denoms, user, new Date().toISOString());
+    const saved = await S.saveSession(finalized);
+    /* cancelPendingDraft() MÅ kalles her — se kommentaren ved funksjonens
+       definisjon over: en autolagringstimer som allerede var i gang da lagringen
+       startet (f.eks. rakk å bli satt av et tastetrykk rett før klikket, og
+       T.ensureUser() ventet på innloggingsmodalen i mellomtiden) kan ellers fyre
+       etter denne S.clearDraft() og skrive akkurat det gamle utkastet tilbake
+       over den nå lagrede økten. */
+    cancelPendingDraft();
+    state.session = saved;
+    S.clearDraft();
+    renderStatus();
+    updateTotals();
+    T.toast('Oppgjøret er lagret.');
+  } catch (err){
+    /* Datalaget kaster med lesbare norske meldinger (full lagringsplass, godkjent
+       økt som ikke kan overskrives, o.l.) — vis den heller enn en generisk tekst. */
+    T.toast('Kunne ikke lagre: ' + (err && err.message ? err.message : 'ukjent feil'));
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+$('verifyBtn').addEventListener('click', async () => {
+  /* Knappen er allerede skjult for alt under manager+ og for alt annet enn en
+     lagret (ikke godkjent) økt (se renderAuth) — samme «stol ikke blindt på
+     UI-et»-linje som saveBtn over. Selve rollesjekken og selvgodkjenning håndheves
+     av KasseStore.verifySession, ikke her (se kasse-store.js). */
+  if (!T.canManage() || !state.session.id || state.session.status !== 'saved') return;
+  const btn = $('verifyBtn');
+  btn.disabled = true;
+  try {
+    state.session = await S.verifySession(state.session.id, T.getUser());
+    /* Samme grunn som saveBtn — og enda mer direkte her (kodegjennomgangens
+       funn 1): godkjenning gjør økten LÅST via KasseStore, mens et lokalt
+       utkast med samme id fortsatt kunne stå igjen og lyve om det ved neste
+       sideinnlasting. cancelPendingDraft() først, i tilfelle en timer allerede
+       var i gang idet godkjenningen fullførte. renderAll(), ikke renderStatus()
+       alene — godkjenning ER en låseovergang (isLocked() går false → true), og
+       renderStatus() rører ikke lenger tabellen selv (se dens egen kommentar,
+       funn 13); det er renderAll() sin jobb å faktisk disable de ni feltene. */
+    cancelPendingDraft();
+    S.clearDraft();
+    renderAll();
+    T.toast('Oppgjøret er godkjent.');
+  } catch (err){
+    T.toast('Kunne ikke godkjenne: ' + (err && err.message ? err.message : 'ukjent feil'));
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* ---------- historikk ---------- */
+
+const NO_DATE = iso => {
+  if (!iso) return '—';
+  const [y, m, d] = String(iso).split('-');
+  return `${d}.${m}.${y}`;
+};
+
+/* Datalaget gir null når en lagret rad mangler tall (se KasseStore sin summary()).
+   Da skal det stå en tankestrek, ikke «0 kr» — et null-avvik tegner det grønne
+   haketegnet for et balansert oppgjør, og en skadet/ufullstendig rad skal ikke se
+   ut som et oppgjør som gikk opp. */
+const oreOrDash = ore => (ore == null ? '—' : K.formatOre(ore));
+
+/* K.formatOre/K.formatDiffOre sine returverdier limes inn under UTEN esc() —
+   det ene stedet i fila der et interpolert felt ikke går via esc(), og
+   kodegjennomgangens funn 14 ba om enten å gjøre regelen bokstavelig eller
+   forklare unntaket. Dette er unntaket, forklart: begge funksjonene bygger
+   strengen selv fra et Number(...)-tvunget tall, av et fast, kjent
+   tegnsett (siffer, mellomrom/non-breaking space, komma, minus, «kr») —
+   ingen inndata kan få dem til å produsere & < > " ' . rowHtml over gjør det
+   samme (K.formatOre(K.valueOre(...))) uten esc(), av samme grunn. */
+function histRowHtml(r){
+  const known = r.safe_diff_ore != null;
+  const diffOk = known && r.safe_diff_ore === 0;
+  const verified = r.status === 'verified';
+  return `<div class="hist-row" data-id="${esc(r.id)}" role="button" tabindex="0">
+    <span class="hist-date">${esc(NO_DATE(r.session_date))}</span>
+    <span class="hist-who">${esc(r.counted_by_name || 'ukjent')}${verified ? ' · godkjent' : ''}</span>
+    <span class="hist-sums">
+      <span>Safe ${oreOrDash(r.safe_total_ore)}</span>
+      <span class="hist-diff${diffOk ? ' ok' : ''}">${known ? K.formatDiffOre(r.safe_diff_ore) : '—'}</span>
+      <span>Åpn ${oreOrDash(r.opening_total_ore)}</span>
+      <span>Lukk ${oreOrDash(r.closing_total_ore)}</span>
+    </span>
+  </div>`;
+}
+
+/* Kodegjennomgangens funn 10: en fast grense på 60 uten datofilter eller
+   «last flere» gjorde de eldste radene helt uoppnåelige så snart historikken
+   passerte 60 lagrede oppgjør. listSessions({limit}) gir alltid HELE det
+   sorterte utvalget opp til grensen (ikke en side/cursor) — økes grensen og
+   spørringen kjøres på nytt, kommer nøyaktig de samme radene tilbake pluss
+   flere, så «last flere» kan trygt bare erstatte hele lista med et høyere tak
+   i stedet for å slå sammen to spørringer. */
+const HIST_PAGE = 60;
+let histLimit = HIST_PAGE;
+
+async function renderHistoryList(){
+  /* KasseStore.listSessions kaster heller enn å levere en skadet liste videre
+     (se readSessions i kasse-store.js) — et pengeregister skal si ifra, ikke
+     late som historikken er tom. Historikkvisningen skal likevel vise NOE
+     lesbart i stedet for å la feilen boble opp til en blank side. */
+  try {
+    const rows = await S.listSessions({ limit: histLimit });
+    const more = rows.length >= histLimit
+      ? '<button class="chipbtn" id="histMore">Last flere</button>' : '';
+    $('histList').innerHTML = rows.length
+      ? rows.map(histRowHtml).join('') + more
+      : '<p class="empty">Ingen lagrede oppgjør ennå.</p>';
+  } catch (err){
+    $('histList').innerHTML = '<p class="empty">Kunne ikke hente historikken: ' +
+      esc(err && err.message ? err.message : 'ukjent feil') + '</p>';
+  }
+}
+
+async function openHistory(){
+  histLimit = HIST_PAGE;
+  await renderHistoryList();
+  $('countView').hidden = true;
+  $('historyView').hidden = false;
+  $('totalBar').hidden = true;
+  /* Kodegjennomgangens funn 11: fokus falt til <body> på hvert visningsbytte.
+     Overskriften har tabindex="-1" nettopp for å kunne ta imot fokus
+     programmatisk uten å komme inn i vanlig Tab-rekkefølge. */
+  $('historyHeading').focus({ preventScroll:true });
+}
+
+function showCount(){
+  $('historyView').hidden = true;
+  $('countView').hidden = false;
+  $('totalBar').hidden = false;
+  /* Samme begrunnelse som openHistory over — fokus skal ikke falle til <body>.
+     Den aktive fanen er alltid til stede og alltid en fornuftig landingsplass. */
+  const activeTab = $('tabs').querySelector('.on');
+  if (activeTab) activeTab.focus({ preventScroll:true });
+}
+
+/* Nullstiller fanevisningen til Safe — samme oppdatering av .on/aria-selected/
+   aria-labelledby som tabs-klikkhandleren over gjør. Kalles kun fra enterView
+   nedenfor nå (se dens kommentar). */
+function resetToSafeTab(){
+  state.tab = 'safe';
+  [...$('tabs').children].forEach((b, i) => {
+    b.classList.toggle('on', i === 0);
+    b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+  });
+  $('tableWrap').setAttribute('aria-labelledby', 'tab-safe');
+}
+
+/* ---------- én eier av visningstilstanden ----------
+   Kodegjennomgangen fant at fem forskjellige steder (boot, openSaved,
+   «tilbake til historikk», «tilbake til telling», newBtn) hver på sin egen
+   måte satte de samme fire tingene — state.session, state.denoms,
+   state.readonly, og (dels) den lokale kladden — og at nettopp AVVIKET mellom
+   dem var kilden til flere funn: state.readonly glemt i én visning
+   (funn 6), aria-labelledby glemt i en annen, en risikabel rekkefølge i en
+   tredje (funn 4). enterView er nå det ENESTE stedet i fila som skriver disse
+   sammen. Alt annet i fila skal kalle DENNE i stedet for å sette
+   state.session/state.denoms/state.readonly hver for seg.
+   Den rører bevisst IKKE den lokale kladden (S.saveDraft/clearDraft) — det er
+   ikke en femte ting enterView eier, det er en beslutning hvert kallsted tar
+   eksplisitt og ulikt (newBtn/saveBtn/verifyBtn sletter kladden fordi de vet
+   den ikke lenger skal representere noe; boot/restoreLiveSession LESER kladden
+   for å bygge session-verdien de sender inn hit) — å gjemme kladdehåndtering
+   inne i enterView ville gjort nettopp den variasjonen umulig å uttrykke. */
+function enterView({ session, denoms, readonly }){
+  state.session = session;
+  state.denoms = denoms;
+  state.readonly = readonly;
+  resetToSafeTab();
+  $('sessDate').value = session.session_date || todayIso();
+  $('note').value = session.note || '';
+  renderAll();
+}
+
+async function openSaved(id){
+  let full = null;
+  try { full = await S.getSession(id); }
+  catch (err){ T.toast('Kunne ikke åpne oppgjøret: ' + (err && err.message ? err.message : 'ukjent feil')); return; }
+  if (!full){ T.toast('Fant ikke oppgjøret.'); return; }
+  /* Samme formsjekk som boot() bruker på et utkast (se isPlausibleSession) — en
+     håndredigert eller eldre-formet rad skal gi en lesbar feil her også, ikke en
+     tabell som kræsjer halvveis inn i renderTable/updateTotals. Kjøres FØR noe
+     som helst skrives til delt tilstand (funn 4): en avvist økt skal etterlate
+     siden nøyaktig som den var, ikke en halvveis anvendt tilstand med
+     readonly:true og ni skrivbare felt fortsatt synlige for en ANNEN økt. */
+  if (!isPlausibleSession(full)){ T.toast('Oppgjøret har feil format og kan ikke vises.'); return; }
+  /* Historikken vises med valørene slik de var da økten ble lagret, ikke dagens —
+     en senere endret myntvekt eller deaktivert valør skal ikke skrive om en
+     historisk telling. */
+  const denoms = (full.denom_snapshot && full.denom_snapshot.length) ? full.denom_snapshot : state.denoms;
+  enterView({ session: full, denoms, readonly:true });
+  showCount();
+}
+
+$('histList').addEventListener('click', e => {
+  if (e.target.id === 'histMore'){ histLimit += HIST_PAGE; renderHistoryList(); return; }
+  const row = e.target.closest('.hist-row');
+  if (row) openSaved(row.dataset.id);
+});
+$('histList').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const row = e.target.closest('.hist-row');
+  if (row){ e.preventDefault(); openSaved(row.dataset.id); }
+});
+
+$('histBtn').addEventListener('click', openHistory);
+
+/* Henter dagens levende valørkonfigurasjon og bygger en redigerbar økt (det
+   gjenopprettede utkastet, eller en frisk økt) inn i delt tilstand via
+   enterView. Eneste stedet som forlater en skrivebeskyttet visning til fordel
+   for en levende telling — brukt av BÅDE «‹ Tilbake til historikk» og «‹
+   Tilbake til telling» (se kommentarene ved hver av dem for hvorfor begge
+   trenger den, kodegjennomgangens funn 6).
+   Lesingen skjer FØR noe skrives til delt tilstand: S.getDenominations() kan
+   kaste (skadet eller ugyldig valørliste), og hvis den gjør det midt i et
+   forsøk på å bytte vekk fra en skrivebeskyttet, historisk økt, skal ikke
+   brukeren sitte igjen med et redigerbart skjema som fortsatt peker på den
+   historiske øktens id — en utkast-lagring eller «Lagre oppgjør» ville da
+   skrevet nye tall over en lagret post med dens gamle id. Returnerer
+   true/false slik kallerne kan la resten av sin egen handling (åpne
+   historikklista, vise tellevisningen) utebli ved feil. */
+async function restoreLiveSession(){
+  let denoms;
+  try { denoms = await S.getDenominations(); }
+  catch (err){ T.toast('Kunne ikke laste valørene: ' + (err && err.message ? err.message : 'ukjent feil')); return false; }
+  let draft = null;
+  try { draft = S.getDraft(); } catch { draft = null; }
+  const session = (draft && isPlausibleSession(draft)) ? K.syncLines(draft, denoms) : K.newSession(denoms, todayIso());
+  enterView({ session, denoms, readonly:false });
+  return true;
+}
+
+$('backToHist').addEventListener('click', async () => {
+  if (!(await restoreLiveSession())) return;
+  openHistory();
+});
+
+/* Kodegjennomgangens funn 6: «‹ Tilbake til telling» er nådd på to ulike
+   veier. Fra en LEVENDE telling (state.readonly er allerede false — brukeren
+   bare kikket på historikklista uten å åpne en rad) skal knappen bare vise
+   countView igjen, uendret, akkurat slik den sto. Men headerens «Historikk»-
+   chip (histBtn) er alltid synlig og går RETT til listen uten å røre
+   state.readonly — så en bruker som åpnet en skrivebeskyttet rad, deretter
+   trykket «Historikk» i toppen (tilbake til listen, readonly fortsatt true,
+   fortsatt pekende på den historiske øktens id/denoms), og SÅ trykket «‹
+   Tilbake til telling», ville få den samme gamle, skrivebeskyttede historiske
+   økten tilbake — stikk i strid med det knappen lover. Sjekk state.readonly
+   og gjenopprett en levende økt FØRST i det tilfellet. */
+$('backToCount').addEventListener('click', async () => {
+  if (state.readonly){ if (!(await restoreLiveSession())) return; }
+  showCount();
+});
+
+/* ---------- valørark (manager+) ---------- */
+
+/* Kronefeltet har ingen egen K.-funksjon å gjenbruke (verdien konverteres til
+   øre her, ikke brukt direkte i en sum i domenet) — samme normalisering
+   (komma → punktum) som K.toGrams sin kommentar beskriver, men en egen, liten
+   kopi fordi resultatet her er kroner, ikke gram.
+   Kodegjennomgangens funn 8 rettet opp en påstand her som var feil: et TOMT
+   felt gir faktisk 0, ikke NaN (JS sin egen Number('') === 0), mens et
+   BOKSTAV-holdig felt (f.eks. «abc») gir NaN. To ulike tall, men samme utfall
+   uansett — begge blir avvist av validateDenoms (0 er ikke > 0, NaN er ikke et
+   sikkert heltall), med samme lesbare, valørnavngitte feilmelding. Ren
+   dokumentasjon rettet her; oppførselen var aldri feil. */
+const parseKrInput = v => {
+  const n = Number(String(v == null ? '' : v).trim().replace(',', '.'));
+  return Number.isFinite(n) ? n : NaN;
+};
+
+/* Norsk komma i redisplay for valørarkets desimalfelt — samme prinsipp som
+   gramsDisplay i rowHtml over: et tall lagret med punktum skal vises med
+   komma, også etter en re-rendering av arket (f.eks. rett etter lagring). */
+const decDisplay = n => {
+  const num = Number(n);
+  return Number.isFinite(num) ? String(num).replace('.', ',') : '';
+};
+
+/* Regelen er nå absolutt, ikke fordelt etter hvor «desimal» hvert felt er:
+   INGEN numerisk felt på denne siden er `type="number"`, uansett om det er et
+   desimalfelt («Verdi kr», «Gram/stk», begge `inputmode="decimal"`) eller et
+   heltallsfelt («Stk/rull», `inputmode="numeric"`). Kodegjennomgangens funn 9
+   rettet opp en tidligere versjon av nettopp denne kommentaren som hevdet
+   «Stk/rull» trygt kunne være type="number" fordi det er et heltall uten
+   kommafelle — det stemte ikke: et number-felt kan la et enkelt ugyldig tegn
+   forsvinne midt i inntastingen mens sifrene rundt består og slås sammen
+   («2,5» → «25»), en helt annen og verre feil enn den vanlige komma-til-
+   punktum-fellen. Se samme funn ved data-f="loose"/data-f="rolls" i rowHtml. */
+function denomRowHtml(d){
+  const coin = d.kind === 'coin';
+  const krVal = decDisplay(Number(d.value_ore) / 100);
+  const gramVal = coin ? decDisplay(d.gram_per_unit) : '';
+  const rollVal = coin ? esc(Number(d.units_per_roll) || 0) : '';
+  const active = d.active !== false;
+  const label = esc(d.label);
+  return `<div class="dn-row" data-id="${esc(d.id)}">
+    <div class="f"><span class="th-kicker">Navn</span><input data-k="label" value="${label}" aria-label="Navn på ${label}"></div>
+    <div class="f"><span class="th-kicker">Verdi kr</span><input data-k="value" type="text" inputmode="decimal" value="${esc(krVal)}" aria-label="Verdi i kroner for ${label}"></div>
+    <div class="f"><span class="th-kicker">Gram/stk</span><input data-k="gram" type="text" inputmode="decimal" value="${esc(gramVal)}" aria-label="Gram per stykk for ${label}"${coin ? '' : ' disabled'}></div>
+    <div class="f"><span class="th-kicker">Stk/rull</span><input data-k="roll" type="text" inputmode="numeric" pattern="[0-9]*" value="${rollVal}" aria-label="Stykk per rull for ${label}"${coin ? '' : ' disabled'}></div>
+    <button type="button" class="chipbtn tog${active ? ' on' : ''}" data-k="active" aria-pressed="${active}">${active ? 'Aktiv' : 'Av'}</button>
+  </div>`;
+}
+
+/* denomBtn er kun synlig for manager+ og ikke-låste økter (se renderAuth) — men
+   den sessbaren er del av #countView og forblir synlig der uansett
+   låsetilstand (i motsetning til #actions). Guarden under er samme «stol ikke
+   blindt på UI-et»-linje som save/verify over: isLocked(), ikke bare
+   state.readonly (funn 3) — en økt godkjent i SAMME visning har
+   readonly:false men status:'verified', og skal være like utilgjengelig for
+   arket som en historisk visning.
+   Kodegjennomgangens funn 2, adressert her: dialogen manglet en fokusfelle og
+   bakgrunnen var ikke inert, så Tab kunne gå UT av arket til #histBtn og videre
+   til de tabindex="0" historikkradene bak overlegget — reelt nok til å nå
+   openSaved() og bytte state.denoms til en FROSSET, historisk (og potensielt
+   kortere) valørliste mens arket fortsatt sto åpent med den opprinnelige,
+   lengre lista tegnet. denomReturnFocus + inert på header/main/totalbar
+   stenger den veien; Tab-fellen på selve arket (se nedenfor) er redundans i
+   tilfelle inert ikke virker helt likt overalt. readDenomSheet/denomSave har
+   i tillegg sitt eget forsvar i dybden mot nøyaktig det scenariet. */
+const DENOM_INERT_TARGETS = () =>
+  [document.querySelector('header'), document.querySelector('main'), $('totalBar')].filter(Boolean);
+
+let denomReturnFocus = null;
+
+function openDenomSheet(){
+  if (!T.canManage() || isLocked()) return;
+  denomReturnFocus = document.activeElement;
+  $('denomRows').innerHTML = state.denoms.map(denomRowHtml).join('');
+  $('denomErr').textContent = '';
+  $('denomModal').classList.add('open');
+  DENOM_INERT_TARGETS().forEach(el => { el.inert = true; });
+  setTimeout(() => { const first = $('denomRows').querySelector('input'); if (first) first.focus(); }, 30);
+}
+function closeDenomSheet(){
+  $('denomModal').classList.remove('open');
+  DENOM_INERT_TARGETS().forEach(el => { el.inert = false; });
+  /* Kodegjennomgangens funn 11: fokus falt ikke tilbake til det som åpnet
+     arket (normalt #denomBtn). document.contains-sjekken dekker det sjeldne
+     tilfellet der historikklista ble tegnet på nytt mens arket sto åpent, slik
+     at elementet som opprinnelig hadde fokus ikke lenger finnes. */
+  const back = denomReturnFocus;
+  denomReturnFocus = null;
+  if (back && typeof back.focus === 'function' && document.contains(back)) back.focus();
+}
+
+/* Tab-felle: Tab/Shift+Tab sykler mellom arkets egne synlige, ikke-avslåtte
+   felt i stedet for å forlate arket — se begrunnelsen ved DENOM_INERT_TARGETS
+   over. offsetParent er null for et element med display:none (skjult
+   forelder), som er hvordan et deaktivert Gram/Stk-rull-felt sitt display
+   fortsatt IKKE er — de er disabled, ikke skjult, og filtreres derfor separat. */
+$('denomModal').addEventListener('keydown', e => {
+  if (e.key !== 'Tab') return;
+  const focusables = [...$('denomModal').querySelectorAll('button, input')]
+    .filter(el => !el.disabled && el.offsetParent !== null);
+  if (!focusables.length) return;
+  const first = focusables[0], last = focusables[focusables.length - 1];
+  if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+});
+
+$('denomBtn').addEventListener('click', openDenomSheet);
+$('denomClose').addEventListener('click', closeDenomSheet);
+$('denomCancel').addEventListener('click', closeDenomSheet);
+$('denomModal').addEventListener('click', e => { if (e.target === $('denomModal')) closeDenomSheet(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('denomModal').classList.contains('open')) closeDenomSheet(); });
+
+$('denomRows').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-k="active"]');
+  if (!btn) return;
+  const on = !btn.classList.contains('on');
+  btn.classList.toggle('on', on);
+  btn.setAttribute('aria-pressed', String(on));
+  btn.textContent = on ? 'Aktiv' : 'Av';
+});
+
+/* K.toGrams og K.toCount gjør normaliseringen (komma → punktum, avkorting/klamping)
+   for gram- og rull-feltene — samme testede funksjoner domenet selv bruker for
+   telletabellens tilsvarende felt, ikke egne kopier her. En gramvekt lest som 0
+   eller et ugyldig tall blir 0, som validateDenoms uansett avviser med en lesbar,
+   valørnavngitt feilmelding («Myntvekten på … må være et tall over null.»).
+   Returnerer null (ikke en delvis liste) hvis ÉN rad peker på en valør-id som
+   ikke lenger finnes i state.denoms — kodegjennomgangens funn 2: forrige
+   versjon droppet en slik rad stille (.filter(Boolean)), som i praksis SLETTET
+   en valør fra den lagrede lista uten varsel akkurat den ene gangen
+   state.denoms rakk å endre seg mens arket sto åpent (repro: åpne arket, Tab
+   ut via den manglende fokusfellen, åpne en historisk økt med færre valører
+   bak overlegget, Tab tilbake til «Lagre valører» og trykk Enter — coin_1
+   forsvant sporløst). Avbryt hele lesingen i stedet: denomSave viser da en
+   feil og ber om å åpne arket på nytt, i stedet for å lagre en ufullstendig
+   liste som ser helt gyldig ut. */
+function readDenomSheet(){
+  const rows = [...$('denomRows').querySelectorAll('.dn-row')];
+  const list = [];
+  for (const row of rows){
+    const src = K.denomById(state.denoms, row.dataset.id);
+    if (!src) return null;
+    const get = k => row.querySelector(`[data-k="${k}"]`);
+    const kr = parseKrInput(get('value').value);
+    list.push({
+      id: src.id,
+      kind: src.kind,
+      label: get('label').value.trim(),
+      value_ore: Number.isFinite(kr) ? Math.round(kr * 100) : NaN,
+      gram_per_unit: src.kind === 'coin' ? K.toGrams(get('gram').value) : null,
+      units_per_roll: src.kind === 'coin' ? K.toCount(get('roll').value) : null,
+      sort: src.sort,
+      active: get('active').classList.contains('on'),
+    });
+  }
+  return list;
+}
+
+$('denomSave').addEventListener('click', async () => {
+  /* isLocked(), ikke bare canManage() — kodegjennomgangens funn 2 og 3: en
+     låst økt (skrivebeskyttet historikk ELLER en økt godkjent i samme
+     visning) skal aldri kunne være mål for en lagring herfra, selv om
+     fokusfellen over lukker den vanligste veien inn i det tilfellet. */
+  if (!T.canManage() || isLocked()){ closeDenomSheet(); return; }
+  const list = readDenomSheet();
+  if (list === null){
+    $('denomErr').textContent = 'Valørlisten endret seg mens arket var åpent. Lukk og åpne det på nytt.';
+    return;
+  }
+  const check = K.validateDenoms(list);
+  if (!check.ok){ $('denomErr').textContent = check.error; return; }
+  const btn = $('denomSave');
+  btn.disabled = true;
+  try {
+    const saved = await S.saveDenominations(list);
+    state.denoms = saved;
+    /* Aldri syncLines/recalc en låst økt (funn 3): en godkjent økt vist under
+       banneret «Godkjent … låst» skal ikke få tallene sine regnet om av en
+       valørendring — ingenting av dette persisteres uansett (KasseStore.
+       saveSession nekter å skrive over en godkjent økt), men «låst» skal bety
+       låst også på skjermen, også midlertidig. Sjekket her på nytt (ikke bare
+       i guarden øverst) fordi await S.saveDenominations kan gi tid for
+       tilstanden å endre seg. syncLines, ikke en ny K.newSession når vi FÅR
+       lov: en valør som nettopp ble talt og så deaktivert her skal beholde
+       linja si (se syncLines-kommentaren i kasse-domain.js) — ikke forsvinne
+       stille fordi arket ble lagret. */
+    if (!isLocked()) K.syncLines(state.session, state.denoms);
+    closeDenomSheet();
+    renderAll();
+    queueDraft();
+    T.toast('Valørene er lagret.');
+  } catch (err){
+    $('denomErr').textContent = err && err.message ? err.message : 'Kunne ikke lagre valørene.';
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.addEventListener('DOMContentLoaded', boot);
+</script>
+</body>
+</html>
