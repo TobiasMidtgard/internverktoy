@@ -1,0 +1,68 @@
+{
+  "title": "Bilpærer: W5W, P21W og slik finner du riktig pære",
+  "category": "Bildeler",
+  "tags": [
+    "bilpærer",
+    "lyspærer",
+    "W5W",
+    "P21W",
+    "P21/5W",
+    "PY21W",
+    "R5W",
+    "R10W",
+    "C5W",
+    "C10W",
+    "W16W",
+    "W21W",
+    "W21/5W",
+    "H1",
+    "H3",
+    "H4",
+    "H7",
+    "H8",
+    "H11",
+    "HB3",
+    "HB4",
+    "xenon",
+    "LED",
+    "sokkel",
+    "NBK",
+    "Norsk Bildelkatalog",
+    "thansen",
+    "Osram"
+  ],
+  "sources": [
+    {
+      "label": "Norsk Bildelkatalog",
+      "url": "https://www.norskbildelkatalog.no/"
+    },
+    {
+      "label": "NBK – brukerveiledning",
+      "url": "https://www.norskbildelkatalog.no/Default.aspx?Cat=4&Id=12"
+    },
+    {
+      "label": "Romnes – dokumentert arbeidsflyt i NBK (eldre manual)",
+      "url": "https://www.romnes.no/wp-content/uploads/2021/04/Brukerveiledning-ny-versjon-av-Norsk-Bildelkatalog.pdf"
+    },
+    {
+      "label": "thansen – pæreutvalg og registreringsnummersøk",
+      "url": "https://www.thansen.no/bil/bildeler/paerer-og-lykter/front-og-taakelykter/n438"
+    },
+    {
+      "label": "OSRAM – pærefinner",
+      "url": "https://www.osram.com/apps/gvlrg/en_COM"
+    },
+    {
+      "label": "OSRAM – halogenpærer, tekniske data",
+      "url": "https://www.osram.com/appsj/pdc/pdf.do?cid=GPS01_1057023&lid=EN&vid=MP_EUROPE_Europe_eCat"
+    },
+    {
+      "label": "OSRAM – LED-godkjenninger for Norge",
+      "url": "https://www.osram.com/am/night-breaker-led-compatibility-list-norway.jsp"
+    },
+    {
+      "label": "HELLA – pærebytte",
+      "url": "https://www.hella.com/techworld/uk/technical/automotive-lighting/xenon-and-headlight-bulb-replacement/"
+    }
+  ]
+}
