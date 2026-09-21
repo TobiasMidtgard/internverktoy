@@ -167,6 +167,17 @@
   .sc-head .sp{flex:1;height:1px;background:var(--line);margin-left:0;}
   .arts-label{margin-top:26px;}
   .arts-label::after{content:"";flex:1;height:1px;background:var(--line);}
+  .content-head{margin:28px 0 8px;flex-wrap:wrap;gap:10px;}
+  .content-head[hidden]{display:none;}
+  .content-head h2{flex:1;min-width:180px;}
+  .section-help{color:var(--muted);font-size:13px;margin:0 0 12px;}
+  .section-empty{padding:20px 16px;text-align:left;border:1px dashed var(--line);border-radius:var(--radius);}
+  .sequence-meta{display:flex;align-items:center;gap:8px;margin-top:9px;color:#9ecbff;font:500 11px var(--font-mono);}
+  .sequence-meta .th-ic{font-size:16px;}
+  #sequences{scroll-margin-top:90px;}
+  #catalogFilters{margin-top:26px;}
+  .filter-label{color:var(--muted);font:600 10px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;}
+  #catalogFilters .cats{margin-top:10px;}
   .sc-cats{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px;}
   .sc-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));margin-top:10px;}
   .sc-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;display:flex;flex-direction:column;gap:9px;
@@ -221,11 +232,9 @@
   <div class="search">
     <div class="q-wrap">
       <svg class="q-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="search" id="q" placeholder="Søk i kunnskapsbasen: «vindusvisker passform», «dekkmønster vinter», «takboks montering»…" autocomplete="off">
+      <input type="search" id="q" aria-label="Søk i artikler, knappesekvenser og snarveier" placeholder="Søk i artikler, knappesekvenser og snarveier …" autocomplete="off">
     </div>
     <button class="btn" onclick="doSearch()">Søk</button>
-    <button id="newBtn" class="btn cta" style="display:none" onclick="newEntry()">+ Ny</button>
-    <button id="newGuideBtn" class="btn ghost" style="display:none" onclick="openEditor(null,undefined,true)">+ Ny knappesekvens</button>
   </div>
   <section id="shortcuts" hidden>
     <div class="sc-head">
@@ -235,11 +244,28 @@
     </div>
     <div class="sc-cats" id="scCats"></div>
     <div class="sc-grid" id="scGrid"></div>
-    <h2 class="arts-label"><span class="sec-idx">02 /</span> Artikler</h2>
   </section>
-  <div class="cats" id="cats"></div>
-  <div class="res-count" id="resCount" aria-live="polite"></div>
-  <div class="results" id="results"></div>
+  <div id="catalogFilters" hidden>
+    <div class="filter-label">Filtrer artikler og knappesekvenser</div>
+    <div class="cats" id="cats"></div>
+  </div>
+  <section id="sequences" aria-labelledby="sequenceHeading" hidden>
+    <div class="sc-head content-head">
+      <h2 id="sequenceHeading"><span class="sec-idx">02 /</span> Knappesekvenser</h2>
+      <button id="newGuideBtn" class="btn cta" style="display:none" onclick="openEditor(null,undefined,true)">+ Ny knappesekvens</button>
+    </div>
+    <p class="section-help">Steg for steg med tydelige taster, knapper og skjermbilder.</p>
+    <div class="res-count" id="sequenceCount" aria-live="polite"></div>
+    <div class="results" id="sequenceResults"></div>
+  </section>
+  <section id="articleSection" aria-labelledby="articleHeading">
+    <div class="sc-head content-head" id="articleHead" hidden>
+      <h2 id="articleHeading"><span class="sec-idx">03 /</span> Artikler</h2>
+      <button id="newBtn" class="btn ghost" style="display:none" onclick="newEntry()">+ Ny artikkel</button>
+    </div>
+    <div class="res-count" id="resCount" aria-live="polite"></div>
+    <div class="results" id="results"></div>
+  </section>
 </main>
 
 <!-- Article -->
@@ -384,6 +410,7 @@ function refreshAuth(){
   $('newBtn').style.display = me ? 'inline-block' : 'none';
   $('newBtn').textContent = canManage ? '+ Ny artikkel' : '+ Foreslå artikkel';
   $('newGuideBtn').style.display = canManage ? 'inline-block' : 'none';
+  $('sequences').hidden=!me; $('articleHead').hidden=!me; $('catalogFilters').hidden=!me;
   $('sugBtn').style.display = canManage ? 'inline-flex' : 'none';
   if(canManage) loadSuggestionCount();
   loadLinks();
@@ -486,31 +513,48 @@ async function deleteLink(){
 /* ---------- search ---------- */
 let tmr;
 function debounce(){ clearTimeout(tmr); tmr=setTimeout(doSearch,250); }
+function searchResultHTML(r){
+  const steps=Number.isInteger(r.step_count)&&r.step_count>0?r.step_count:0;
+  return `<div class="res" role="button" tabindex="0" data-article-id="${esc(r.id)}">
+    <div class="res-top"><h3>${esc(r.title)}</h3><span class="cat">${esc(r.category)}</span></div>
+    <div class="snip">${highlight(r.snippet)}</div>
+    ${r.is_guide===true?`<div class="sequence-meta">${T.icon('terminal')}<span>${steps?steps+' steg':'Knappesekvens'} · Åpne veiledning</span></div>`:''}</div>`;
+}
 async function doSearch(){
   const request=++searchRequest, revision=authRevision;
   renderLinks();   // snarveiene filtreres av samme søkefelt, klient-side
   if(!T.getUser()){
+    $('sequences').hidden=true; $('sequenceResults').innerHTML=''; $('sequenceCount').textContent='';
     $('resCount').textContent='';
     $('results').innerHTML=`<div class="empty gate">
       <span class="gate-ic-box" aria-hidden="true">${T.icon('lock','gate-ic')}</span>
       <span class="th-kicker">Intern tilgang</span>
       <h3>Kunnskapsbasen er intern</h3>
-      <p>Logg inn med ansattkoden din for å lese artikler og snarveier.</p>
+      <p>Logg inn med ansattkoden din for å lese artikler, knappesekvenser og snarveier.</p>
       <button class="btn" onclick="toggleAuth().then(doSearch)">Logg inn</button>
     </div>`;
     return;
   }
-  if(!$('results').childElementCount){ $('results').innerHTML='<div class="th-skel sk-row"></div><div class="th-skel sk-row"></div><div class="th-skel sk-row"></div>'; }
+  if(!$('results').childElementCount||$('results').querySelector('.gate')){ $('results').innerHTML='<div class="th-skel sk-row"></div><div class="th-skel sk-row"></div>'; }
+  if(!$('sequenceResults').childElementCount){ $('sequenceResults').innerHTML='<div class="th-skel sk-row"></div>'; }
   const q=$('q').value; let data;
-  try{ data = await T.rpcAuth('wiki_search',{ p_q:q, p_category:cat||null }); }
-  catch(error){ if(error.message==='no-auth'||revision!==authRevision||request!==searchRequest) return; $('resCount').textContent=''; $('results').innerHTML=`<div class="empty">${/function|does not exist|schema/i.test(error.message)?'Kjør wiki_v2.sql i Supabase først.':esc(error.message)}</div>`; return; }
+  try{ data = await T.rpcAuth('wiki_search_sections',{ p_q:q, p_category:cat||null }); }
+  catch(error){
+    if(error.message==='no-auth'||revision!==authRevision||request!==searchRequest) return;
+    $('resCount').textContent=''; $('sequenceCount').textContent='';
+    const message=/function|does not exist|schema/i.test(error.message)?'Søket er ikke tilgjengelig akkurat nå. Last siden på nytt og prøv igjen.':error.message;
+    $('results').innerHTML=`<div class="empty section-empty">${esc(message)}</div>`;
+    $('sequenceResults').innerHTML='<div class="empty section-empty">Knappesekvensene kunne ikke lastes. Prøv Søk igjen.</div>'; return;
+  }
   if(revision!==authRevision||request!==searchRequest||!T.getUser())return;
-  const rows=data||[];
-  $('resCount').textContent = rows.length + ((q.trim()||cat) ? ' treff' : ' artikler');
-  if(!rows.length){ $('results').innerHTML='<div class="empty">Ingen treff. Prøv et annet søkeord'+(canManage?' eller lag en ny artikkel.':', eller foreslå en ny artikkel.')+'</div>'; return; }
-  $('results').innerHTML = rows.map(r=>`<div class="res" role="button" tabindex="0" onclick="openArticle('${r.id}')">
-    <div class="res-top"><h3>${esc(r.title)}</h3><span class="cat">${esc(r.category)}</span></div>
-    <div class="snip">${highlight(r.snippet)}</div></div>`).join('');
+  const rows=data||[],sequences=rows.filter(r=>r.is_guide===true),ordinary=rows.filter(r=>r.is_guide!==true),filtered=!!(q.trim()||cat);
+  $('sequences').hidden=false;
+  $('sequenceCount').textContent=sequences.length+(filtered?' treff':sequences.length===1?' knappesekvens':' knappesekvenser')+(sequences.length===60?' · viser inntil 60':'');
+  $('resCount').textContent=ordinary.length+(filtered?' treff':ordinary.length===1?' artikkel':' artikler')+(ordinary.length===60?' · viser inntil 60':'');
+  $('sequenceResults').innerHTML=sequences.length?sequences.map(searchResultHTML).join(''):
+    `<div class="empty section-empty">${filtered?'Ingen knappesekvenser matcher søket eller kategorien. Prøv et annet søkeord eller velg Alle.':'Ingen knappesekvenser ennå.'+(canManage?' Velg «+ Ny knappesekvens» for å lage den første.':' Her kommer veiledninger med tastetrykk og bilder.')}</div>`;
+  $('results').innerHTML=ordinary.length?ordinary.map(searchResultHTML).join(''):
+    `<div class="empty section-empty">${filtered?'Ingen artikler matcher søket eller kategorien.':'Ingen artikler ennå.'}</div>`;
 }
 
 /* ---------- article ---------- */
@@ -657,6 +701,9 @@ document.addEventListener('keydown',e=>{
           && e.target.getAttribute('role')==='button' && e.target.tagName!=='BUTTON'){ e.preventDefault(); e.target.click(); }
 });
 $('q').addEventListener('input',debounce);
+for(const id of ['results','sequenceResults'])$(id).addEventListener('click',e=>{
+  const result=e.target.closest('[data-article-id]'); if(result)openArticle(result.dataset.articleId);
+});
 $('q').addEventListener('keydown',e=>{ if(e.key==='Enter') doSearch(); });
 $('editModal').addEventListener('input',()=>{editorDirty=true;});
 window.addEventListener('beforeunload',e=>{if(editorDirty && $('editModal').classList.contains('show')){e.preventDefault();e.returnValue='';}});

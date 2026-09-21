@@ -153,21 +153,23 @@ test('the last editor requested keeps its own content and save target', async t 
 test('delayed search and shortcut replies do not repopulate the page after logout', async t => {
   const ui = page(t), search = deferred(), links = deferred();
   await flush();
-  ui.rpc(name => name === 'wiki_search' ? search.promise : name === 'get_links' ? links.promise : []);
+  ui.rpc(name => name === 'wiki_search_sections' ? search.promise : name === 'get_links' ? links.promise : []);
   const searching = ui.window.doSearch();
   const loadingLinks = ui.window.loadLinks();
   await ui.window.toggleAuth();
-  search.resolve([{ id: 'private', title: 'Privat treff', category: 'XAL', snippet: 'Hemmelig beskrivelse' }]);
+  search.resolve([{ id: 'private', title: 'Privat treff', category: 'XAL', snippet: 'Hemmelig beskrivelse',is_guide:true,step_count:2 }]);
   links.resolve([{ id: 'private-link', title: 'Privat snarvei', kind: 'xal', command: 'PRIVATE', category: 'XAL' }]);
   await Promise.all([searching, loadingLinks]);
   assert.match(ui.byId('results').textContent, /Logg inn/);
+  assert.equal(ui.byId('sequences').hidden,true);
+  assert.equal(ui.byId('sequenceResults').textContent,'');
   assert.doesNotMatch(ui.document.body.textContent, /Privat treff|Hemmelig beskrivelse|Privat snarvei|PRIVATE/);
 });
 
 test('a slower previous search does not replace the latest results', async t => {
   const ui = page(t), old = deferred(), recent = deferred();
   await flush();
-  ui.rpc((name, args) => name === 'wiki_search'
+  ui.rpc((name, args) => name === 'wiki_search_sections'
     ? (args.p_q === 'old' ? old.promise : recent.promise) : []);
   ui.byId('q').value = 'old';
   const first = ui.window.doSearch();
@@ -304,5 +306,46 @@ test('an RPC save failure keeps the editor, changed fields, screenshots and retr
   ui.window.confirm = () => false;
   ui.window.closeModal('editModal');
   assert.equal(ui.byId('editModal').classList.contains('show'), true, 'The unsaved-change guard is retained');
+});
+
+test('search places guides in their own section without downloading screenshots until opened', async t => {
+  const ui=page(t);await flush();
+  ui.rpc((name,args)=>name==='get_article'?article(args.p_id,'Finn lagerstatus'):name==='wiki_search_sections'?[
+    {id:'ordinary',title:'Vanlig artikkel',category:'Bildeler',snippet:'Om bilpærer',is_guide:false,step_count:0},
+    {id:'sequence',title:'Finn lagerstatus',category:'XAL',snippet:'Start ved hovedmenyen',is_guide:true,step_count:3}
+  ]:[]);
+  await ui.window.doSearch();
+  assert.equal(ui.byId('sequences').hidden,false);
+  assert.match(ui.byId('sequenceResults').textContent,/Finn lagerstatus/);
+  assert.match(ui.byId('sequenceResults').textContent,/3 steg/);
+  assert.doesNotMatch(ui.byId('sequenceResults').textContent,/Vanlig artikkel/);
+  assert.match(ui.byId('results').textContent,/Vanlig artikkel/);
+  assert.doesNotMatch(ui.byId('results').textContent,/Finn lagerstatus/);
+  assert.equal(ui.byId('sequenceCount').textContent,'1 knappesekvens');
+  assert.equal(ui.byId('resCount').textContent,'1 artikkel');
+  assert.equal(ui.byId('sequenceResults').querySelector('img'),null);
+  assert.equal(ui.calls.some(c=>c.name==='get_article'),false);
+  ui.byId('sequenceResults').querySelector('h3').click();await flush();
+  assert.equal(ui.byId('aTitle').textContent,'Finn lagerstatus');
+  assert.equal(ui.byId('articleModal').classList.contains('show'),true);
+});
+
+test('the sequence section stays discoverable when empty and errors clear both old result lists', async t => {
+  const ui=page(t);await flush();
+  ui.rpc(()=>[]);await ui.window.doSearch();
+  assert.equal(ui.byId('sequences').hidden,false);
+  assert.match(ui.byId('sequenceResults').textContent,/Ingen knappesekvenser ennå/);
+  assert.equal(ui.byId('newGuideBtn').closest('section').id,'sequences');
+  assert.equal(ui.byId('newBtn').closest('section').id,'articleSection');
+  ui.byId('q').value='finn';ui.window.setCat('XAL');await flush();
+  const request=ui.calls.filter(c=>c.name==='wiki_search_sections').at(-1);
+  assert.deepEqual(request.args,{p_q:'finn',p_category:'XAL'});
+  assert.match(ui.byId('sequenceResults').textContent,/Ingen knappesekvenser matcher/);
+  ui.byId('results').textContent='OLD ARTICLE';ui.byId('sequenceResults').textContent='OLD GUIDE';
+  ui.rpc(name=>{if(name==='wiki_search_sections')throw new Error('Nettverksfeil');return [];});
+  await ui.window.doSearch();
+  assert.doesNotMatch(ui.byId('results').textContent,/OLD/);
+  assert.doesNotMatch(ui.byId('sequenceResults').textContent,/OLD/);
+  assert.match(ui.byId('sequenceResults').textContent,/kunne ikke lastes/);
 });
 
