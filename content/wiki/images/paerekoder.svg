@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280" role="img" aria-labelledby="title desc">
+<title id="title">Les pærekoden: W5W, R5W, P21W og PY21W</title>
+<desc id="desc">Egen skjematisk illustrasjon, ikke måltegning. W5W har glasskile. R5W og P21W har metallsokkel. PY21W har ravfarget glass. Første W i W5W beskriver utførelsen; siste W betyr watt. Y i PY21W betegner gult eller ravfarget lys. De gule sikksakklinjene viser glødetråden.</desc>
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#f1f4f8}
+.title{font-size:36px;font-weight:700}.code{font-size:40px;font-weight:700}
+.label{font-size:28px}.note{font-size:26px;fill:#b9c9db}
+.glass{fill:#122d49;stroke:#7db8f0;stroke-width:4}
+.metal{fill:#344f6a;stroke:#a9c7e6;stroke-width:4}
+.wire{fill:none;stroke:#a9c7e6;stroke-width:3}
+.filament{fill:none;stroke:#ffd400;stroke-width:4;stroke-linejoin:round}
+.panel{fill:#101f31;stroke:#2a4664;stroke-width:2}
+</style>
+<defs>
+<g id="metal-base">
+<rect x="81" y="119" width="56" height="47" class="metal"/>
+<path d="M81 133H137M81 150H137" stroke="#a9c7e6" stroke-width="2"/>
+<path d="M75 140H81M137 140H143M100 172H118" stroke="#a9c7e6" stroke-width="5"/>
+</g>
+<g id="large-filament">
+<path d="M91 122V80L90 61M127 122V80L128 61" class="wire"/>
+<path d="M90 61l6-9 7 18 6-18 7 18 6-18 6 9" class="filament"/>
+</g>
+</defs>
+<rect width="720" height="1280" rx="14" fill="#06101f"/>
+<text x="32" y="56" class="title">Les pærekoden</text>
+<text x="32" y="102" class="note">Gul sikksakk i glasset = glødetråd</text>
+<path d="M32 128H688" stroke="#2684e6" stroke-width="2"/>
+<g transform="translate(0 156)">
+<rect x="24" width="672" height="208" rx="10" class="panel"/>
+<path d="M94 147V116C55 81 61 25 109 25S163 81 124 116V147Z" class="glass"/>
+<path d="M97 145V91L91 74M121 145V91L127 74" class="wire"/>
+<path d="M91 74l6-9 6 18 6-18 6 18 6-18 6 9" class="filament"/>
+<path d="M94 129H124M94 141H124" stroke="#7db8f0" stroke-width="3"/>
+<text x="208" y="55" class="code"><tspan fill="#7db8f0">W</tspan><tspan>5</tspan><tspan fill="#ffd400">W</tspan></text>
+<text x="208" y="104" class="label">Glasskile · 5 watt</text>
+<text x="208" y="146" class="note">W foran: glass-/kilesokkel</text>
+<text x="208" y="184" class="note">W bakerst: enheten watt</text>
+</g>
+<g transform="translate(0 380)">
+<rect x="24" width="672" height="208" rx="10" class="panel"/>
+<path d="M81 120V94C56 70 66 24 109 24S162 70 137 94V120Z" class="glass"/>
+<path d="M91 122V80L94 66M127 122V80L124 66" class="wire"/>
+<path d="M94 66l5-9 5 18 5-18 5 18 5-18 5 9" class="filament"/>
+<use href="#metal-base"/>
+<text x="208" y="55" class="code">R5<tspan fill="#ffd400">W</tspan></text>
+<text x="208" y="104" class="label">Liten rund kolbe · 5 watt</text>
+<text x="208" y="146" class="note">R5W: metallsokkel BA15s</text>
+<text x="208" y="184" class="note">Samme watt som W5W</text>
+</g>
+<g transform="translate(0 604)">
+<rect x="24" width="672" height="208" rx="10" class="panel"/>
+<path d="M81 120V98C44 74 54 15 109 15S174 74 137 98V120Z" class="glass"/>
+<use href="#large-filament"/><use href="#metal-base"/>
+<text x="208" y="55" class="code">P21<tspan fill="#ffd400">W</tspan></text>
+<text x="208" y="104" class="label">Større kolbe · 21 watt</text>
+<text x="208" y="146" class="note">Klar pære · BA15s</text>
+<text x="208" y="184" class="note">Én glødetråd</text>
+</g>
+<g transform="translate(0 828)">
+<rect x="24" width="672" height="208" rx="10" class="panel"/>
+<path d="M81 120V98C44 74 54 15 109 15S174 74 137 98V120Z" fill="#734519" stroke="#ffc36d" stroke-width="4"/>
+<use href="#large-filament"/><use href="#metal-base"/>
+<text x="208" y="55" class="code">P<tspan fill="#ffc36d">Y</tspan>21<tspan fill="#ffd400">W</tspan></text>
+<text x="208" y="104" class="label">Ravfarget · 21 watt</text>
+<text x="208" y="146" class="note">Y: gult / ravfarget lys</text>
+<text x="208" y="184" class="note">BAU15s: annen pinnevinkel</text>
+</g>
+<text x="32" y="1093" class="label" font-weight="700">Koden beskriver mer enn effekten.</text>
+<text x="32" y="1137" class="note">Sjekk også sokkel, spenning og lysfunksjon.</text>
+<text x="32" y="1179" class="note">Lik wattstyrke betyr ikke at pærene passer.</text>
+<text x="32" y="1242" class="note">Skjematisk · ikke måltegning</text>
+</svg>

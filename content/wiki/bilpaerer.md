@@ -27,6 +27,73 @@ Tall og bokstaver kan ikke tolkes likt i alle pærefamilier. Les hele merkingen.
 
 Betegnelser som **T10, T15 og T20** brukes ofte om størrelse/utførelse. De er nyttige søkeord, men erstatter ikke kontroll av den fullstendige pæretypen, effekten og sokkelen. [thansen W5W](https://www.thansen.no/bil/bildeler/paerer-og-lykter/ovrige-paerer/w5w/paeresett-osram-t10-w5w-12v-5w/n1540207/pn1540340) · [OSRAM halogendata](https://www.osram.com/appsj/pdc/pdf.do?cid=GPS01_1057023&lid=EN&vid=MP_EUROPE_Europe_eCat)
 
+# W, R, P og Y – hva forteller bokstavene?
+
+**Se først på hvilken kode du leser.** W5W er en pæretype, mens W2.1x9.5d er en sokkelkode. Samme bokstav kan bety forskjellige ting i pærekoden og sokkelkoden.
+
+- **W først i W5W, W16W og W21W:** Disse er pærer med glass-/kilesokkel som skyves inn i holderen. I W5W beskriver den første W-en utførelsen.
+- **W til slutt i W5W eller P21W:** W etter effekttallet betyr watt. W5W er dermed en glassokkelpære på 5 W; P21W har 21 W nominell effekt.
+- **R i R5W og R10W:** Dette er familien med liten, rund glasskolbe og metallbajonett. R betyr ikke at pæren lyser rødt, og er ikke en instruks om at den alltid skal sitte bak på bilen.
+- **P i P21W og P21/5W:** Dette er en annen pærefamilie, med større kolbe enn vanlige R5W/R10W. P betyr ikke at pæren automatisk er et parkeringslys.
+- **Y i PY21W og WY5W:** Y angir gul/oransje lysfarge, altså «yellow/amber». Resten av koden er fortsatt viktig: PY21W og WY5W har forskjellig utførelse, effekt og sokkel.
+
+Bokstavene hjelper deg å kjenne igjen familien, men er ingen komplett passformkontroll. For eksempel har en vanlig R5W og P21W begge BA15s-sokkel, selv om kolbe og effekt er forskjellige. [HELLA om pærebetegnelser](https://www.hella.com/lightstyle/pl/which-bulbs-does-your-car-need.html) · [OSRAMs signalpærer](https://www.osram.com/ecat/ULTRA%20LIFE-Signal%20lamps-Car%20lighting-Automotive/sk/en/GPS01_1057056/)
+
+![W5W har glasskile, R5W liten rund kolbe, P21W større kolbe og PY21W gul/oransje lysfarge. Skjematisk illustrasjon, ikke måltegning.](https://tobiasmidtgard.github.io/internverktoy/content/wiki/images/paerekoder.svg)
+
+**Et praktisk eksempel:** Skal bilen ha PY21W, må du kontrollere både gul/oransje lysfarge, 21 W og BAU15s. En klar P21W er ikke riktig erstatning, selv om den ligner. [PY21W hos thansen](https://www.thansen.no/bil/bildeler/paerer-og-lykter/ovrige-paerer/py21w/paeresett-py21w-bau15s-12v-21w-gul-osram/n1540194/pn1540270)
+
+# BA15s, BA15d, BAY15d og BAU15s – se på undersiden og siden
+
+De vanlige skrivemåtene er **BA15s** og **BA15d**, med s eller d etter tallet. «BAS15» og «BAD15» brukes noen ganger når kodene gjengis feil. Les den faktiske merkingen før du bestiller.
+
+## Slik deler du opp koden
+
+- **BA:** Bajonettsokkel. Små pinner på siden låser sokkelen når pæren settes inn og vris.
+- **15:** Sokkelens nominelle diameter i millimeter. Det betyr ikke 15 W.
+- **s:** Én kontaktflate på bunnen, fra «single».
+- **d:** To separate kontaktflater på bunnen, fra «double».
+- **Y eller U mellom BA og 15:** En bestemt mekanisk variant av sokkelen. Bokstaven må være med når du sammenligner.
+
+**Bunnkontaktene og låsepinnene er to forskjellige ting.** Bunnkontaktene kobler pæren elektrisk til holderen. Pinnene på siden bestemmer hvordan den kan settes inn og låses. Metallhylsen kan også føre strøm, men telles ikke som en ekstra bunnkontakt i s/d-betegnelsen. [IEC 60061: system for sokkelbetegnelser, utdrag](https://cdn.standards.iteh.ai/samples/17585/3c3c88abf9d74657b573f0ecfd05b133/IEC-60061-4-1990-AMD13-2010.pdf)
+
+## Forskjellene du må kunne se
+
+- **BA15s:** Én bunnkontakt. Sidepinnene står rett overfor hverandre, 180° fra hverandre, og i samme høyde. Vanlig på P21W og mange R5W/R10W.
+- **BA15d:** To bunnkontakter. Sidepinnene står 180° fra hverandre og i samme høyde. Ikke det samme som BAY15d.
+- **BAY15d:** To bunnkontakter. Sidepinnene står 180° fra hverandre, men i ulik høyde. Dette koder innsettingsretningen. Vanlig på P21/5W.
+- **BAU15s:** Én bunnkontakt. Sidepinnene sitter i samme høyde, men med 150° vinkel mellom seg i stedet for 180°. Vanlig på PY21W.
+- **BAZ15d:** To bunnkontakter, 150° pinnevinkel og ulik pinnehøyde. Også dette er en egen variant, ikke en erstatning du velger bare fordi den har to kontakter.
+
+Pinneplasseringene er dokumentert i [Lumileds’ sammenligning av 15 mm-bajonettsokler hos UNECE, side 5](https://wiki.unece.org/download/attachments/58524685/TFSR-03-07%20LED-Options-15mmBayonet%202018-03-12.pdf?api=v2). Vinklene gjelder rundt sokkelen, sett langs pærens lengderetning.
+
+![BA15s, BA15d, BAY15d og BAU15s sammenlignet fra siden og undersiden. Tell bunnkontaktene og kontroller både vinkelen og høyden på låsepinnene.](https://tobiasmidtgard.github.io/internverktoy/content/wiki/images/bajonettsokler.svg)
+
+**To bunnkontakter betyr ikke alltid to glødetråder.** P21/5W med BAY15d har to glødetråder, men det finnes BA15d-pærer med én glødetråd og to bunnkontakter. HELLA viser for eksempel en slik 12 V/21 W-pære. Bruk derfor pæretypen og effektmerkingen i tillegg til s/d. [HELLA: BA15d med én glødetråd](https://www.hella.co.nz/en/products/bulbs/signal-and-marker-bulbs/bayonet-signal-bulb-single-filament-double-contact-ba15d.html)
+
+**Y i PY21W og Y i BAY15d betyr ulike ting.** I pæretypen PY21W viser Y til gul/oransje lys. I sokkelkoden BAY15d angir Y sokkelvarianten med pinner i ulik høyde. En BAY15d-pære trenger derfor ikke være gul.
+
+## En rask kontroll med pæren i hånden
+
+- Se **under** pæren: Er det én eller to kontaktflater?
+- Se **langs siden**: Sitter låsepinnene i samme eller ulik høyde?
+- Se **langs lengderetningen**: Står pinnene rett overfor hverandre eller forskjøvet rundt sokkelen?
+- Les merkingen: Pæretype, volt, watt og sokkel må stemme samlet.
+
+Hvis pæren ikke låser med den bevegelsen holderen er laget for, må du kontrollere typen. Ikke press, slip av pinner eller endre holderen for å få en annen variant til å passe.
+
+# Glassokkel og pinol – andre ting å kontrollere
+
+**W2.1x9.5d** beskriver en glass-/kilesokkel med omtrent 2,1 mm tykkelse ved kontaktområdet og 9,5 mm bredde. Tykkelsesangivelsen omfatter kontaktområdet med tilførselsleder, ikke bare glasset. **d** angir to kontaktdeler. I **W3x16q** angir **q** fire kontaktdeler. Disse tallene er sokkelmål, ikke pærens watt eller hele glasskolbens størrelse. [IEC 60061: sokkelmål og kontaktdeler](https://cdn.standards.iteh.ai/samples/17585/3c3c88abf9d74657b573f0ecfd05b133/IEC-60061-4-1990-AMD13-2010.pdf)
+
+Derfor kan W5W og W16W ha samme sokkelkode og likevel være feil å bytte om: W16W har større kolbe og 16 W effekt, mens W5W har 5 W. Og P21/5W og W21/5W har like oppgitte effekter, men helt forskjellig innfesting. [OSRAMs glassokkeldata](https://www.osram.com/appsj/pdc/pdf.do?cid=GPS01_1057149&lid=EN&mpid=&vid=MP_APAC_JP_eCat)
+
+På **pinolpærer** må du også måle fra metallspiss til metallspiss. Sokkelkontaktene sitter i hver ende, og feil lengde kan gi dårlig kontakt eller en pære som ikke passer.
+
+![Mål pinolpæren fra spiss til spiss. W5W og W16W kan dele sokkel, mens P21/5W og W21/5W har forskjellige sokler selv om effekten er lik.](https://tobiasmidtgard.github.io/internverktoy/content/wiki/images/pinol-og-glassokkel.svg)
+
+Illustrasjonene er egne, forenklede tegninger av kjennetegnene. Bruk merkingen og produsentens mål for den konkrete pæren. Trykk på et bilde for å se det større.
+
 # Småpærer og signalpærer
 
 ## W5W – den lille glassokkelpæren
@@ -104,7 +171,7 @@ thansen fører disse og flere typer, blant annet H9, H15 og HIR-varianter. Når 
 
 # Xenon og fabrikkmontert LED
 
-Xenonpærer har betegnelser som **D1S, D2S, D3S og D4S**. Behold nøyaktig nummer og bokstav. Det er ikke tilstrekkelig å be om «en xenonpære på 35 W». S- og R-utgaver er tilpasset forskjellige lykteløsninger, og D5S/D8S er eksempler på andre systemer med 25 W.
+Xenonpærer har betegnelser som **D1S, D2S, D3S og D4S**. Behold nøyaktig nummer og bokstav. Det er ikke tilstrekkelig å be om «en xenonpære på 35 W». S betyr projektorutførelse, mens R betyr reflektorutførelse. R i D2R beskriver altså noe annet enn R i R5W. Behold riktig utførelse. D5S/D8S er eksempler på andre systemer med 25 W.
 
 Xenon har forkobling og høy tennspenning. Følg bilprodusentens arbeidsbeskrivelse; bruk verksted når fremgangsmåten eller feilen er uklar. En slukket xenonlykt kan også skyldes forkobling, tilkobling eller annen feil. [OSRAM Xenarc-data](https://www.osram.com/appsj/pdc/pdf.do?cid=GPS01_1056953&lid=EN&vid=MP_EUROPE_Europe_eCat) · [HELLA om lysteknologi](https://www.hella.com/techworld/us/technical/automotive-lighting/basic-principles-of-car-lighting-technology/)
 
@@ -148,7 +215,7 @@ Min anbefaling for en kunde med norsk registreringsnummer som skal handle hos th
 
 [OSRAM Lamp Replacement Guide](https://www.osram.com/apps/gvlrg/en_COM) er mitt foretrukne ekstra oppslag når pæretypen er uklar. Velg **Car**, deretter merke, produksjonsår, modell og type. Gå videre til lysplassering, les kjøretøymerknadene og se aktuelle produkter. Det finnes også søk på ECE-kategori eller produktnummer når koden allerede er kjent.
 
-Finneren ble åpnet og kjøretøyfeltene kontrollert i nettleser. Den dekker europeiske modeller med 12 eller 24 V, men OSRAM tar forbehold om utstyrsvarianter og manglende opplysninger. Ingen bestemt bil eller registreringsnummer er verifisert i denne guiden.
+OSRAMs pærefinner dekker europeiske modeller med 12 eller 24 V, men OSRAM tar forbehold om utstyrsvarianter og manglende opplysninger. Ingen bestemt bil eller registreringsnummer er verifisert i denne guiden.
 
 ## Philips – et ekstra alternativ
 

@@ -29,7 +29,19 @@
     "NBK",
     "Norsk Bildelkatalog",
     "thansen",
-    "Osram"
+    "Osram",
+    "pærekoder",
+    "sokkeltyper",
+    "BA15s",
+    "BA15d",
+    "BAY15d",
+    "BAU15s",
+    "BAZ15d",
+    "BAS15",
+    "BAD15",
+    "WY5W",
+    "glassokkel",
+    "pinol"
   ],
   "sources": [
     {
@@ -63,6 +75,22 @@
     {
       "label": "HELLA – pærebytte",
       "url": "https://www.hella.com/techworld/uk/technical/automotive-lighting/xenon-and-headlight-bulb-replacement/"
+    },
+    {
+      "label": "HELLA – forklaring av pærebetegnelser",
+      "url": "https://www.hella.com/lightstyle/pl/which-bulbs-does-your-car-need.html"
+    },
+    {
+      "label": "HELLA – BA15d med én glødetråd og to kontakter",
+      "url": "https://www.hella.co.nz/en/products/bulbs/signal-and-marker-bulbs/bayonet-signal-bulb-single-filament-double-contact-ba15d.html"
+    },
+    {
+      "label": "Lumileds / UNECE – pinneplassering på 15 mm-sokler, side 5",
+      "url": "https://wiki.unece.org/download/attachments/58524685/TFSR-03-07%20LED-Options-15mmBayonet%202018-03-12.pdf?api=v2"
+    },
+    {
+      "label": "IEC 60061 – sokkelbetegnelser, utdrag",
+      "url": "https://cdn.standards.iteh.ai/samples/17585/3c3c88abf9d74657b573f0ecfd05b133/IEC-60061-4-1990-AMD13-2010.pdf"
     }
   ]
 }

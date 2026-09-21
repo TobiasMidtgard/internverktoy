@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1320" role="img" aria-labelledby="title desc">
+<title id="title">Låsepinner og bunnkontakter på bajonettsokler</title>
+<desc id="desc">Egen skjematisk illustrasjon, ikke måltegning. BA15s: én bunnkontakt, låsepinner 180 grader og lik høyde. BA15d: to bunnkontakter, 180 grader og lik høyde. BAY15d: to bunnkontakter, 180 grader og ulik høyde. BAU15s: én bunnkontakt, 150 grader og lik høyde. Gule firkanter er låsepinner utenpå sokkelen; lyse sirkler er elektriske bunnkontakter. Bokstavene s og d angir antall bunnkontakter, ikke antall glødetråder.</desc>
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#f1f4f8}
+.title{font-size:34px;font-weight:700}.code{font-size:34px;font-weight:700}
+.label{font-size:28px}.note{font-size:26px;fill:#b9c9db}
+.panel{fill:#101f31;stroke:#2a4664;stroke-width:2}
+.metal{fill:#344f6a;stroke:#a9c7e6;stroke-width:4}
+.pin{fill:#ffd400;stroke:#ffd400;stroke-width:2}
+.contact{fill:#f1f4f8;stroke:#7db8f0;stroke-width:2}
+.axis{fill:none;stroke:#7db8f0;stroke-width:2;stroke-dasharray:6 6}
+</style>
+<defs>
+<g id="row-base">
+<rect x="24" width="672" height="242" rx="10" class="panel"/>
+<text x="94" y="80" class="note">Side</text>
+<text x="442" y="80" class="note">Bunn</text>
+<rect x="96" y="98" width="124" height="98" class="metal"/>
+<path d="M96 112H220M96 183H220" stroke="#7db8f0" stroke-width="2"/>
+<circle cx="490" cy="147" r="53" class="metal"/>
+<circle cx="490" cy="147" r="37" fill="#06101f"/>
+</g>
+<g id="side-level">
+<rect x="82" y="138" width="17" height="17" class="pin"/>
+<rect x="218" y="138" width="17" height="17" class="pin"/>
+<path d="M74 146H244" class="axis"/>
+</g>
+<rect id="bottom-left" x="426" y="139" width="16" height="16" class="pin"/>
+<rect id="bottom-right" x="538" y="139" width="16" height="16" class="pin"/>
+<g id="bottom-180">
+<use href="#bottom-left"/><use href="#bottom-right"/>
+<text x="570" y="156" class="label">180°</text>
+</g>
+<circle id="single" cx="490" cy="147" r="12" class="contact"/>
+<g id="double">
+<circle cx="474" cy="147" r="10" class="contact"/>
+<circle cx="506" cy="147" r="10" class="contact"/>
+</g>
+</defs>
+<rect width="720" height="1320" rx="14" fill="#06101f"/>
+<text x="32" y="51" class="title">Bajonettsokler: se begge sider</text>
+<text x="32" y="96" class="note">Låsepinner utenpå · kontakter under</text>
+<g transform="translate(0 124)">
+<use href="#row-base"/>
+<text x="44" y="42" class="code">BA15s</text>
+<use href="#side-level"/><use href="#bottom-180"/><use href="#single"/>
+<text x="92" y="228" class="label">Lik høyde</text>
+<text x="416" y="228" class="label">1 kontakt</text>
+</g>
+<g transform="translate(0 380)">
+<use href="#row-base"/>
+<text x="44" y="42" class="code">BA15d</text>
+<use href="#side-level"/><use href="#bottom-180"/><use href="#double"/>
+<text x="92" y="228" class="label">Lik høyde</text>
+<text x="404" y="228" class="label">2 kontakter</text>
+</g>
+<g transform="translate(0 636)">
+<use href="#row-base"/>
+<text x="44" y="42" class="code">BAY15d</text>
+<rect x="82" y="159" width="17" height="17" class="pin"/>
+<rect x="218" y="120" width="17" height="17" class="pin"/>
+<path d="M74 167H258M74 128H258" class="axis"/>
+<path d="M265 128V167M258 128H272M258 167H272" fill="none" stroke="#ffd400" stroke-width="3"/>
+<use href="#bottom-180"/><use href="#double"/>
+<text x="80" y="228" class="label">Ulik høyde</text>
+<text x="404" y="228" class="label">2 kontakter</text>
+</g>
+<g transform="translate(0 892)">
+<use href="#row-base"/>
+<text x="44" y="42" class="code">BAU15s</text>
+<rect x="82" y="138" width="17" height="17" class="pin"/>
+<rect x="206" y="138" width="17" height="17" class="pin"/>
+<path d="M74 146H244" class="axis"/>
+<path d="M434 147H490L538.5 119" class="axis"/>
+<use href="#bottom-left"/>
+<use href="#bottom-right" transform="rotate(-30 490 147)"/>
+<use href="#single"/>
+<text x="570" y="156" class="label">150°</text>
+<text x="92" y="228" class="label">Lik høyde</text>
+<text x="416" y="228" class="label">1 kontakt</text>
+</g>
+<rect x="34" y="1172" width="18" height="18" class="pin"/>
+<text x="64" y="1191" class="note">Låsepinne</text>
+<circle cx="348" cy="1181" r="10" class="contact"/>
+<text x="369" y="1191" class="note">Bunnkontakt</text>
+<text x="32" y="1234" class="note">s/d: antall bunnkontakter, ikke glødetråder.</text>
+<text x="32" y="1280" class="note">Skjematisk · ikke måltegning</text>
+</svg>

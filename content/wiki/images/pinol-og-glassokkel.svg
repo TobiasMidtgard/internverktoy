@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1440" role="img" aria-labelledby="title desc">
+<title id="title">Pinollengde og forskjeller mellom glass- og metallsokler</title>
+<desc id="desc">Egen skjematisk illustrasjon, ikke måltegning. En pinolpære måles mellom de ytterste kontaktspissene. W5W og W16W bruker begge sokkelen W2.1x9.5d, men har ulik kolbestørrelse og effekt: 5 og 16 watt. P21/5W har metallsokkelen BAY15d. W21/5W har glassokkelen W3x16q. Begge er 21/5 watt, men passer i forskjellige holdere.</desc>
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#f1f4f8}
+.title{font-size:34px;font-weight:700}.code{font-size:32px;font-weight:700}
+.label{font-size:28px}.note{font-size:26px;fill:#b9c9db}
+.glass{fill:#122d49;stroke:#7db8f0;stroke-width:4}
+.metal{fill:#344f6a;stroke:#a9c7e6;stroke-width:4}
+.wire{fill:none;stroke:#a9c7e6;stroke-width:3}
+.filament{fill:none;stroke:#ffd400;stroke-width:4;stroke-linejoin:round}
+.panel{fill:#101f31;stroke:#2a4664;stroke-width:2}
+.dim{fill:none;stroke:#ffd400;stroke-width:3}
+</style>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+<path d="M0 0L10 5L0 10Z" fill="#ffd400"/>
+</marker>
+</defs>
+<rect width="720" height="1440" rx="14" fill="#06101f"/>
+<text x="32" y="52" class="title">Kontroller mål og sokkel</text>
+<text x="32" y="98" class="note">Form, effekt og kontaktpunkter må stemme.</text>
+<g transform="translate(0 130)">
+<rect x="24" width="672" height="334" rx="10" class="panel"/>
+<text x="44" y="49" class="code">Pinol: mål hele lengden</text>
+<rect x="229" y="104" width="262" height="66" rx="14" class="glass"/>
+<path d="M174 137L213 105H237V169H213Z" class="metal"/>
+<path d="M546 137L507 105H483V169H507Z" class="metal"/>
+<path d="M237 137H280M440 137H483" class="wire"/>
+<path d="M280 137l8-12 12 24 12-24 12 24 12-24 12 24 12-24 12 24 12-24 12 24 12-24 12 24 12-24 8 12" class="filament"/>
+<path d="M174 148V230M546 148V230" class="dim"/>
+<path d="M180 216H540" class="dim" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+<text x="176" y="270" class="label">Kontaktspiss til kontaktspiss</text>
+<text x="44" y="312" class="note">Mål i millimeter, ikke bare glassrøret.</text>
+</g>
+<g transform="translate(0 486)">
+<rect x="24" width="672" height="428" rx="10" class="panel"/>
+<text x="44" y="49" class="code">Samme sokkel, ulik pære</text>
+<text x="130" y="101" class="code">W5W</text>
+<text x="445" y="101" class="code">W16W</text>
+<path d="M162 281V233C126 210 130 158 179 158S232 210 196 233V281Z" class="glass"/>
+<path d="M166 281V216L160 200M192 281V216L198 200" class="wire"/>
+<path d="M160 200l6-9 6 18 7-18 6 18 6-18 7 9" class="filament"/>
+<path d="M162 259H196M162 273H196" stroke="#7db8f0" stroke-width="3"/>
+<path d="M486 281V227C428 208 424 129 503 129S578 208 520 227V281Z" class="glass"/>
+<path d="M490 281V208L475 181M516 281V208L531 181" class="wire"/>
+<path d="M475 181l7-10 7 20 7-20 7 20 7-20 7 20 7-20 7 10" class="filament"/>
+<path d="M486 259H520M486 273H520" stroke="#7db8f0" stroke-width="3"/>
+<text x="131" y="326" class="label">5 watt</text>
+<text x="447" y="326" class="label">16 watt</text>
+<text x="44" y="374" class="label">Begge: W2.1x9.5d</text>
+<text x="44" y="412" class="note">Sjekk også plass, effekt og lysfunksjon.</text>
+</g>
+<g transform="translate(0 936)">
+<rect x="24" width="672" height="408" rx="10" class="panel"/>
+<text x="44" y="49" class="code">21/5 watt, ulike holdere</text>
+<text x="108" y="101" class="code">P21/5W</text>
+<text x="431" y="101" class="code">W21/5W</text>
+<path d="M145 234V214C97 184 111 125 179 125S261 184 213 214V234Z" class="glass"/>
+<path d="M154 234V174H161M204 234V174H197M161 234V199M197 234V199" class="wire"/>
+<path d="M161 174l6-8 6 16 6-16 6 16 6-16 6 8M161 199l6-8 6 16 6-16 6 16 6-16 6 8" class="filament"/>
+<rect x="145" y="234" width="68" height="46" class="metal"/>
+<path d="M139 263H145M213 247H219M155 286H166M192 286H203" stroke="#a9c7e6" stroke-width="5"/>
+<path d="M474 280V231C431 210 429 137 503 137S575 210 532 231V280Z" class="glass"/>
+<path d="M483 280V184H484M523 280V184H522M493 280V210M513 280V210" class="wire"/>
+<path d="M484 184l6-8 7 16 6-16 6 16 7-16 6 8M493 210l3-8 4 16 3-16 3 16 4-16 3 8" class="filament"/>
+<path d="M474 260H532M474 273H532" stroke="#7db8f0" stroke-width="3"/>
+<text x="111" y="328" class="label">BAY15d</text>
+<text x="423" y="328" class="label">W3x16q</text>
+<text x="95" y="372" class="note">Metallsokkel</text>
+<text x="432" y="372" class="note">Glassokkel</text>
+</g>
+<text x="32" y="1400" class="note">Skjematisk · ikke måltegning · ulik skala</text>
+</svg>

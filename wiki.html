@@ -129,6 +129,12 @@
   .md a{color:var(--primary);text-underline-offset:2px;}
   .md code{font:500 12.5px var(--font-mono);background:#0c1422;border:1px solid var(--line);padding:1px 5px;border-radius:5px;}
   .md strong{color:#fff;font-weight:700;}
+  .md .md-figure{margin:20px 0;max-width:100%;}
+  .md .md-figure > a{display:block;border:1px solid var(--line);border-radius:10px;overflow:hidden;cursor:zoom-in;}
+  .md .md-figure img{display:block;width:100%;height:auto;}
+  .md .md-figure figcaption{margin-top:8px;color:var(--muted);font-size:13px;line-height:1.5;overflow-wrap:anywhere;}
+  .md .image-hint{display:block;margin-top:3px;color:#7db8f0;}
+
   /* kilder som punkterte ledelinjer: etikett ……… ÅPNE */
   .sources{margin-top:20px;border-top:1px solid var(--line);padding-top:14px;max-width:68ch;}
   .sources:empty{display:none;}
@@ -323,6 +329,17 @@ let me=null, canManage=false, cat='', articles={}, editId=null, suggestForId=nul
 let links=[], linkCat='', editLinkId=null;
 
 /* ---------- markdown ---------- */
+function wikiImageUrl(src){
+  if(/[\u0000-\u0020\u007f"'<>\\]/.test(src)) return null;
+  if(/^https:\/\//i.test(src)){
+    try{
+      const url=new URL(src);
+      return url.protocol==='https:' && !url.username && !url.password ? url.href : null;
+    }catch{ return null; }
+  }
+  return /^(?:\.\/)?content\/wiki\/images\/[A-Za-z0-9_-]+\.(?:svg|png|jpe?g|webp)$/i.test(src)
+    ? src : null;
+}
 function md(src){
   if(!src) return '<p class="meta">Ingen innhold ennå.</p>';
   const out=[]; let inList=false;
@@ -333,6 +350,14 @@ function md(src){
     return s; };
   const close=()=>{ if(inList){ out.push('</ul>'); inList=false; } };
   for(const raw of src.split('\n')){ const line=raw.replace(/\s+$/,''); let m;
+    if(m=line.trim().match(/^!\[([^\]]*)\]\(([^)]+)\)$/)){
+      close();
+      const url=wikiImageUrl(m[2]), caption=esc(m[1].trim()||'Illustrasjon');
+      if(url) out.push('<figure class="md-figure"><a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer" aria-label="Åpne illustrasjonen i full størrelse: '+caption+'"><img src="'+esc(url)+'" alt="'+caption+'" loading="lazy" decoding="async"></a><figcaption>'+caption+'<span class="image-hint">Trykk på bildet for større visning.</span></figcaption></figure>');
+      else out.push('<p>'+esc(line)+'</p>');
+      continue;
+    }
+
     if(m=line.match(/^(#{1,4})\s+(.*)$/)){ close(); const l=Math.min(4,m[1].length); out.push(`<h${l+1}>${inline(m[2])}</h${l+1}>`); }
     else if(m=line.match(/^\s*[-*]\s+(.*)$/)){ if(!inList){ out.push('<ul>'); inList=true; } out.push(`<li>${inline(m[1])}</li>`); }
     else if(line.trim()===''){ close(); }
