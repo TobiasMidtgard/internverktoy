@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#004595">
 <title>Kunnskapsbase · Thansen Internverktøy</title>
+<link rel="stylesheet" href="wiki-guides.css?v=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800;900&family=Martian+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -224,6 +225,7 @@
     </div>
     <button class="btn" onclick="doSearch()">Søk</button>
     <button id="newBtn" class="btn cta" style="display:none" onclick="newEntry()">+ Ny</button>
+    <button id="newGuideBtn" class="btn ghost" style="display:none" onclick="openEditor(null,undefined,true)">+ Ny knappesekvens</button>
   </div>
   <section id="shortcuts" hidden>
     <div class="sc-head">
@@ -241,7 +243,7 @@
 </main>
 
 <!-- Article -->
-<div class="modal" role="dialog" aria-modal="true" id="articleModal">
+<div class="modal" role="dialog" aria-modal="true" aria-labelledby="aTitle" id="articleModal">
   <div class="sheet">
     <div class="hd">
       <div class="hd-t"><span class="hd-k">Artikkel</span><h2 id="aTitle"></h2></div>
@@ -250,6 +252,7 @@
     <div class="bd">
       <div class="meta" id="aMeta"></div>
       <div class="md" id="aBody" style="margin-top:12px"></div>
+      <div id="aGuide"></div>
       <div class="sources" id="aSources"></div>
     </div>
     <div class="ft" id="aActions"></div>
@@ -257,7 +260,7 @@
 </div>
 
 <!-- Editor (manager) -->
-<div class="modal" role="dialog" aria-modal="true" id="editModal">
+<div class="modal" role="dialog" aria-modal="true" aria-labelledby="eTitle" id="editModal">
   <div class="sheet">
     <div class="hd">
       <div class="hd-t"><span class="hd-k">Redigering</span><h2 id="eTitle">Ny artikkel</h2></div>
@@ -265,13 +268,15 @@
     </div>
     <div class="bd">
       <div class="note" id="eNote" style="display:none"></div>
+      <div class="row"><label for="fFormat">Innholdstype</label><select id="fFormat" onchange="entryFormatChange()"><option value="article">Artikkel</option><option value="guide">Knappesekvens med bilder</option></select></div>
       <div class="row"><label for="fTitle">Tittel</label><input type="text" id="fTitle"></div>
       <div class="row"><label for="fCat">Kategori</label><select id="fCat"></select></div>
       <div class="row"><label for="fTags">Tagger (komma)</label><input type="text" id="fTags" placeholder="dekk, vinter, pigg"></div>
       <div class="row"><label for="fBody">Innhold</label><span class="hint">Markdown: # overskrift, **fet**, - punktliste, [tekst](lenke)</span><textarea id="fBody" rows="10"></textarea></div>
+      <div id="guideEditor" hidden></div>
       <div class="row"><label for="fSources">Kilder</label><span class="hint">Én per linje: «Tittel | https://…»</span><textarea id="fSources" rows="3" placeholder="Produsentens monteringsguide | https://…"></textarea></div>
     </div>
-    <div class="ft"><button class="btn ghost" onclick="closeModal('editModal')">Avbryt</button><button class="btn" onclick="saveArticle()">Lagre</button></div>
+    <div class="ft"><button class="btn ghost" onclick="closeModal('editModal')">Avbryt</button><button id="saveArticleBtn" class="btn" onclick="saveArticle()">Lagre</button></div>
   </div>
 </div>
 
@@ -322,11 +327,16 @@
 </div>
 
 <script src="shared.js?v=16"></script>
+<script src="wiki-guides.js?v=1"></script>
 <script>
 const T=window.THelper, $=id=>document.getElementById(id), esc=s=>T.esc(s);
 const CATS=['Bildeler','Dekk','Sykkel','Bilvask','Barneseter','Takbokser','Takstativ','Vindusviskere','Verktøy','MC','Internt','XAL','Generelt'];
 let me=null, canManage=false, cat='', articles={}, editId=null, suggestForId=null, suggestForTitle=null, sugMap={};
 let links=[], linkCat='', editLinkId=null;
+let editorDirty=false, editorSaving=false, editorHadGuide=false;
+let authRevision=0, articleRequest=0, editorRequest=0, searchRequest=0;
+const guideEditor=new WikiGuides.Editor($('guideEditor'),()=>{editorDirty=true;});
+WikiGuides.mountReader($('aGuide'));
 
 /* ---------- markdown ---------- */
 function wikiImageUrl(src){
@@ -368,16 +378,25 @@ function highlight(snip){ return esc(snip||''); }
 
 /* ---------- auth ---------- */
 function refreshAuth(){
+  authRevision++;
   me=T.getUser(); canManage=T.canManage();
   $('lockBtn').textContent = me ? (me.tag+' · logg ut') : 'Logg inn';
   $('newBtn').style.display = me ? 'inline-block' : 'none';
   $('newBtn').textContent = canManage ? '+ Ny artikkel' : '+ Foreslå artikkel';
+  $('newGuideBtn').style.display = canManage ? 'inline-block' : 'none';
   $('sugBtn').style.display = canManage ? 'inline-flex' : 'none';
   if(canManage) loadSuggestionCount();
   loadLinks();
 }
 async function toggleAuth(){
-  if(T.getUser()){ T.clearSession(); refreshAuth(); T.toast('Logget ut'); }
+  if(T.getUser()){
+    if(editorSaving)return;
+    if(editorDirty && $('editModal').classList.contains('show') && !confirm('Logge ut og forkaste endringene som ikke er lagret?'))return;
+    T.clearSession(); articles={}; editorDirty=false; guideEditor.setValue(null);
+    document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));
+    document.querySelectorAll('.guide-zoom').forEach(d=>d.close());
+    $('aBody').innerHTML=''; $('aGuide').innerHTML=''; refreshAuth(); doSearch(); T.toast('Logget ut');
+  }
   else { const u=await T.ensureUser(); if(u){ refreshAuth(); T.toast('Logget inn som '+(u.name||u.tag)); } }
 }
 
@@ -391,7 +410,8 @@ function setCat(c){ cat=c; renderCats(); doSearch(); }
 /* ---------- snarveier ---------- */
 async function loadLinks(){
   if(!T.getUser()){ links=[]; renderLinks(); return; }
-  try{ links=(await T.rpcAuth('get_links'))||[]; }catch(e){ links=[]; }
+  const revision=authRevision;
+  try{ const data=await T.rpcAuth('get_links'); if(revision!==authRevision||!T.getUser())return; links=data||[]; }catch(e){ if(revision!==authRevision)return; links=[]; }
   renderLinks();
 }
 function linkCats(){ return [...new Set(links.map(l=>l.category))]; }
@@ -467,6 +487,7 @@ async function deleteLink(){
 let tmr;
 function debounce(){ clearTimeout(tmr); tmr=setTimeout(doSearch,250); }
 async function doSearch(){
+  const request=++searchRequest, revision=authRevision;
   renderLinks();   // snarveiene filtreres av samme søkefelt, klient-side
   if(!T.getUser()){
     $('resCount').textContent='';
@@ -482,7 +503,8 @@ async function doSearch(){
   if(!$('results').childElementCount){ $('results').innerHTML='<div class="th-skel sk-row"></div><div class="th-skel sk-row"></div><div class="th-skel sk-row"></div>'; }
   const q=$('q').value; let data;
   try{ data = await T.rpcAuth('wiki_search',{ p_q:q, p_category:cat||null }); }
-  catch(error){ if(error.message==='no-auth') return; $('resCount').textContent=''; $('results').innerHTML=`<div class="empty">${/function|does not exist|schema/i.test(error.message)?'Kjør wiki_v2.sql i Supabase først.':esc(error.message)}</div>`; return; }
+  catch(error){ if(error.message==='no-auth'||revision!==authRevision||request!==searchRequest) return; $('resCount').textContent=''; $('results').innerHTML=`<div class="empty">${/function|does not exist|schema/i.test(error.message)?'Kjør wiki_v2.sql i Supabase først.':esc(error.message)}</div>`; return; }
+  if(revision!==authRevision||request!==searchRequest||!T.getUser())return;
   const rows=data||[];
   $('resCount').textContent = rows.length + ((q.trim()||cat) ? ' treff' : ' artikler');
   if(!rows.length){ $('results').innerHTML='<div class="empty">Ingen treff. Prøv et annet søkeord'+(canManage?' eller lag en ny artikkel.':', eller foreslå en ny artikkel.')+'</div>'; return; }
@@ -493,11 +515,17 @@ async function doSearch(){
 
 /* ---------- article ---------- */
 async function openArticle(id){
+  const request=++articleRequest,revision=authRevision;
+  if(!T.getUser())return;
   let a=articles[id];
-  if(!a){ try{ a=await T.rpcAuth('get_article',{p_id:id}); articles[id]=a; }catch(e){ if(e.message!=='no-auth') T.toast('Feil: '+e.message); return; } }
+  if(!a){ try{ a=await T.rpcAuth('get_article',{p_id:id}); }catch(e){ if(e.message!=='no-auth'&&revision===authRevision) T.toast('Feil: '+e.message); return; } }
+  if(request!==articleRequest||revision!==authRevision||!T.getUser())return;
+  articles[id]=a;
   $('aTitle').textContent=a.title;
   $('aMeta').innerHTML=`<span class="cat">${esc(a.category)}</span><span class="m-date">Sist endret ${new Date(a.updated_at).toLocaleDateString('nb-NO',{day:'numeric',month:'short',year:'numeric'})}</span>${a.updated_by?`<span>av ${esc(a.updated_by)}</span>`:''}`;
   $('aBody').innerHTML=md(a.body);
+  $('aGuide').innerHTML=WikiGuides.render(a.guide);
+  $('articleModal').classList.toggle('has-guide',!!a.guide);
   const src=Array.isArray(a.sources)?a.sources:[];
   $('aSources').innerHTML = src.length ? `<h4>Gode kilder</h4>`+src.map(s=>`<a href="${esc(s.url)}" target="_blank" rel="noopener"><span class="src-label">${esc(s.label||s.url)}</span><span class="src-dots" aria-hidden="true"></span><span class="src-go">Åpne ${T.icon('external')}</span></a>`).join('') : '';
   $('aActions').innerHTML = canManage
@@ -511,20 +539,40 @@ function newEntry(){ if(canManage) openEditor(null); else openSuggest(null); }
 function fillCatSelect(sel,val){ sel.innerHTML=CATS.map(c=>`<option ${c===val?'selected':''}>${c}</option>`).join(''); }
 function parseSources(text){ return text.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{ const i=l.indexOf('|'); return i>=0?{label:l.slice(0,i).trim(),url:l.slice(i+1).trim()}:{label:'',url:l}; }).filter(s=>s.url); }
 function sourcesToText(arr){ return (arr||[]).map(s=>s.label?`${s.label} | ${s.url}`:s.url).join('\n'); }
-async function openEditor(id, prefillBody){
+async function openEditor(id, prefillBody, newGuide=false){
+  if(!canManage)return;
+  const request=++editorRequest,revision=authRevision;
   editId=id; $('eNote').style.display='none';
   fillCatSelect($('fCat'), cat||'Generelt');
-  if(id){ const a=articles[id]||await T.rpcAuth('get_article',{p_id:id}).catch(()=>null); if(!a){ T.toast('Fant ikke artikkelen'); return; } articles[id]=a;
-    $('eTitle').textContent='Rediger artikkel'; $('fTitle').value=a.title; $('fCat').value=a.category; $('fTags').value=(a.tags||[]).join(', '); $('fBody').value=a.body||''; $('fSources').value=sourcesToText(a.sources); }
-  else { $('eTitle').textContent='Ny artikkel'; $('fTitle').value=''; $('fTags').value=''; $('fBody').value=prefillBody||''; $('fSources').value=''; }
+  if(id){ const a=articles[id]||await T.rpcAuth('get_article',{p_id:id}).catch(()=>null);
+    if(request!==editorRequest||revision!==authRevision||!T.canManage())return;
+    if(!a){ T.toast('Fant ikke artikkelen'); return; } articles[id]=a;
+    try{guideEditor.setValue(a.guide);}catch(e){T.toast('Sekvensen kunne ikke åpnes: '+e.message);return;}
+    editorHadGuide=!!a.guide; $('fFormat').value=a.guide?'guide':'article';
+    $('fTitle').value=a.title; $('fCat').value=a.category; $('fTags').value=(a.tags||[]).join(', '); $('fBody').value=a.body||''; $('fSources').value=sourcesToText(a.sources); }
+  else { guideEditor.setValue(null); editorHadGuide=false; $('fFormat').value=newGuide?'guide':'article'; $('fTitle').value=''; $('fTags').value=''; $('fBody').value=prefillBody||''; $('fSources').value=''; }
+  entryFormatChange(); editorDirty=false;
   closeModal('articleModal'); show('editModal');
+  $('fTitle').focus();
+}
+function entryFormatChange(){
+  const guide=$('fFormat').value==='guide';
+  $('guideEditor').hidden=!guide; $('editModal').classList.toggle('has-guide',guide);
+  $('eTitle').textContent=(editId?'Rediger ':'Ny ')+(guide?'knappesekvens':'artikkel');
+  document.querySelector('label[for="fBody"]').textContent=guide?'Innledning (valgfritt)':'Innhold';
+  $('fBody').rows=guide?3:10; editorDirty=true;
 }
 async function saveArticle(){
+  if(editorSaving)return;
   const payload={ title:$('fTitle').value.trim(), category:$('fCat').value, tags:$('fTags').value.split(',').map(s=>s.trim()).filter(Boolean), body:$('fBody').value, sources:parseSources($('fSources').value) };
   if(!payload.title){ T.toast('Tittel mangler'); return; }
-  try{ if(editId) await T.rpcAuth('update_article',{p_id:editId,p_article:payload}); else await T.rpcAuth('add_article',{p_article:payload});
-    closeModal('editModal'); articles={}; T.toast('Lagret'); doSearch(); }
+  try{payload.guide=$('fFormat').value==='guide'?guideEditor.getValue():null;}catch(e){T.toast(e.message);return;}
+  if(!payload.guide && editorHadGuide && !confirm('Lagre som vanlig artikkel? Dette fjerner knappesekvensen og bildene fra artikkelen.'))return;
+  editorSaving=true; $('editModal').querySelector('.bd').inert=true; $('saveArticleBtn').disabled=true; $('saveArticleBtn').textContent='Lagrer …';
+  try{ const saved=editId?await T.rpcAuth('update_article',{p_id:editId,p_article:payload}):await T.rpcAuth('add_article',{p_article:payload});
+    editorDirty=false; editorSaving=false; closeModal('editModal'); articles={}; T.toast('Lagret'); doSearch(); if(saved?.id)openArticle(saved.id); }
   catch(e){ if(e.message!=='no-auth') T.toast('Feil: '+e.message); }
+  finally{editorSaving=false; $('editModal').querySelector('.bd').inert=false; $('saveArticleBtn').disabled=false; $('saveArticleBtn').textContent='Lagre';}
 }
 async function delArticle(id){
   if(!confirm('Slette artikkelen permanent?')) return;
@@ -580,15 +628,38 @@ async function dismissSuggestion(id){
 }
 
 /* ---------- helpers ---------- */
-function show(id){ $(id).classList.add('show'); }
-function closeModal(id){ $(id).classList.remove('show'); }
+const modalFocus=new Map();
+function show(id){
+  modalFocus.set(id,document.activeElement); $(id).classList.add('show');
+  $(id).querySelector('.sheet').scrollTop=0;
+  $(id).querySelector('button,input,select,textarea')?.focus();
+}
+function closeModal(id){
+  if(id==='editModal'){
+    if(editorSaving)return;
+    if(editorDirty && !confirm('Forkaste endringene som ikke er lagret?'))return;
+    editorDirty=false;
+    guideEditor.generation++;
+  }
+  $(id).classList.remove('show');
+  const previous=modalFocus.get(id); if(previous?.isConnected)previous.focus(); modalFocus.delete(id);
+}
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape') document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));
+  const last=Array.from(document.querySelectorAll('.modal.show')).at(-1);
+  if(e.key==='Tab' && last && !document.querySelector('.guide-zoom[open]')){
+    const focusable=Array.from(last.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),a[href],[tabindex="0"]')).filter(el=>el.offsetParent!==null&&!el.closest('[inert]'));
+    const first=focusable[0],end=focusable.at(-1);
+    if(e.shiftKey && (document.activeElement===first||!last.contains(document.activeElement))){e.preventDefault();end?.focus();}
+    else if(!e.shiftKey && (document.activeElement===end||!last.contains(document.activeElement))){e.preventDefault();first?.focus();}
+  }
+  if(e.key==='Escape'){ if(last)closeModal(last.id); }
   else if((e.key==='Enter'||e.key===' ') && e.target instanceof HTMLElement
           && e.target.getAttribute('role')==='button' && e.target.tagName!=='BUTTON'){ e.preventDefault(); e.target.click(); }
 });
 $('q').addEventListener('input',debounce);
 $('q').addEventListener('keydown',e=>{ if(e.key==='Enter') doSearch(); });
+$('editModal').addEventListener('input',()=>{editorDirty=true;});
+window.addEventListener('beforeunload',e=>{if(editorDirty && $('editModal').classList.contains('show')){e.preventDefault();e.returnValue='';}});
 
 /* ---------- boot ---------- */
 renderCats(); refreshAuth(); doSearch();
