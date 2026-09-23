@@ -943,7 +943,7 @@ function updateRow(rowEl, d, line){
   if (isSum('grams')) info.push(text('grams') + ' = ' + K.formatGrams(K.parseGrams(text('grams')).grams));
   if (isSum('value')) info.push(text('value') + ' = ' + K.formatOre(K.parseKr(text('value')).ore));
   const rolls = kind === 'safe' && d.kind === 'coin' ? K.toCount(line.rolls) : 0;
-  if (rolls) info.push(rolls + ' ruller × ' + (Number(d.units_per_roll) || 0) + ' + ' + K.toCount(line.loose) + ' løse = ' + units + ' stk');
+  if (rolls) info.push(rolls + (rolls === 1 ? ' rull × ' : ' ruller × ') + (Number(d.units_per_roll) || 0) + ' + ' + K.toCount(line.loose) + ' løse = ' + units + ' stk');
   if (kind !== 'safe' && d.kind === 'coin' && line.source === 'weight' && K.toGrams(line.grams) > 0)
     info.push(K.formatGrams(line.grams) + ' → ' + units + ' stk');
 
