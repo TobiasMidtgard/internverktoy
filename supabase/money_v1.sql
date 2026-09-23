@@ -3,8 +3,9 @@
 -- Skrives nå slik at datalaget i kasse-store.js har en konkret kontrakt å kobles mot
 -- senere. Produksjonsbasen er live med ekte data; kjøring er et eget, godkjent steg.
 --
--- Mønsteret følger tasks/wiki i denne suiten: lesing er offentlig, skriving går gjennom
--- RPC som verifiserer ansattkode + sesjonstoken (samme signatur som THelper.rpcAuth sender).
+-- Skriving går gjennom RPC som verifiserer ansattkode + sesjonstoken (samme signatur som
+-- THelper.rpcAuth sender). LESING av oppgjør gjør det også — se «Tilgang» under for
+-- hvorfor kontantdata ikke følger tasks/wiki-mønsteret med offentlig lesing.
 --
 -- Reglene under er ikke pyntekonstruksjoner. Hver enkelt tilsvarer noe kasse-domain.js
 -- eller kasse-store.js håndhever i dag, og som må fortsette å gjelde når skrivingen
@@ -61,6 +62,11 @@ create table if not exists money_count_sessions (
   counted_by_tag    text,
   counted_by_name   text,
   counted_at        timestamptz not null default now(),
+  -- Hvem som SIST lagret tallene. counted_by fryses ved første lagring, så uten
+  -- denne kunne en butikksjef endre en annens telling og godkjenne resultatet selv.
+  edited_by_tag     text,
+  edited_by_name    text,
+  edited_at         timestamptz,
   verified_by_tag   text,
   verified_by_name  text,
   verified_at       timestamptz,
@@ -83,9 +89,12 @@ create table if not exists money_count_sessions (
   -- Et godkjent oppgjør har navn og tidspunkt på seg, eller er ikke godkjent.
   constraint verified_has_signature check (
     status <> 'verified' or (verified_by_tag is not null and verified_at is not null)),
-  -- Den som talte kan ikke godkjenne sin egen telling.
+  -- Den som talte, eller sist endret tallene, kan ikke godkjenne telling.
   constraint verified_by_someone_else check (
-    verified_by_tag is null or verified_by_tag is distinct from counted_by_tag),
+    verified_by_tag is null or (verified_by_tag is distinct from counted_by_tag
+                                and verified_by_tag is distinct from edited_by_tag)),
+  -- Fast vekselbeholdning (eierbeslutning): godkjent betyr at safen gikk nøyaktig opp.
+  constraint verified_is_balanced check (status <> 'verified' or safe_diff_ore = 0),
   constraint sections_is_object check (jsonb_typeof(sections) = 'object'),
   constraint denom_snapshot_is_array check (jsonb_typeof(denom_snapshot) = 'array')
 );
@@ -101,8 +110,18 @@ create index if not exists money_count_sessions_date_idx
 alter table money_denominations  enable row level security;
 alter table money_count_sessions enable row level security;
 
-create policy money_denominations_read  on money_denominations  for select using (true);
-create policy money_count_sessions_read on money_count_sessions for select using (true);
+-- Valørene (1000 kr, 9,9 g …) er ikke sensitive: offentlig lesing, som wiki-artiklene.
+drop policy if exists money_denominations_read on money_denominations;
+create policy money_denominations_read on money_denominations for select using (true);
+
+-- Oppgjørene er det. Supabase-nøkkelen ligger i klartekst i shared.js på den åpne
+-- GitHub Pages-siden, så en select-policy med using (true) ville latt hvem som helst
+-- på internett lese butikkens kontanthistorikk med navn på de ansatte. Derfor INGEN
+-- select-policy og ingen tabellrettigheter for anon/authenticated: lesing går
+-- gjennom list_money_counts/get_money_count under, som krever gyldig sesjon —
+-- samme mønster som get_links (XAL-snarveiene) allerede bruker.
+drop policy if exists money_count_sessions_read on money_count_sessions;
+revoke all on money_count_sessions from anon, authenticated;
 -- Ingen insert/update/delete-policy: all skriving går gjennom security definer-RPC.
 
 
@@ -110,6 +129,10 @@ create policy money_count_sessions_read on money_count_sessions for select using
 -- RPC-ene supabase-driveren i kasse-store.js skal kalle
 -- ---------------------------------------------------------------------------
 --
+--   list_money_counts(p_auth_tag text, p_auth_pw text, p_limit int)
+--       returns setof (toppnivåkolonnene — samme form som summary() i kasse-store.js)
+--   get_money_count(p_auth_tag text, p_auth_pw text, p_id uuid)
+--       returns money_count_sessions
 --   save_money_count(p_auth_tag text, p_auth_pw text, p_session jsonb)
 --       returns money_count_sessions
 --   verify_money_count(p_auth_tag text, p_auth_pw text, p_id uuid)
@@ -119,8 +142,8 @@ create policy money_count_sessions_read on money_count_sessions for select using
 --   save_money_denominations(p_auth_tag text, p_auth_pw text, p_list jsonb)
 --       returns setof money_denominations
 --
--- Rollekrav: lagring for alle innloggede; godkjenning, sletting og valørendring
--- for manager+. Rollesjekken ligger i dag KUN i sidekoden (THelper.canManage), og
+-- Rollekrav: lesing og lagring for alle innloggede; godkjenning, sletting og
+-- valørendring for manager+. Rollesjekken ligger i dag KUN i sidekoden (THelper.canManage), og
 -- det er ikke en sikkerhetsgrense — den må håndheves på nytt inne i disse RPC-ene.
 --
 -- Regler save_money_count og delete_money_count MÅ håndheve, fordi kasse-store.js
@@ -130,7 +153,12 @@ create policy money_count_sessions_read on money_count_sessions for select using
 --     endres etter godkjenning mens raden fortsatt viser at en butikksjef har
 --     signert på andre tall.
 --   * verify_money_count skal avvise et oppgjør som ikke har status 'saved',
---     og avvise at den som talte godkjenner selv.
+--     avvise at den som talte ELLER sist lagret (edited_by) godkjenner selv, og
+--     avvise et oppgjør der safen ikke går opp (safe_diff_ore <> 0). De to siste
+--     står også som constraints over, som et siste nett.
+--   * save_money_count setter edited_by_* til innlogget bruker på hver lagring
+--     (og counted_by_* bare første gang), og regner safe_total_ore/safe_diff_ore
+--     ut fra sections på serveren i stedet for å stole på tallene klienten sender.
 --
 -- Samtidighet: kasse-store.js har «siste skriving vinner» mellom faner. En
 -- upsert her arver det med mindre en revisjonskolonne innføres nå. Vurder

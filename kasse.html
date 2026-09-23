@@ -72,31 +72,73 @@
   .chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;}
   .chip.st-saved{color:#7db8f0;border-color:var(--blue-line);}
   .chip.st-verified{color:var(--yellow);border-color:rgba(255,212,0,.35);}
+  /* Et lagret oppgjør som er endret på skjermen uten ny lagring. Før sto det
+     fortsatt «Lagret» her mens tallene på skjermen ikke var de lagrede. */
+  .chip.st-dirty{color:#ff9b9b;border-color:rgba(255,155,155,.4);}
 
   /* ---------- faner ---------- */
   .tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
 
-  /* ---------- telletabell ---------- */
-  .grp{margin-bottom:18px;}
-  .grp-hd{margin:0 2px 8px;display:flex;align-items:center;gap:10px;}
-  .grp-hd::after{content:"";flex:1;height:1px;background:var(--line);}
-  .row{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"label lead val" "in in in" "units units warn";
-    gap:6px 12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
-    padding:12px 14px;margin-bottom:8px;transition:border-color var(--dur);}
+  /* ---------- telletabell ----------
+     Kompakt spesifikasjonsark: én linje per valør på brede skjermer. Tidligere var
+     hver valør et ~125 px høyt kort med et 840 px bredt felt for et tall på inntil
+     fire sifre — safen alene ble ~1 100 px høy og kunne ikke leses i ett blikk
+     (PRODUCT.md, prinsipp 1). Nå får alle ni valørene plass på én skjerm.
+     Kolonnene: valør | antall/løse | ruller eller gram | ledelinje | verdi.
+     Samme mal for kolonneoverskriftene (.cols) og radene, så de står i flukt. */
+  .tbl{--cols:minmax(66px,100px) minmax(0,150px) minmax(0,150px) minmax(12px,1fr) minmax(0,176px);}
+  .count-hint{margin:-4px 2px 14px;font:400 12.5px/1.5 var(--font-ui);color:var(--muted);}
+  .count-hint b{color:var(--text);font:500 12px var(--font-mono);}
+  .grp{margin-bottom:16px;}
+  .cols{display:grid;grid-template-columns:var(--cols);column-gap:10px;align-items:end;padding:0 11px 6px 15px;}
+  .cols span{font:600 10px/1.2 var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+  .cols .c-n{text-align:right;padding-right:12px;}
+  .row{display:grid;grid-template-columns:var(--cols);grid-template-areas:"label f1 f2 lead val";column-gap:10px;
+    align-items:center;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:6px 10px 6px 14px;margin-bottom:5px;transition:border-color var(--dur);}
   .row:focus-within{border-color:var(--blue-line);}
-  .r-label{grid-area:label;font:600 15px var(--font-mono);letter-spacing:-.02em;}
-  .lead{grid-area:lead;height:1px;border-bottom:1px dotted #37414f;align-self:center;margin-top:6px;}
-  .r-val{grid-area:val;font:700 16px var(--font-mono);letter-spacing:-.03em;white-space:nowrap;}
-  .r-val.pop{animation:th-tick-pop var(--dur-slow) var(--ease);}
-  .r-in{grid-area:in;display:flex;gap:10px;flex-wrap:wrap;}
-  .in{display:flex;flex-direction:column;gap:4px;flex:1 1 120px;min-width:0;}
-  .in input{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:var(--radius);
-    padding:10px 12px;font:500 16px var(--font-mono);min-height:44px;transition:border-color var(--dur),box-shadow var(--dur);}
-  .in input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(38,132,230,.18);}
-  .in input.derived{color:#7db8f0;border-style:dashed;}
-  .r-units{grid-area:units;font:500 11px var(--font-mono);color:var(--muted);letter-spacing:.06em;}
-  .r-warn{grid-area:warn;justify-self:end;text-align:right;font:600 11px/1.3 var(--font-mono);color:var(--yellow);letter-spacing:.04em;}
+  .r-label{grid-area:label;font:600 15px var(--font-mono);letter-spacing:-.02em;white-space:nowrap;}
+  .row .lead{grid-area:lead;height:1px;border-bottom:1px dotted #37414f;}
+  .f1{grid-area:f1;} .f2{grid-area:f2;} .f-val{grid-area:val;}
+  .in{display:flex;flex-direction:column;gap:4px;min-width:0;}
+  /* Kolonneoverskriftene bærer feltnavnene på brede skjermer; per-felt-etiketten
+     vises bare på smal skjerm (under), og da INNE i feltet — en etikett over hvert
+     felt gjorde mobilsiden høyere enn før. aria-label er det tilgjengelige navnet. */
+  .ig .th-kicker{display:none;flex:none;padding-left:9px;font-size:9px;letter-spacing:.1em;white-space:nowrap;}
+  /* Inndatagruppe: felt + fast enhet (×25, g, kr) + «+»-tast i én ramme. */
+  .ig{display:flex;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);
+    min-height:40px;transition:border-color var(--dur),box-shadow var(--dur);}
+  .ig:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px rgba(38,132,230,.18);}
+  .ig input{flex:1;min-width:0;width:100%;background:transparent;border:0;color:var(--text);padding:8px 10px;
+    font:500 16px var(--font-mono);letter-spacing:-.02em;text-align:right;text-overflow:ellipsis;}
+  /* Et felt som renner over viser STARTEN av teksten: «1 000 000» leses da som
+     «1 000». I et pengefelt skal avkutting synes («1 000 0…»), ikke se ut som et
+     annet beløp. */
+  .ig input:focus{outline:none;}
+  .ig input::placeholder{color:#4d5866;}
+  .ig input:disabled{color:var(--text);opacity:.75;}
+  .ig .sfx{flex:none;padding-right:10px;font:500 11px var(--font-mono);color:var(--muted);letter-spacing:.02em;}
+  .ig.derived{border-style:dashed;} .ig.derived input{color:#7db8f0;}
+  .ig.err{border-color:#ff9b9b;} .ig.err:focus-within{box-shadow:0 0 0 3px rgba(255,155,155,.16);}
+  .f-val .ig input{font-weight:700;}
+  /* «+»-tasten: tallastaturet på iPhone (inputmode=numeric) har ingen pluss, så
+     uten denne kunne man ikke legge sammen bunker på telefon. Kun på berøring —
+     med tastatur skriver man + selv. tabindex=-1: ikke et ekstra Tab-stopp. */
+  .ig .plus{display:none;flex:none;align-self:stretch;align-items:center;justify-content:center;width:40px;margin:0;padding:0;
+    border:0;border-left:1px solid var(--line);background:transparent;color:#7db8f0;font:600 18px/1 var(--font-mono);
+    cursor:pointer;border-radius:0 var(--radius) var(--radius) 0;}
+  @media (pointer:coarse){ .ig .plus{display:flex;} .ig{min-height:44px;} }
+  .dash{grid-area:f2;text-align:right;padding-right:12px;color:#6b7887;font:500 14px var(--font-mono);}
+  /* Merknadslinja under raden: uttrykk («10+10+3 = 23»), rullregnestykke, vekt og
+     advarsler. Plassert automatisk i en egen rad KUN når den vises — ingen tom
+     luke under hver valør. */
+  .r-note{grid-column:2 / -1;display:flex;gap:4px 14px;flex-wrap:wrap;justify-content:flex-end;margin-top:6px;
+    font:500 11px/1.4 var(--font-mono);letter-spacing:.03em;color:var(--muted);text-align:right;}
+  .r-warn{color:var(--yellow);font-weight:600;}
+  .r-warn.err{color:#ff9b9b;}
+  .r-warn:empty,.r-info:empty{display:none;}
   .r-retired{margin-left:8px;padding:2px 6px;border:1px solid var(--line);border-radius:999px;color:var(--muted);vertical-align:middle;}
+  .pop{animation:th-tick-pop var(--dur-slow) var(--ease);}
 
   /* ---------- oppsummering ---------- */
   .summary{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px 16px;margin:22px 0 16px;}
@@ -105,13 +147,19 @@
   .sum-row b{font:700 15px var(--font-mono);letter-spacing:-.02em;}
   .sum-row.change{border-top:1px solid var(--line);margin-top:6px;padding-top:10px;}
   .sum-row.change b{color:var(--muted);}
+  .sum-row b.idle{color:var(--muted);font-weight:500;}
+  .sum-row b.ok{color:#7db8f0;} .sum-row b.bad{color:#ff9b9b;}
 
   /* ---------- handlinger ---------- */
   .note-f{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
   .note-f textarea{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:var(--radius);
     padding:10px 12px;font:400 16px/1.5 var(--font-ui);resize:vertical;}
   .note-f textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(38,132,230,.18);}
-  .act-row{display:flex;gap:10px;flex-wrap:wrap;}
+  .act-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  /* Hvorfor Godkjenn er avslått (safen går ikke opp, du talte selv …). En avslått
+     knapp uten forklaring lar en butikksjef gjette. */
+  .why{font:500 12.5px/1.4 var(--font-ui);color:var(--muted);}
+  .why:empty{display:none;}
 
   /* ---------- fast summeringslinje ---------- */
   .totalbar{position:fixed;left:0;right:0;bottom:0;z-index:12;background:var(--panel);border-top:1px solid var(--line);
@@ -121,13 +169,18 @@
   .tb-inner::before{top:-2px;left:-2px;border-top:1px solid var(--blue-line);border-left:1px solid var(--blue-line);}
   .tb-inner::after{bottom:-2px;right:-2px;border-bottom:1px solid var(--blue-line);border-right:1px solid var(--blue-line);}
   .tb-item{display:flex;flex-direction:column;gap:2px;}
-  .tb-item b{font:700 18px var(--font-mono);letter-spacing:-.03em;}
+  .tb-item b{font:700 18px var(--font-mono);letter-spacing:-.03em;white-space:nowrap;}
+  /* nowrap: et beløp brytes aldri inne i seg selv. Uten det krympet elementet
+     under tallets bredde på smal skjerm, og «SUM» og «MÅL» skled inn i hverandre
+     i stedet for at linja brøt pent. */
   /* --red (#e30613) er ~3.54:1 mot panelflaten som tekst i denne størrelsen/vekten
      — under DESIGN.md sitt ≥4.5:1-krav. --red er dokumentert for flater/kanter
      («kun fare»-bruk), ikke tekst; suitens etablerte feiltekst-rød er #ff9b9b
      (.th-err i shared.js), som måler ~8:1 her. Samme fiks i .hist-diff. */
   .tb-item.diff b{color:#ff9b9b;}
   .tb-item.diff.ok b{color:#7db8f0;}
+  /* Før noe er talt: nøytral, ikke et rødt «−10 000 kr» i det siden åpner. */
+  .tb-item.diff.idle b{color:var(--muted);font-weight:500;}
   .tb-check{width:18px;height:18px;color:var(--yellow);opacity:0;}
   .tb-check.on{opacity:1;}
   .tb-check path{stroke-dasharray:24;stroke-dashoffset:24;}
@@ -145,7 +198,8 @@
   .hist-diff.ok{color:#7db8f0;}
   .empty{color:var(--muted);text-align:center;padding:40px 10px;}
   .ro-note{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;
-    font:500 14px var(--font-ui);color:var(--muted);display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+    font:500 14px var(--font-ui);color:var(--muted);display:flex;gap:10px 12px;align-items:center;flex-wrap:wrap;}
+  .ro-note .why{flex-basis:100%;order:9;}
 
   /* ---------- valørark ---------- */
   .modal{position:fixed;inset:0;background:rgba(6,9,13,.72);display:none;align-items:center;justify-content:center;z-index:50;padding:14px;}
@@ -170,10 +224,34 @@
   .sheet-err{color:#ff9b9b;font-size:13px;min-height:18px;margin:6px 0 10px;}
   .sheet-act{display:flex;gap:10px;justify-content:flex-end;}
 
+  /* Smal skjerm: tabellen brettes til kort. Øverst valør + verdi, under dem
+     antall og ruller/gram SIDE OM SIDE (før sto de under hverandre, så hver
+     myntrad ble dobbelt så høy som nødvendig). Kolonneoverskriftene skjules og
+     hvert felt viser sin egen etikett i stedet. */
+  @media (max-width:600px){
+    .cols{display:none;}
+    /* Fast valørkolonne: med «auto» fikk hver rad sin egen bredde, og feltene
+       sto hakkete nedover («1000 kr» dyttet dem til høyre, «5 kr» til venstre). */
+    .row{grid-template-columns:4.3em minmax(0,1.1fr) minmax(0,.9fr);grid-template-areas:"label f1 val";
+      column-gap:8px;row-gap:6px;padding:8px 10px;}
+    /* Ruller/gram rett under antallet, i en rad som bare finnes for mynt. */
+    .row .f2{grid-area:auto;grid-column:2;grid-row:2;}
+    .row .lead,.dash{display:none;}
+    .ig .th-kicker{display:block;}
+    .f-val .ig .th-kicker{display:none;}   /* «kr» bak tallet sier nok */
+    .ig input{padding:8px 6px;}
+    .r-label{font-size:14px;}
+    .r-note{grid-column:1 / -1;justify-content:flex-start;text-align:left;margin-top:0;}
+  }
+  /* Rimelige Android-telefoner (360 px): med ekte Martian Mono ble et firesifret
+     antall og tre sifre ruller klippet. Det overflødige viker: etiketten på
+     løse-feltet (det eneste tellefeltet, eller rett over et merket RULLER) og
+     enheten ×25/g (rullstørrelsen står i merknaden så snart ruller er tastet). */
+  @media (max-width:380px){
+    .f1 .ig .th-kicker,.f2 .ig .sfx{display:none;}
+  }
   @media (max-width:560px){
     main{padding:14px 12px 8px;}
-    .row{grid-template-columns:auto 1fr auto;}
-    .in{flex:1 1 100%;}
     .tb-inner{gap:12px;}
     .tb-item b{font-size:16px;}
     .hist-sums{margin-left:0;width:100%;}
@@ -197,9 +275,17 @@
 <main>
   <!-- ---------- tellevisning ---------- -->
   <section id="countView">
+    <!-- Skrivebeskyttet visning (historikk eller godkjent). Et lagret, ikke godkjent
+         oppgjør kan redigeres videre (f.eks. legge til lukkingen om kvelden) og
+         godkjennes HERFRA — før var godkjenning bare mulig i samme fane rett etter
+         lagring, og et oppgjør lastet på nytt kunne aldri godkjennes. -->
     <div class="ro-note" id="roNote" hidden>
       <span id="roText">Skrivebeskyttet — lagret oppgjør.</span>
+      <span class="sp"></span>
+      <button class="chipbtn" id="roEdit" hidden>Rediger</button>
+      <button class="btn cta" id="roVerify" hidden>Godkjenn</button>
       <button class="chipbtn" id="backToHist">‹ Tilbake til historikk</button>
+      <span class="why" id="roVerifyWhy"></span>
     </div>
 
     <div class="sessbar">
@@ -217,10 +303,13 @@
       <button class="chipbtn" role="tab" id="tab-closing" data-kind="closing" aria-selected="false" aria-controls="tableWrap">Lukking</button>
     </div>
 
-    <div id="tableWrap" role="tabpanel" tabindex="0" aria-labelledby="tab-safe"></div>
+    <p class="count-hint" id="countHint">Legg sammen bunker med <b>+</b> (f.eks. <b>10+10+3</b>), eller skriv beløpet rett i Verdi-feltet.</p>
+
+    <div id="tableWrap" class="tbl" role="tabpanel" tabindex="0" aria-labelledby="tab-safe"></div>
 
     <section class="summary" aria-label="Oppsummering">
       <div class="sum-row"><span class="th-kicker">Safe</span><span class="lead"></span><b id="sumSafe">0 kr</b></div>
+      <div class="sum-row"><span class="th-kicker">Avvik safe</span><span class="lead"></span><b id="sumDiff">—</b></div>
       <div class="sum-row"><span class="th-kicker">Åpning</span><span class="lead"></span><b id="sumOpening">0 kr</b></div>
       <div class="sum-row"><span class="th-kicker">Lukking</span><span class="lead"></span><b id="sumClosing">0 kr</b></div>
       <div class="sum-row change"><span class="th-kicker">Endring i kassen</span><span class="lead"></span><b id="sumChange">0 kr</b></div>
@@ -234,6 +323,7 @@
       <div class="act-row">
         <button class="btn" id="saveBtn">Lagre oppgjør</button>
         <button class="btn cta" id="verifyBtn" hidden>Godkjenn</button>
+        <span class="why" id="verifyWhy"></span>
       </div>
     </div>
   </section>
@@ -280,16 +370,24 @@
   </div>
 </div>
 
-<script src="shared.js"></script>
-<script src="kasse-domain.js"></script>
-<script src="kasse-store.js"></script>
+<!-- ?v= som resten av suiten: GitHub Pages cacher i ti minutter, og en ny
+     kasse.html som kaller en funksjon en bufret, eldre kasse-domain.js ikke har
+     ville knekke siden i det vinduet. Øk tallet når fila endres. -->
+<script src="shared.js?v=16"></script>
+<script src="kasse-domain.js?v=2"></script>
+<script src="kasse-store.js?v=2"></script>
 <script>
 /* ---------- Kasseoppgjør — visning. All pengematematikk ligger i KasseDomain,
    all lagring i KasseStore. Denne filen gjør DOM og hendelser, ikke noe annet. ---------- */
 const T = window.THelper, K = window.KasseDomain, S = window.KasseStore;
 const $ = id => document.getElementById(id);
 
-const state = { denoms:[], session:null, tab:'safe', readonly:false };
+/* dirty: et LAGRET oppgjør (med id) er endret på skjermen uten ny lagring. Utkast
+   uten id trenger ikke flagget — de autolagres lokalt (queueDraft).
+   fieldErr: felt med inntasting som ikke kan tolkes, nøkkel «kind|valør|felt» →
+   { raw, msg, shown }. Raden teller 0 for et ugyldig felt, lagring sperres, og den
+   rå teksten tas vare på så den ikke forsvinner ved et fanebytte. */
+const state = { denoms:[], session:null, tab:'safe', readonly:false, dirty:false, fieldErr:new Map() };
 
 const todayIso = () => {
   const d = new Date();
@@ -361,7 +459,9 @@ function renderAll(){
 
 function renderAuth(){
   const u = T.getUser();
-  $('lockBtn').textContent = u ? u.tag : 'Logg inn';
+  /* «TAG · logg ut», som i Kunnskapsbasen. Før sto bare «MORT» her, og et trykk på
+     sitt eget navn logget ut uten forvarsel. */
+  $('lockBtn').textContent = u ? u.tag + ' · logg ut' : 'Logg inn';
   $('counterName').textContent = state.session && state.session.counted_by
     ? 'Talt av ' + state.session.counted_by.name
     : (u ? 'Innlogget som ' + u.name : '');
@@ -379,13 +479,46 @@ function renderAuth(){
      dagens levende konfigurasjon. Se guarden i openDenomSheet for samme
      resonnement, og denomSave for hvorfor ALDRI å regne om en låst økt. */
   $('denomBtn').hidden = !T.canManage() || isLocked();
-  $('verifyBtn').hidden = !(T.canManage() && state.session && state.session.status === 'saved');
+  renderVerify();
+}
+
+/* Kan innlogget bruker godkjenne det som vises? Samme regler som
+   KasseStore.verifySession håndhever — her for å kunne si HVORFOR på forhånd i
+   stedet for å la knappen feile. Vises kun for manager+ på et lagret oppgjør. */
+function verifyState(){
+  const u = T.getUser(), s = state.session;
+  if (!T.canManage() || !s || !s.id || s.status !== 'saved') return { show:false };
+  if (state.dirty) return { show:true, ok:false, why:'Lagre endringene før godkjenning.' };
+  if (!K.isSafeBalanced(s)){
+    return { show:true, ok:false, why: K.sectionHasData(s.sections.safe)
+      ? 'Safen går ikke opp (avvik ' + K.formatDiffOre(K.safeDiffOre(s)) + ') — kan ikke godkjennes.'
+      : 'Safen er ikke talt — kan ikke godkjennes.' };
+  }
+  if (u && s.counted_by && s.counted_by.tag === u.tag)
+    return { show:true, ok:false, why:'Du talte selv — en annen butikksjef må godkjenne.' };
+  if (u && s.edited_by && s.edited_by.tag === u.tag)
+    return { show:true, ok:false, why:'Du lagret sist endringer — en annen butikksjef må godkjenne.' };
+  return { show:true, ok:true, why:'' };
+}
+
+/* To Godkjenn-knapper, én funksjon: #verifyBtn i den redigerbare visningen,
+   #roVerify i den skrivebeskyttede (historikk). Bare én av dem er synlig om gangen,
+   fordi #actions og #roNote skjules motsatt av hverandre (se renderStatus). */
+function renderVerify(){
+  const v = verifyState();
+  [['verifyBtn', 'verifyWhy'], ['roVerify', 'roVerifyWhy']].forEach(([b, w]) => {
+    $(b).hidden = !v.show;
+    $(b).disabled = !v.ok;
+    $(w).textContent = v.show ? v.why : '';
+  });
+  $('roEdit').hidden = !(state.readonly && state.session && state.session.status === 'saved');
 }
 
 $('lockBtn').addEventListener('click', async () => {
   if (T.getUser()){ T.clearSession(); renderAuth(); T.toast('Logget ut.'); return; }
-  await T.authModal('login');
+  const u = await T.authModal('login');
   renderAuth();
+  if (u) T.toast('Logget inn som ' + (u.name || u.tag) + '.');
 });
 
 /* ---------- telletabell ---------- */
@@ -398,70 +531,69 @@ const esc = s => T.esc(s);
    den ikke får lov til å gjennomføre. */
 const isLocked = () => state.readonly || (state.session && state.session.status === 'verified');
 
-/* Veide rader viser gramtallet ved siden av antallet, så telleren ser hva vekta sa. */
-function unitsText(units, line, d, kind){
-  if (!units) return '';
-  const weighed = kind !== 'safe' && d.kind === 'coin' && line.source === 'weight';
-  return weighed ? units + ' stk · ' + K.formatGrams(line.grams) : units + ' stk';
+const fkey = (kind, denomId, f) => kind + '|' + denomId + '|' + f;
+/* Et ugyldig felt beholder den rå teksten brukeren skrev, også etter en ny
+   rendering (fanebytte) — ellers forsvant feilen stille og raden viste bare 0. */
+const rawOr = (kind, d, f, fallback) => {
+  const e = state.fieldErr.get(fkey(kind, d.id, f));
+  return e ? e.raw : fallback;
+};
+
+/* Felles markup for ett felt: inndatagruppe med etikett til venstre (kun synlig
+   på smal skjerm, der kolonneoverskriftene er skjult), fast enhet til høyre, og
+   «+»-tast for berøringsskjerm.
+   type="text", IKKE type="number" — kodegjennomgangens funn 9 gjelder fortsatt og
+   er nå dobbelt viktig: feltene skal godta «10+10+3» og «1 000», som et number-felt
+   forkaster før JavaScript ser verdien. Ingen pattern-attributt heller: pattern
+   [0-9]* ville merket enhver sum som ugyldig. All tolking skjer i K.parseCount /
+   K.parseKr / K.parseGrams, testet ett sted. Verdiene er Number-tvunget eller
+   formatert av domenet, og esc() i tillegg — samme to-lags forsvar som før. */
+function fieldHtml({ f, slot, kicker, mode, sfx, value, aria, disabled, derived, plus: withPlus = true }){
+  const plus = (disabled || !withPlus) ? '' :
+    '<button type="button" class="plus" data-plus tabindex="-1" aria-label="Legg til: skriv +">+</button>';
+  return `<div class="in ${slot}">` +
+    `<span class="ig${derived ? ' derived' : ''}"><span class="th-kicker" aria-hidden="true">${esc(kicker)}</span>` +
+    `<input type="text" inputmode="${mode}" enterkeyhint="next"` +
+    ` autocomplete="off" data-f="${f}" value="${esc(value)}" placeholder="0" aria-label="${esc(aria)}"${disabled}>` +
+    (sfx ? `<span class="sfx" aria-hidden="true">${esc(sfx)}</span>` : '') + plus + '</span></div>';
 }
 
 function rowHtml(d, kind, line){
   const isSafe = kind === 'safe';
   const coin = d.kind === 'coin';
-  const units = K.unitsFor(line, d, kind);
-  const warn = K.weightWarning(line, d, kind);
   const disabled = isLocked() ? ' disabled' : '';
-  /* Fanger opp navnet på advarselselementet slik at gramfeltet kan peke på det
-     via aria-describedby — uten dette har skjermleserbrukere ingen kobling
-     mellom feltet og advarselsteksten (se punkt 6 i kodegjennomgangen). */
   const warnId = 'rw-' + esc(d.id) + '-' + esc(kind);
-
-  /* Verdiene under kommer fra lagret/gjenopprettet tilstand (utkast i dag,
-     denom_snapshot/sections fra en fremtidig Supabase-rad senere) og skal
-     aldri limes rått inn i markup: Number(...) tvinger dem til trygge tall
-     før esc() i tillegg HTML-escaper resultatet — samme to-lags forsvar som
-     resten av siden bruker for d.id/d.label. En lagret streng som
-     `1" onfocus="…` skal bli tallet 0, ikke en levende hendelseshandler på et
-     felt telleren trykker på i det den lastes. */
   const looseVal = K.toCount(line.loose);
   const rollsVal = K.toCount(line.rolls);
   const gramsVal = line.grams == null ? 0 : K.toGrams(line.grams);
   /* Norsk komma i redisplay, ikke bare ved inntasting — et tall lagret som
-     103.5 skal vises «103,5», ikke slå om til punktum bare fordi det gikk
-     gjennom en re-rendering (fanebytte, reload). */
+     103.5 skal vises «103,5», ikke slå om til punktum ved en ny rendering. */
   const gramsDisplay = gramsVal > 0 ? String(gramsVal).replace('.', ',') : '';
-
+  const valOre = K.valueOre(K.unitsFor(line, d, kind), d);
   const looseLabel = isSafe ? 'Løse' : 'Antall';
-  const derived = (!isSafe && line.source === 'weight' && coin) ? ' derived' : '';
-  /* type="text", IKKE type="number" — kodegjennomgangens funn 9: et number-felt
-     kan la ett enkelt ugyldig tegn (typisk et feilplassert komma) forsvinne
-     midt i inntastingen mens sifrene rundt det består og slås sammen —
-     «12,5» blir stille «125», ti ganger for mye (2 500 kr i stedet for
-     240 kr på en 20-kroning), UTEN at input-eventet noensinne ser det rå,
-     feilaktige innholdet, fordi nettleseren luker bort tegnet før JavaScript
-     får se verdien. Regelen i denne fila er nå absolutt: INGEN numerisk felt
-     er type="number" noe sted på siden (se også data-k="roll" i
-     denomRowHtml). Parsing skjer som før gjennom K.toCount. */
-  let inputs =
-    `<label class="in"><span class="th-kicker">${esc(looseLabel)}</span>` +
-    `<input type="text" inputmode="numeric" pattern="[0-9]*" data-f="loose" class="${esc(derived.trim())}"` +
-    ` value="${esc(looseVal || '')}" placeholder="0" aria-label="${esc(d.label)} ${esc(looseLabel.toLowerCase())}"${disabled}></label>`;
+  const weighed = !isSafe && coin && line.source === 'weight';
 
+  const f1 = fieldHtml({ f:'loose', slot:'f1', kicker:looseLabel, mode:'numeric', disabled, derived:weighed,
+    value: rawOr(kind, d, 'loose', looseVal ? String(looseVal) : ''), aria: d.label + ' ' + looseLabel.toLowerCase() });
+  let f2 = '<span class="dash" aria-hidden="true">—</span>';
   if (coin && isSafe){
-    inputs += `<label class="in"><span class="th-kicker">Ruller ×${esc(Number(d.units_per_roll) || 0)}</span>` +
-      `<input type="text" inputmode="numeric" pattern="[0-9]*" data-f="rolls"` +
-      ` value="${esc(rollsVal || '')}" placeholder="0" aria-label="${esc(d.label)} ruller"${disabled}></label>`;
-  } else if (coin && !isSafe){
-    /* type="text", IKKE type="number": et number-felt forkaster desimalkomma
-       («103,5» blir «1035», deretter tolket som 1035 g — ti ganger for mye,
-       stille) før JavaScript i det hele tatt får se verdien. inputmode="decimal"
-       gir likevel numerisk/desimal-tastatur på mobil. Selve normaliseringen
-       (komma → punktum) skjer i K.toGrams, testet ett sted. */
-    inputs += `<label class="in"><span class="th-kicker">Gram</span>` +
-      `<input type="text" inputmode="decimal" pattern="[0-9]+([.,][0-9]+)?" enterkeyhint="next" data-f="grams"` +
-      ` value="${esc(gramsDisplay)}" placeholder="0" aria-label="${esc(d.label)} gram"` +
-      `${warn ? ` aria-describedby="${warnId}"` : ''}${disabled}></label>`;
+    /* «+» kun på løse/antall — der bunker legges sammen. Ruller telles som ett tall,
+       og på telefon trengte feltet plassen (to sifre ble klippet). */
+    f2 = fieldHtml({ f:'rolls', slot:'f2', kicker:'Ruller', mode:'numeric', disabled, plus:false,
+      sfx: '×' + (Number(d.units_per_roll) || 0),
+      value: rawOr(kind, d, 'rolls', rollsVal ? String(rollsVal) : ''), aria: d.label + ' ruller' });
+  } else if (coin){
+    f2 = fieldHtml({ f:'grams', slot:'f2', kicker:'Gram', mode:'decimal', disabled, sfx:'g', plus:false,
+      value: rawOr(kind, d, 'grams', gramsDisplay), aria: d.label + ' gram' });
   }
+  /* Verdi er et felt, ikke bare en visning: den opprinnelige bestillingen hadde
+     «verdi» som inndata for både safe og kasse, og mange teller sedler etter
+     beløp («tre tusen i hundrelapper»), ikke etter antall. */
+  /* Ingen «+»-tast på verdifeltet: bunker legges sammen i antall, og på en
+     telefon trengte beløpet de 40 px (et beløp på 1 000 ble klippet). Med
+     tastatur kan man fortsatt skrive 1000+500 her. */
+  const fv = fieldHtml({ f:'value', slot:'f-val', kicker:'Verdi', mode:'decimal', disabled, sfx:'kr', plus:false,
+    value: rawOr(kind, d, 'value', K.formatKrInput(valOre)), aria: d.label + ' verdi i kroner' });
 
   /* En avslått valør vises bare når linja fortsatt har tall i seg — merket, så
      det er tydelig at den ikke lenger er en del av standardoppsettet. */
@@ -469,11 +601,8 @@ function rowHtml(d, kind, line){
 
   return `<div class="row" data-denom="${esc(d.id)}">
     <span class="r-label">${esc(d.label)}${retired}</span>
-    <span class="lead"></span>
-    <b class="r-val" data-val>${K.formatOre(K.valueOre(units, d))}</b>
-    <div class="r-in">${inputs}</div>
-    <span class="r-units" data-units>${esc(unitsText(units, line, d, kind))}</span>
-    <span class="r-warn" id="${warnId}" data-warn${warn ? '' : ' hidden'} aria-live="polite">Vekten gir ikke et helt antall mynt</span>
+    ${f1}${f2}<span class="lead" aria-hidden="true"></span>${fv}
+    <div class="r-note" data-note hidden><span class="r-info" data-info></span><span class="r-warn" id="${warnId}" data-warn aria-live="polite"></span></div>
   </div>`;
 }
 
@@ -491,29 +620,58 @@ function renderTable(){
       .map(x => rowHtml(x.d, kind, x.line))
       .join('');
     if (!rows) return '';
-    const hint = (g === 'coin' && kind === 'safe') ? ' · løse + uåpnede ruller'
-               : (g === 'coin') ? ' · antall eller vekt' : '';
-    return `<div class="grp"><div class="grp-hd th-kicker">${title}${hint}</div>${rows}</div>`;
+    const c2 = g === 'coin' ? (kind === 'safe' ? 'Ruller' : 'Gram') : '';
+    /* Kolonneoverskrifter i samme rutenett som radene. Skjules på smal skjerm,
+       der hvert felt viser sin egen etikett. */
+    const cols = `<div class="cols" aria-hidden="true"><span>${title}</span>` +
+      `<span class="c-n">${kind === 'safe' ? 'Løse' : 'Antall'}</span><span class="c-n">${c2}</span>` +
+      '<span></span><span class="c-n">Verdi</span></div>';
+    return `<div class="grp">${cols}${rows}</div>`;
   }).join('');
+  /* Merknader, advarsler og feil fylles av updateRow — samme kode som ved
+     inntasting, så en ny rendering aldri viser noe annet enn et tastetrykk ville. */
+  $('tableWrap').querySelectorAll('.row').forEach(rowEl => {
+    const d = K.denomById(state.denoms, rowEl.dataset.denom);
+    const line = lineFor(section, rowEl.dataset.denom);
+    if (d && line) updateRow(rowEl, d, line);
+  });
 }
 
 /* ---------- faner ---------- */
 
-$('tabs').addEventListener('click', e => {
-  const btn = e.target.closest('button[data-kind]');
-  if (!btn) return;
-  state.tab = btn.dataset.kind;
+/* Eneste stedet som bytter fane: klikk, piltaster og resetToSafeTab går alle hit.
+   Roving tabindex (WAI-ARIA tabs): bare den aktive fanen er et Tab-stopp, og
+   piltastene flytter mellom fanene. Før var alle tre Tab-stopp og piltastene
+   gjorde ingenting. */
+function selectTab(kind, render){
+  state.tab = kind;
   [...$('tabs').children].forEach(b => {
-    const on = b === btn;
+    const on = b.dataset.kind === kind;
     b.classList.toggle('on', on);
     b.setAttribute('aria-selected', on ? 'true' : 'false');
+    b.tabIndex = on ? 0 : -1;
   });
   /* tableWrap er ett delt panel som bytter innhold i stedet for tre separate
      paneler — gyldig etter WAI-ARIA sitt tabs-mønster så lenge det peker på
      hvilken fane som faktisk styrer det til enhver tid. */
-  $('tableWrap').setAttribute('aria-labelledby', btn.id);
-  renderTable();
-  updateTotals();
+  $('tableWrap').setAttribute('aria-labelledby', 'tab-' + kind);
+  if (render !== false){ renderTable(); updateTotals(); }
+}
+
+$('tabs').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-kind]');
+  if (btn) selectTab(btn.dataset.kind);
+});
+$('tabs').addEventListener('keydown', e => {
+  const tabs = [...$('tabs').querySelectorAll('[role="tab"]')];
+  const i = tabs.indexOf(document.activeElement);
+  if (i < 0) return;
+  const j = { ArrowRight:(i + 1) % tabs.length, ArrowLeft:(i - 1 + tabs.length) % tabs.length,
+              Home:0, End:tabs.length - 1 }[e.key];
+  if (j === undefined) return;
+  e.preventDefault();
+  tabs[j].focus();
+  selectTab(tabs[j].dataset.kind);
 });
 
 /* ---------- status ---------- */
@@ -542,8 +700,13 @@ function renderStatus(){
      inn i et className uten å være sjekket mot den kjente statusvokabularen
      K.STATUSES — samme whitelist-prinsipp finalizeSession selv håndhever. */
   const status = K.STATUSES.includes(s.status) ? s.status : 'draft';
-  chip.className = 'chip st-' + status;
-  chip.textContent = STATUS_TEXT[status];
+  /* Et lagret oppgjør endret på skjermen er IKKE «Lagret» lenger. Før sto chipen
+     på «Lagret» mens tallene var andre enn de lagrede — og en butikksjef kunne
+     trykke Godkjenn på tall hen så, mens de lagrede (andre) tallene ble godkjent. */
+  const dirty = state.dirty && !isLocked();
+  chip.className = 'chip st-' + (dirty ? 'dirty' : status);
+  chip.textContent = dirty ? 'Endret · ikke lagret' : STATUS_TEXT[status];
+  $('countHint').hidden = isLocked();
   $('actions').hidden = isLocked();
   $('roNote').hidden = !isLocked();
   $('roText').textContent = status === 'verified'
@@ -557,88 +720,253 @@ function renderStatus(){
 
 /* ---------- inntasting ----------
    Tabellen re-rendres aldri på et tastetrykk; det ville revet fokus vekk midt i
-   tellingen. Vi oppdaterer den berørte raden og summene, ingenting annet. */
+   tellingen. Vi oppdaterer den berørte raden og summene, ingenting annet.
+
+   Tre veier inn i samme rad, og siste inntasting vinner:
+     antall/løse  → tolkes av K.parseCount («10+10+3», «1 000»)
+     gram         → K.parseGrams, gir antallet (bare mynt i kassen)
+     verdi (kr)   → K.parseKr + K.looseFromValue, gir antallet
+   Det som ble utledet vises stiplet blått (.derived). Inntasting som ikke kan
+   tolkes teller 0 og flagges — ALDRI stille 0 slik toCount ga for «10+10+3». */
+
+/* Feil vises først etter en kort pause eller når feltet forlates: på vei mot
+   «1 000» passerer man «1 0», og på vei mot 2 000 kr i 200-lapper passerer man
+   «2», «20» (går ikke opp) — det skal ikke blinke rødt for hvert siffer. Selve
+   feiltilstanden (sperret lagring, raden teller 0) gjelder derimot straks. */
+const errTimers = new Map();
+function setFieldErr(key, raw, msg){
+  const prev = state.fieldErr.get(key);
+  const shown = !!(prev && prev.shown);
+  state.fieldErr.set(key, { raw, msg, shown });
+  clearTimeout(errTimers.get(key));
+  if (!shown) errTimers.set(key, setTimeout(() => showFieldErr(key), 900));
+}
+function clearFieldErr(key){
+  clearTimeout(errTimers.get(key));
+  errTimers.delete(key);
+  state.fieldErr.delete(key);
+}
+function showFieldErr(key){
+  const e = state.fieldErr.get(key);
+  if (!e || e.shown) return;
+  e.shown = true;
+  refreshRowFor(key);
+}
+function clearAllFieldErrs(){
+  errTimers.forEach(clearTimeout);
+  errTimers.clear();
+  state.fieldErr.clear();
+}
+function refreshRowFor(key){
+  const [kind, denomId] = key.split('|');
+  if (kind !== state.tab) return;
+  const rowEl = [...$('tableWrap').querySelectorAll('.row')].find(r => r.dataset.denom === denomId);
+  const d = K.denomById(state.denoms, denomId);
+  const line = lineFor(state.session.sections[kind], denomId);
+  if (rowEl && d && line) updateRow(rowEl, d, line);
+}
+
+/* «200-lapper», «20-kroninger» — slik det sies ved kassen. */
+const pieceName = d => (Number(d.value_ore) / 100) + (d.kind === 'note' ? '-lapper' : '-kroninger');
 
 $('tableWrap').addEventListener('input', e => {
   const input = e.target.closest('input[data-f]');
   if (!input || isLocked()) return;
   const rowEl = input.closest('.row');
   const d = K.denomById(state.denoms, rowEl.dataset.denom);
-  const line = lineFor(state.session.sections[state.tab], rowEl.dataset.denom);
+  const kind = state.tab;
+  const line = lineFor(state.session.sections[kind], rowEl.dataset.denom);
   if (!d || !line) return;
+  const f = input.dataset.f, key = fkey(kind, d.id, f);
+  const field = n => rowEl.querySelector(`input[data-f="${n}"]`);
+  const setDerived = (inp, on) => { if (inp) inp.closest('.ig').classList.toggle('derived', on); };
+  const clearGrams = () => {
+    const g = field('grams');
+    if (g){ g.value = ''; clearFieldErr(fkey(kind, d.id, 'grams')); }
+    line.grams = null;
+  };
 
-  if (input.dataset.f === 'grams'){
-    /* K.toGrams gjør normaliseringen (komma → punktum) og klampingen — samme
-       testede funksjon domenet selv bruker, ikke en egen kopi her (se
-       kasse-domain.js). Gramfeltet er type="text" nettopp for at det rå,
-       komma-holdige innholdet skal nå helt hit uforvrengt. */
-    const g = K.toGrams(input.value);
-    const looseInput = rowEl.querySelector('input[data-f="loose"]');
-    if (g > 0){
-      line.grams = g;
+  if (f === 'loose' || f === 'rolls'){
+    const r = K.parseCount(input.value);
+    if (r.ok) clearFieldErr(key);
+    else setFieldErr(key, input.value, 'Bare hele tall — legg sammen bunker med +');
+    line[f] = r.ok ? r.value : 0;
+    if (f === 'loose'){
+      /* Et tastet antall overstyrer både vekt og beløp. */
+      line.source = 'manual';
+      clearGrams();
+      setDerived(input, false);
+    }
+    /* Verdifeltet skrives om fra antallet av updateRow — en gammel feil der gjelder ikke lenger. */
+    clearFieldErr(fkey(kind, d.id, 'value'));
+  } else if (f === 'grams'){
+    const r = K.parseGrams(input.value);
+    const looseIn = field('loose');
+    clearFieldErr(fkey(kind, d.id, 'value'));
+    if (!r.ok){
+      /* Ugyldig vekt: vi veier, men kan ikke regne — raden teller 0 til vekta er gyldig. */
+      setFieldErr(key, input.value, 'Vekt i gram, f.eks. 412,5 — flere poser med +');
+      line.grams = null; line.source = 'weight'; line.loose = 0;
+      looseIn.value = ''; setDerived(looseIn, true);
+    } else if (r.grams > 0){
+      clearFieldErr(key);
+      clearFieldErr(fkey(kind, d.id, 'loose'));
+      line.grams = r.grams;
       line.source = 'weight';
-      line.loose = K.unitsFor(line, d, state.tab);
-      looseInput.value = line.loose || '';
-      looseInput.classList.add('derived');
+      line.loose = K.unitsFor(line, d, kind);
+      looseIn.value = line.loose || '';
+      setDerived(looseIn, true);
     } else {
-      /* 0 g er «ingen vekt registrert» i K.toGrams sin egen kontrakt (samme
-         grense som weightWarning/unitsFor bruker) — ikke «null mynt». Et
-         tomt eller nullstilt gramfelt skal derfor IKKE røre et allerede
-         manuelt talt antall i løse-feltet (kodegjennomgangsfunn: å sette
-         loose=0 her slettet en reell telling bare fordi noen rørte
-         gramfeltet ved et uhell). */
+      /* 0 g / tomt felt er «ingen vekt registrert» i K.toGrams sin kontrakt — ikke
+         «null mynt». Et allerede manuelt talt antall skal IKKE røres (tidligere
+         kodegjennomgangsfunn: å sette loose=0 her slettet en reell telling). */
+      clearFieldErr(key);
       line.grams = null;
       line.source = 'manual';
-      looseInput.classList.remove('derived');
+      setDerived(looseIn, false);
     }
-  } else {
-    line[input.dataset.f] = K.toCount(input.value);
-    if (input.dataset.f === 'loose'){
-      line.source = 'manual';
-      input.classList.remove('derived');
-      const gramInput = rowEl.querySelector('input[data-f="grams"]');
-      if (gramInput) gramInput.value = '';
-      line.grams = null;
+  } else if (f === 'value'){
+    const r = K.parseKr(input.value);
+    const looseIn = field('loose');
+    if (!r.ok){
+      setFieldErr(key, input.value, 'Skriv et kronebeløp, f.eks. 3 000');
+      line.loose = 0;
+    } else {
+      const lf = K.looseFromValue(r.ore, line, d, kind);
+      if (lf.ok){ clearFieldErr(key); line.loose = lf.loose; }
+      else {
+        setFieldErr(key, input.value, lf.reason === 'below-rolls'
+          ? 'Mindre enn rullene alene (' + K.formatOre(lf.rollOre) + ')'
+          : 'Går ikke opp i hele ' + pieceName(d));
+        line.loose = 0;
+      }
     }
+    line.source = 'manual';
+    clearGrams();
+    clearFieldErr(fkey(kind, d.id, 'loose'));
+    looseIn.value = line.loose || '';
+    setDerived(looseIn, r.ok && input.value.trim() !== '');
   }
 
+  markDirty();
   updateRow(rowEl, d, line);
   updateTotals();
   queueDraft();
 });
 
-/* Enter flytter til neste felt — telling går raskere med én hånd på tastaturet. */
-$('tableWrap').addEventListener('keydown', e => {
-  if (e.key !== 'Enter') return;
-  const inputs = [...$('tableWrap').querySelectorAll('input')];
-  const i = inputs.indexOf(e.target);
-  if (i >= 0 && i < inputs.length - 1){ e.preventDefault(); inputs[i + 1].focus(); inputs[i + 1].select(); }
+/* Forlater man et felt, vises en eventuell feil med én gang, og et gyldig
+   verdifelt får norsk gruppering («5000» → «5 000»). */
+$('tableWrap').addEventListener('focusout', e => {
+  const input = e.target.closest('input[data-f]');
+  if (!input) return;
+  const rowEl = input.closest('.row');
+  const key = fkey(state.tab, rowEl.dataset.denom, input.dataset.f);
+  if (state.fieldErr.has(key)){ showFieldErr(key); return; }
+  const d = K.denomById(state.denoms, rowEl.dataset.denom);
+  const line = lineFor(state.session.sections[state.tab], rowEl.dataset.denom);
+  /* updateRow skriver om verdifeltet når det ikke har fokus — fokus er borte nå. */
+  if (d && line) setTimeout(() => { if (rowEl.isConnected) updateRow(rowEl, d, line); }, 0);
 });
 
+/* Tastaturflyt. Enter går videre til neste tellefelt (løse → ruller/gram → neste
+   valør) og hopper over verdifeltene; står man i et verdifelt, går Enter til neste
+   valørs verdifelt. Pil opp/ned flytter til samme felt i raden over/under. Slik
+   holder man seg i én inntastingsmåte uten å måtte tabbe gjennom tre felt per rad. */
+$('tableWrap').addEventListener('keydown', e => {
+  const input = e.target.closest('input[data-f]');
+  if (!input || !['Enter', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
+  const f = input.dataset.f;
+  const all = [...$('tableWrap').querySelectorAll('input[data-f]:not(:disabled)')];
+  let target;
+  if (e.key !== 'Enter' || f === 'value'){
+    const col = all.filter(i => i.dataset.f === f);
+    target = col[col.indexOf(input) + (e.key === 'ArrowUp' ? -1 : 1)];
+  } else {
+    const seq = all.filter(i => i.dataset.f !== 'value');
+    target = seq[seq.indexOf(input) + 1];
+  }
+  if (target){ e.preventDefault(); target.focus(); target.select(); }
+  else if (e.key === 'Enter'){ e.preventDefault(); input.blur(); }
+});
+
+/* «+»-tasten (kun synlig på berøringsskjerm). pointerdown avbrytes så fokuset —
+   og dermed tallastaturet — blir i feltet i stedet for å hoppe til knappen. */
+$('tableWrap').addEventListener('pointerdown', e => { if (e.target.closest('[data-plus]')) e.preventDefault(); });
+$('tableWrap').addEventListener('click', e => {
+  const btn = e.target.closest('[data-plus]');
+  if (!btn) return;
+  const input = btn.closest('.ig').querySelector('input');
+  if (!input || input.disabled) return;
+  const v = input.value.trim();
+  if (v && !v.endsWith('+')) input.value = v + '+';
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
+  input.dispatchEvent(new Event('input', { bubbles:true }));
+});
+
+/* Én rad: verdifeltet, feilmarkering og merknadslinja. Kalles på hvert
+   tastetrykk i raden og for alle rader ved en full rendering. */
 function updateRow(rowEl, d, line){
-  const units = K.unitsFor(line, d, state.tab);
-  const valEl = rowEl.querySelector('[data-val]');
-  const next = K.formatOre(K.valueOre(units, d));
-  if (valEl.textContent !== next){
-    valEl.textContent = next;
-    valEl.classList.remove('pop');
-    void valEl.offsetWidth;      /* tvinger omstart av animasjonen */
-    valEl.classList.add('pop');
+  const kind = state.tab;
+  const units = K.unitsFor(line, d, kind);
+  const valOre = K.valueOre(units, d);
+
+  /* Verdifeltet følger antallet — men ikke mens man skriver i det, og ikke når
+     det holder en ugyldig inntasting (den skal stå til den rettes). */
+  const vIn = rowEl.querySelector('input[data-f="value"]');
+  if (vIn && document.activeElement !== vIn && !state.fieldErr.has(fkey(kind, d.id, 'value'))){
+    const next = K.formatKrInput(valOre);
+    if (vIn.value !== next) vIn.value = next;
   }
-  rowEl.querySelector('[data-units]').textContent = unitsText(units, line, d, state.tab);
-  const warn = K.weightWarning(line, d, state.tab);
+
+  const errs = [];
+  rowEl.querySelectorAll('input[data-f]').forEach(inp => {
+    const err = state.fieldErr.get(fkey(kind, d.id, inp.dataset.f));
+    const shown = !!(err && err.shown);
+    inp.closest('.ig').classList.toggle('err', shown);
+    if (shown){ inp.setAttribute('aria-invalid', 'true'); errs.push(err.msg); }
+    else inp.removeAttribute('aria-invalid');
+  });
+
+  const warns = [];
+  if (K.weightWarning(line, d, kind)) warns.push('Vekten gir ikke et helt antall mynt');
+  if (kind === 'safe' && K.exceedsSafeTarget(valOre, state.session.sections.safe))
+    warns.push('Mer enn hele safen alene — tastet du kroner? Bruk Verdi-feltet.');
+
+  /* Hva feltene faktisk ble til. Et uttrykk vises mens det står i feltet; etter
+     et fanebytte står bare summen der, og da trengs ikke forklaringen. */
+  const info = [];
+  const text = f => { const i = rowEl.querySelector(`input[data-f="${f}"]`); return i ? i.value.trim() : ''; };
+  const isSum = f => text(f).includes('+') && !state.fieldErr.has(fkey(kind, d.id, f));
+  if (isSum('loose')) info.push(text('loose') + ' = ' + K.parseCount(text('loose')).value + ' stk');
+  if (isSum('rolls')) info.push(text('rolls') + ' = ' + K.parseCount(text('rolls')).value + ' ruller');
+  if (isSum('grams')) info.push(text('grams') + ' = ' + K.formatGrams(K.parseGrams(text('grams')).grams));
+  if (isSum('value')) info.push(text('value') + ' = ' + K.formatOre(K.parseKr(text('value')).ore));
+  const rolls = kind === 'safe' && d.kind === 'coin' ? K.toCount(line.rolls) : 0;
+  if (rolls) info.push(rolls + ' ruller × ' + (Number(d.units_per_roll) || 0) + ' + ' + K.toCount(line.loose) + ' løse = ' + units + ' stk');
+  if (kind !== 'safe' && d.kind === 'coin' && line.source === 'weight' && K.toGrams(line.grams) > 0)
+    info.push(K.formatGrams(line.grams) + ' → ' + units + ' stk');
+
   const warnEl = rowEl.querySelector('[data-warn]');
-  warnEl.hidden = !warn;
-  /* rowHtml setter aria-describedby kun ved en full rendering — tabellen
-     re-rendres aldri på et tastetrykk (se toppen av filen), så uten dette
-     ville advarselen dukke opp visuelt mens gramfeltets kobling til den
-     (og dermed skjermleserens eneste varsel om at vekten ikke traff et helt
-     antall mynt) sto igjen fra før advarselen fantes — typisk «ingen». */
-  const gramsInput = rowEl.querySelector('input[data-f="grams"]');
-  if (gramsInput){
-    if (warn) gramsInput.setAttribute('aria-describedby', warnEl.id);
-    else gramsInput.removeAttribute('aria-describedby');
-  }
+  warnEl.textContent = errs.concat(warns).join(' · ');
+  warnEl.classList.toggle('err', errs.length > 0);
+  rowEl.querySelector('[data-info]').textContent = info.join(' · ');
+  rowEl.querySelector('[data-note]').hidden = !warnEl.textContent && !info.length;
+
+  /* Skjermleserens eneste kobling mellom et felt og feilen/advarselen under det
+     (samme grunn som før: tabellen re-rendres ikke på tastetrykk, så dette må
+     settes her og ikke bare ved full rendering). */
+  rowEl.querySelectorAll('input[data-f]').forEach(inp => {
+    if (warnEl.textContent) inp.setAttribute('aria-describedby', warnEl.id);
+    else inp.removeAttribute('aria-describedby');
+  });
+}
+
+/* Et lagret oppgjør (med id) som endres, er ikke lenger det som er lagret. */
+function markDirty(){
+  if (isLocked() || !state.session || !state.session.id || state.dirty) return;
+  state.dirty = true;
+  renderStatus();
 }
 
 /* ---------- summer ---------- */
@@ -653,30 +981,50 @@ function updateTotals(){
      sections.opening.total_ore kastet rett etterpå, og latt sumSafe stå med
      et tall mens resten av linja aldri ble skrevet. */
   const safeSec = s.sections.safe || {}, openingSec = s.sections.opening || {}, closingSec = s.sections.closing || {};
+  const has = { safe:K.sectionHasData(safeSec), opening:K.sectionHasData(openingSec), closing:K.sectionHasData(closingSec) };
 
-  $('sumSafe').textContent    = K.formatOre(safeSec.total_ore);
-  $('sumOpening').textContent = K.formatOre(openingSec.total_ore);
-  $('sumClosing').textContent = K.formatOre(closingSec.total_ore);
-  $('sumChange').textContent  = K.formatDiffOre(K.dayChangeOre(s));
+  /* «Ikke talt» i stedet for «0 kr» for en del som ikke er talt — og «Endring i
+     kassen» først når BÅDE åpning og lukking er talt. Før viste den −2 000 kr
+     straks åpningen var talt, bare fordi lukkingen ikke var det ennå. */
+  const setSum = (id, isCounted, text, cls) => {
+    const el = $(id);
+    el.textContent = isCounted ? text : 'Ikke talt';
+    el.className = isCounted ? (cls || '') : 'idle';
+  };
+  const diff = K.safeDiffOre(s);
+  setSum('sumSafe', has.safe, K.formatOre(safeSec.total_ore));
+  setSum('sumDiff', has.safe, K.formatDiffOre(diff), diff === 0 ? 'ok' : 'bad');
+  setSum('sumOpening', has.opening, K.formatOre(openingSec.total_ore));
+  setSum('sumClosing', has.closing, K.formatOre(closingSec.total_ore));
+  const both = has.opening && has.closing;
+  $('sumChange').textContent = both ? K.formatDiffOre(K.dayChangeOre(s)) : '—';
+  $('sumChange').className = both ? '' : 'idle';
 
   const kind = state.tab;
   const isSafe = kind === 'safe';
   const section = s.sections[kind] || {};
   $('tbLabel').textContent = { safe:'Safe', opening:'Åpning', closing:'Lukking' }[kind];
-  $('tbSum').textContent = K.formatOre(section.total_ore);
+  const sumText = K.formatOre(section.total_ore);
+  if ($('tbSum').textContent !== sumText){
+    $('tbSum').textContent = sumText;
+    /* th-tick-pop på ETT tall — summen man leser av — ikke på hver rad. */
+    $('tbSum').classList.remove('pop'); void $('tbSum').offsetWidth; $('tbSum').classList.add('pop');
+  }
   $('tbTargetWrap').hidden = !isSafe;
   $('tbDiffWrap').hidden = !isSafe;
 
   if (isSafe){
-    const diff = K.safeDiffOre(s);
     $('tbTarget').textContent = K.formatOre(section.target_ore);
-    $('tbDiff').textContent = K.formatDiffOre(diff);
-    const ok = diff === 0 && section.total_ore > 0;
-    $('tbDiffWrap').classList.toggle('ok', diff === 0);
-    $('tbCheck').classList.toggle('on', ok);
+    /* Før noe er talt: en nøytral strek, ikke et rødt «−10 000 kr» i det siden åpner. */
+    $('tbDiff').textContent = has.safe ? K.formatDiffOre(diff) : '—';
+    $('tbDiffWrap').classList.toggle('idle', !has.safe);
+    $('tbDiffWrap').classList.toggle('ok', has.safe && diff === 0);
+    $('tbCheck').classList.toggle('on', has.safe && K.isSafeBalanced(s));
   } else {
     $('tbCheck').classList.remove('on');
   }
+  /* Godkjenn-tilstanden avhenger av summen (safen går opp eller ikke). */
+  renderVerify();
 }
 
 /* Summeringslinjen nederst er fast posisjonert og kan bli 1–3 linjer høy
@@ -720,16 +1068,44 @@ function queueDraft(){
        som kom inn et annet sted, eller (se cancelPendingDraft) en økt som ble
        byttet ut mens denne timeren ventet men rakk å fyre likevel. Skriv ikke
        et utkast for en økt som ikke lenger skal ha ett. */
-    if (isLocked() || state.session.id) return;
-    state.session.note = $('note').value;
-    state.session.session_date = $('sessDate').value || state.session.session_date;
-    /* saveDraft svarer true/false synkront (se kasse-store.js) — en telefon som
-       låser seg midt i tellingen skal ikke koste en ny telling, så en mislykket
-       skriving her skal si fra, ikke stille anta at utkastet ble lagret. */
-    if (S.saveDraft(state.session) !== true){
-      T.toast('Kunne ikke lagre utkastet automatisk — nettleseren har trolig ikke mer lagringsplass.');
-    }
+    writeDraftNow();
   }, 400);
+}
+
+function writeDraftNow(){
+  if (isLocked() || state.session.id) return;
+  state.session.note = $('note').value;
+  state.session.session_date = $('sessDate').value || state.session.session_date;
+  /* saveDraft svarer true/false synkront (se kasse-store.js) — en telefon som
+     låser seg midt i tellingen skal ikke koste en ny telling, så en mislykket
+     skriving her skal si fra, ikke stille anta at utkastet ble lagret. */
+  if (S.saveDraft(state.session) !== true){
+    T.toast('Kunne ikke lagre utkastet automatisk — nettleseren har trolig ikke mer lagringsplass.');
+  }
+}
+
+/* Lukkes fanen innen 400 ms etter siste tastetrykk, gikk den siste endringen i
+   utkastet tapt. pagehide skriver en ventende autolagring med én gang
+   (S.saveDraft er synkron, så den rekker det). */
+window.addEventListener('pagehide', () => {
+  if (!draftTimer) return;
+  cancelPendingDraft();
+  writeDraftNow();
+});
+
+/* Et LAGRET oppgjør som er endret, autolagres ikke lokalt (se queueDraft) — så
+   nettleseren må spørre før fanen lukkes, i stedet for å kaste endringene stille. */
+window.addEventListener('beforeunload', e => {
+  if (state.dirty && !isLocked()){ e.preventDefault(); e.returnValue = ''; }
+});
+
+/* Finnes det talte tall som går tapt hvis vi bytter økt nå? Et utkast uten id
+   har data som bare ligger i utkastet; et lagret oppgjør bare hvis det er endret. */
+function hasUnsavedWork(){
+  const s = state.session;
+  if (!s || isLocked()) return false;
+  if (s.id) return state.dirty;
+  return K.sessionHasData(s) || !!$('note').value.trim();
 }
 
 /* Nullstiller en ventende autolagring uten å kjøre den. Må kalles overalt
@@ -745,13 +1121,16 @@ function cancelPendingDraft(){
   draftTimer = null;
 }
 
-$('note').addEventListener('input', queueDraft);
+$('note').addEventListener('input', () => { markDirty(); queueDraft(); });
 $('sessDate').addEventListener('change', () => {
   state.session.session_date = $('sessDate').value || todayIso();
+  markDirty();
   queueDraft();
 });
 
 $('newBtn').addEventListener('click', () => {
+  /* Ett feiltrykk slettet før en hel telling uten spørsmål. */
+  if (hasUnsavedWork() && !confirm('Tellingen som ikke er lagret, forkastes. Starte en ny telling?')) return;
   cancelPendingDraft();
   enterView({ session: K.newSession(state.denoms, todayIso()), denoms: state.denoms, readonly:false });
   S.clearDraft();
@@ -767,6 +1146,20 @@ $('newBtn').addEventListener('click', () => {
 
 $('saveBtn').addEventListener('click', async () => {
   if (isLocked()) return;   // knappen er skjult da (se renderStatus), men UI-et skal ikke stoles blindt på
+  /* 1. Felt som ikke kan tolkes teller 0 — å lagre nå ville lagret feil tall. */
+  if (state.fieldErr.size){ revealFieldErrors(); T.toast('Rett opp feltene som er merket før du lagrer.'); return; }
+  /* 2. Et helt tomt oppgjør (0 kr overalt) ble før lagret uten spørsmål. */
+  if (!K.sessionHasData(state.session)){ T.toast('Ingenting er talt ennå — tell før du lagrer.'); return; }
+  /* 3. Fast vekselbeholdning: et oppgjør der safen ikke går opp kan lagres (man
+        skal kunne registrere det man faktisk fant), men ikke godkjennes. Si det
+        før lagring, ikke først når butikksjefen prøver å godkjenne. */
+  K.recalc(state.session, state.denoms);
+  if (!K.isSafeBalanced(state.session)){
+    const why = K.sectionHasData(state.session.sections.safe)
+      ? 'Safen går ikke opp (avvik ' + K.formatDiffOre(K.safeDiffOre(state.session)) + ').'
+      : 'Safen er ikke talt.';
+    if (!confirm(why + ' Oppgjøret kan lagres, men ikke godkjennes før safen går opp. Lagre likevel?')) return;
+  }
   const btn = $('saveBtn');
   btn.disabled = true;
   try {
@@ -784,6 +1177,7 @@ $('saveBtn').addEventListener('click', async () => {
        over den nå lagrede økten. */
     cancelPendingDraft();
     state.session = saved;
+    state.dirty = false;
     S.clearDraft();
     renderStatus();
     updateTotals();
@@ -797,34 +1191,46 @@ $('saveBtn').addEventListener('click', async () => {
   }
 });
 
-$('verifyBtn').addEventListener('click', async () => {
-  /* Knappen er allerede skjult for alt under manager+ og for alt annet enn en
-     lagret (ikke godkjent) økt (se renderAuth) — samme «stol ikke blindt på
-     UI-et»-linje som saveBtn over. Selve rollesjekken og selvgodkjenning håndheves
-     av KasseStore.verifySession, ikke her (se kasse-store.js). */
-  if (!T.canManage() || !state.session.id || state.session.status !== 'saved') return;
-  const btn = $('verifyBtn');
+/* Godkjenning, fra redigerbar visning (#verifyBtn) eller historikk (#roVerify).
+   verifyState gir samme svar som KasseStore.verifySession håndhever — «stol ikke
+   blindt på UI-et»: datalaget sjekker alt på nytt (status, balanse, fireøyne). */
+async function doVerify(btn){
+  const v = verifyState();
+  if (!v.show || !v.ok) return;
   btn.disabled = true;
   try {
+    const wasReadonly = state.readonly;
     state.session = await S.verifySession(state.session.id, T.getUser());
-    /* Samme grunn som saveBtn — og enda mer direkte her (kodegjennomgangens
-       funn 1): godkjenning gjør økten LÅST via KasseStore, mens et lokalt
-       utkast med samme id fortsatt kunne stå igjen og lyve om det ved neste
-       sideinnlasting. cancelPendingDraft() først, i tilfelle en timer allerede
-       var i gang idet godkjenningen fullførte. renderAll(), ikke renderStatus()
-       alene — godkjenning ER en låseovergang (isLocked() går false → true), og
-       renderStatus() rører ikke lenger tabellen selv (se dens egen kommentar,
-       funn 13); det er renderAll() sin jobb å faktisk disable de ni feltene. */
-    cancelPendingDraft();
-    S.clearDraft();
+    /* I den redigerbare visningen (kodegjennomgangens funn 1): godkjenning gjør
+       økten LÅST, og et lokalt utkast skal ikke stå igjen og lyve om det. I
+       historikkvisningen er utkastet derimot en ANNEN, pågående telling — det
+       skal ikke slettes fordi et gammelt oppgjør ble godkjent. */
+    if (!wasReadonly){ cancelPendingDraft(); S.clearDraft(); }
+    /* renderAll, ikke renderStatus alene — godkjenning er en låseovergang, og det
+       er renderAll sin jobb å faktisk disable feltene (funn 13). */
     renderAll();
     T.toast('Oppgjøret er godkjent.');
   } catch (err){
     T.toast('Kunne ikke godkjenne: ' + (err && err.message ? err.message : 'ukjent feil'));
   } finally {
     btn.disabled = false;
+    renderVerify();
   }
-});
+}
+$('verifyBtn').addEventListener('click', () => doVerify($('verifyBtn')));
+$('roVerify').addEventListener('click', () => doVerify($('roVerify')));
+
+/* Ved lagring med ugyldige felt: vis alle feilene straks, gå til fanen med den
+   første, og sett fokus i feltet. */
+function revealFieldErrors(){
+  state.fieldErr.forEach(e => { e.shown = true; });
+  const [firstKey] = state.fieldErr.keys();
+  const [kind, denomId, f] = firstKey.split('|');
+  if (kind !== state.tab) selectTab(kind); else renderTable();
+  const rowEl = [...$('tableWrap').querySelectorAll('.row')].find(r => r.dataset.denom === denomId);
+  const input = rowEl && rowEl.querySelector(`input[data-f="${f}"]`);
+  if (input){ input.focus(); input.select(); }
+}
 
 /* ---------- historikk ---------- */
 
@@ -918,12 +1324,7 @@ function showCount(){
    aria-labelledby som tabs-klikkhandleren over gjør. Kalles kun fra enterView
    nedenfor nå (se dens kommentar). */
 function resetToSafeTab(){
-  state.tab = 'safe';
-  [...$('tabs').children].forEach((b, i) => {
-    b.classList.toggle('on', i === 0);
-    b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
-  });
-  $('tableWrap').setAttribute('aria-labelledby', 'tab-safe');
+  selectTab('safe', false);   /* enterView rendrer selv rett etterpå */
 }
 
 /* ---------- én eier av visningstilstanden ----------
@@ -946,6 +1347,9 @@ function enterView({ session, denoms, readonly }){
   state.session = session;
   state.denoms = denoms;
   state.readonly = readonly;
+  /* Ny økt i visningen: ingen ulagrede endringer og ingen feltfeil hører til den. */
+  state.dirty = false;
+  clearAllFieldErrs();
   resetToSafeTab();
   $('sessDate').value = session.session_date || todayIso();
   $('note').value = session.note || '';
@@ -953,6 +1357,11 @@ function enterView({ session, denoms, readonly }){
 }
 
 async function openSaved(id){
+  /* Et endret, lagret oppgjør autolagres ikke lokalt — å åpne et annet nå ville
+     kastet endringene stille. (Et utkast uten id overlever: det ligger i utkastet
+     og hentes tilbake av restoreLiveSession.) */
+  if (state.dirty && !isLocked() &&
+      !confirm('Endringene i oppgjøret du redigerer er ikke lagret og forkastes. Fortsette?')) return;
   let full = null;
   try { full = await S.getSession(id); }
   catch (err){ T.toast('Kunne ikke åpne oppgjøret: ' + (err && err.message ? err.message : 'ukjent feil')); return; }
@@ -1009,6 +1418,29 @@ async function restoreLiveSession(){
   enterView({ session, denoms, readonly:false });
   return true;
 }
+
+/* «Rediger» på et lagret, ikke godkjent oppgjør i historikken: hent det inn i den
+   redigerbare visningen med DAGENS valører (som et utkast — syncLines beholder
+   tallene), slik at f.eks. lukkingen kan legges til om kvelden. Før kunne et lagret
+   oppgjør aldri åpnes for endring igjen etter en omlasting. Den som lagrer blir
+   edited_by (se finalizeSession), og kan dermed ikke godkjenne resultatet selv. */
+async function editSaved(){
+  if (!state.readonly || !state.session || state.session.status !== 'saved') return;
+  let draft = null;
+  try { draft = S.getDraft(); } catch { draft = null; }
+  if (draft && isPlausibleSession(draft) && K.sessionHasData(draft) &&
+      !confirm('Du har en påbegynt telling som ikke er lagret. Forkaste den og redigere oppgjøret fra ' +
+               NO_DATE(state.session.session_date) + '?')) return;
+  let denoms;
+  try { denoms = await S.getDenominations(); }
+  catch (err){ T.toast('Kunne ikke laste valørene: ' + (err && err.message ? err.message : 'ukjent feil')); return; }
+  const session = K.syncLines(JSON.parse(JSON.stringify(state.session)), denoms);
+  cancelPendingDraft();
+  S.clearDraft();
+  enterView({ session, denoms, readonly:false });
+  T.toast('Redigerer oppgjøret fra ' + NO_DATE(session.session_date) + '. Lagre når du er ferdig.');
+}
+$('roEdit').addEventListener('click', editSaved);
 
 $('backToHist').addEventListener('click', async () => {
   if (!(await restoreLiveSession())) return;
