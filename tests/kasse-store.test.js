@@ -58,6 +58,11 @@ const emptySections = () => ({
   closing: { lines:[], total_ore:0 },
 });
 const sessionStub = extra => Object.assign({ session_date:'2026-07-20', status:'saved', note:'', sections:emptySections() }, extra);
+/* Godkjenning krever at safen går nøyaktig opp (fast vekselbeholdning). Tester som
+   skal nå en VELLYKKET godkjenning bruker derfor en balansert safe; sessionStub sin
+   tomme safe (0 av 10 000 kr) er nettopp det verifySession nå skal avvise. */
+const balancedSections = () => Object.assign(emptySections(), { safe:{ lines:[], total_ore:1000000, target_ore:1000000 } });
+const balancedStub = extra => sessionStub(Object.assign({ sections:balancedSections() }, extra));
 
 /* ---------- driver-dispatch ---------- */
 
@@ -228,7 +233,7 @@ test('I3: safe_diff_ore beregnes med KasseDomain.safeDiffOre, ikke en kopi av fo
 
 test('summary tar med verified_by_tag i tillegg til verified_by_name', async () => {
   const { Store } = freshStore();
-  const saved = await Store.saveSession(sessionStub({ counted_by:{ tag:'ABCD', name:'Ansatt' } }));
+  const saved = await Store.saveSession(balancedStub({ counted_by:{ tag:'ABCD', name:'Ansatt' } }));
   await Store.verifySession(saved.id, { tag:'MGR1', name:'Manager Én' });
   const [row] = await Store.listSessions();
   assert.equal(row.verified_by_tag, 'MGR1');
@@ -272,7 +277,7 @@ test('saveSession dypkopierer: kallerens videre redigering av objektet etter lag
    godkjenningen ved en hel rad-erstatning. */
 test('C1: saveSession nekter å lagre over en godkjent rad — en gammel kopi kan ikke slette en godkjenning', async () => {
   const { Store } = freshStore();
-  const saved = await Store.saveSession(sessionStub({ counted_by:{ tag:'ABCD', name:'Ansatt' } }));
+  const saved = await Store.saveSession(balancedStub({ counted_by:{ tag:'ABCD', name:'Ansatt' } }));
   const verified = await Store.verifySession(saved.id, { tag:'MGR1', name:'Manager Én' });
   assert.equal(verified.status, 'verified');
 
@@ -298,7 +303,7 @@ test('deleteSession fjerner raden; sletting av en ukjent id er et stille no-op',
 
 test('deleteSession nekter å slette en godkjent rad', async () => {
   const { Store } = freshStore();
-  const saved = await Store.saveSession(sessionStub({ counted_by:{ tag:'ABCD', name:'Ansatt' } }));
+  const saved = await Store.saveSession(balancedStub({ counted_by:{ tag:'ABCD', name:'Ansatt' } }));
   await Store.verifySession(saved.id, { tag:'MGR1', name:'Manager Én' });
   await assert.rejects(Store.deleteSession(saved.id), /kan ikke slettes/);
   assert.ok(await Store.getSession(saved.id));
@@ -340,7 +345,7 @@ test('verifySession avviser et utkast — kun lagrede oppgjør kan godkjennes', 
 
 test('verifySession avviser å godkjenne på nytt et allerede godkjent oppgjør', async () => {
   const { Store } = freshStore();
-  const saved = await Store.saveSession(sessionStub({ counted_by:{ tag:'ABCD', name:'Ansatt' } }));
+  const saved = await Store.saveSession(balancedStub({ counted_by:{ tag:'ABCD', name:'Ansatt' } }));
   await Store.verifySession(saved.id, { tag:'MGR1', name:'M' });
   await assert.rejects(Store.verifySession(saved.id, { tag:'MGR2', name:'M2' }), /lagrede oppgjør/);
 });
@@ -353,11 +358,37 @@ test('verifySession avviser selvgodkjenning — telleren kan ikke godkjenne sin 
 
 test('verifySession lykkes for en annen bruker enn telleren, og setter status/verified_by/verified_at', async () => {
   const { Store } = freshStore();
-  const saved = await Store.saveSession(sessionStub({ counted_by:{ tag:'ABCD', name:'Ansatt' } }));
+  const saved = await Store.saveSession(balancedStub({ counted_by:{ tag:'ABCD', name:'Ansatt' } }));
   const verified = await Store.verifySession(saved.id, { tag:'MGR1', name:'Manager Én' });
   assert.equal(verified.status, 'verified');
   assert.deepEqual(verified.verified_by, { tag:'MGR1', name:'Manager Én' });
   assert.ok(verified.verified_at);
+});
+
+test('verifySession avviser en safe som ikke går opp — godkjenning kun ved avvik 0', async () => {
+  const { Store } = freshStore();
+  const short = await Store.saveSession(sessionStub({ counted_by:{ tag:'ABCD', name:'Ansatt' },
+    sections: Object.assign(emptySections(), { safe:{ lines:[], total_ore:900000, target_ore:1000000 } }) }));
+  await assert.rejects(Store.verifySession(short.id, { tag:'MGR1', name:'M' }), /går ikke opp \(avvik -1\u00a0000 kr\)/);
+  const still = await Store.getSession(short.id);
+  assert.equal(still.status, 'saved');
+  assert.equal(still.verified_by, undefined);
+});
+
+test('verifySession avviser også en safe med for MYE i seg', async () => {
+  const { Store } = freshStore();
+  const over = await Store.saveSession(sessionStub({ counted_by:{ tag:'ABCD', name:'Ansatt' },
+    sections: Object.assign(emptySections(), { safe:{ lines:[], total_ore:1000100, target_ore:1000000 } }) }));
+  await assert.rejects(Store.verifySession(over.id, { tag:'MGR1', name:'M' }), /går ikke opp/);
+});
+
+test('verifySession avviser den som sist lagret endringer — ikke bare den som talte først', async () => {
+  const { Store } = freshStore();
+  const saved = await Store.saveSession(balancedStub({ counted_by:{ tag:'ABCD', name:'Ansatt' },
+    edited_by:{ tag:'MGR1', name:'Manager Én' } }));
+  await assert.rejects(Store.verifySession(saved.id, { tag:'MGR1', name:'Manager Én' }), /lagret sist endringer/);
+  const ok = await Store.verifySession(saved.id, { tag:'MGR2', name:'Manager To' });
+  assert.equal(ok.status, 'verified');
 });
 
 /* ---------- utkast ---------- */

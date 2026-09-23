@@ -220,6 +220,18 @@ window.KasseStore = (function () {
          riktig, slik kommentaren over også sier om statussjekken. */
       if (row.counted_by && row.counted_by.tag === user.tag)
         throw new Error('Den som talte kan ikke godkjenne sin egen telling.');
+      /* Samme regel for den som sist lagret tallene (edited_by, se finalizeSession):
+         ellers kunne en butikksjef endre en annens telling og godkjenne resultatet. */
+      if (row.edited_by && row.edited_by.tag === user.tag)
+        throw new Error('Du lagret sist endringer i denne tellingen og kan ikke godkjenne den selv.');
+      /* Fast vekselbeholdning (eierbeslutning): et oppgjør godkjennes kun når safen
+         går nøyaktig opp. Tidligere kunne en butikksjef godkjenne en safe som manglet
+         1 000 kr — godkjenningen betydde da ingenting om beløpet. Sjekkes etter
+         status og selvgodkjenning, så de feilene fortsatt meldes med egen tekst.
+         total_ore er skrevet av finalizeSession ved lagring, ikke tastet rått. */
+      if (!KasseDomain.isSafeBalanced(row))
+        throw new Error('Safen går ikke opp (avvik ' + KasseDomain.formatDiffOre(KasseDomain.safeDiffOre(row)) +
+          ') og kan ikke godkjennes. Tell på nytt og lagre før godkjenning.');
       row.status = 'verified';
       row.verified_by = { tag:user.tag, name:user.name };
       row.verified_at = new Date().toISOString();
@@ -257,10 +269,13 @@ window.KasseStore = (function () {
 
   const supabase = {
     async saveSession(){ throw new Error('not-implemented: RPC save_money_count(p_auth_tag, p_auth_pw, p_session jsonb) → upsert i money_count_sessions'); },
-    async listSessions(){ throw new Error('not-implemented: select toppnivåkolonner fra money_count_sessions, order by session_date desc, counted_at desc'); },
-    async getSession(){ throw new Error('not-implemented: select * fra money_count_sessions where id = ? (inkl. sections og denom_snapshot)'); },
+    /* Lesing via RPC, ikke direkte select: oppgjørene har ingen offentlig
+       select-policy (se «Tilgang» i supabase/money_v1.sql — nøkkelen i shared.js er
+       offentlig, så en åpen tabell ville vist kontanthistorikken til alle). */
+    async listSessions(){ throw new Error('not-implemented: RPC list_money_counts(p_auth_tag, p_auth_pw, p_limit) → toppnivåkolonner, order by session_date desc, counted_at desc'); },
+    async getSession(){ throw new Error('not-implemented: RPC get_money_count(p_auth_tag, p_auth_pw, p_id) → hele raden inkl. sections og denom_snapshot'); },
     async deleteSession(){ throw new Error('not-implemented: RPC delete_money_count(p_auth_tag, p_auth_pw, p_id)'); },
-    async verifySession(){ throw new Error('not-implemented: RPC verify_money_count(p_auth_tag, p_auth_pw, p_id)'); },
+    async verifySession(){ throw new Error('not-implemented: RPC verify_money_count(p_auth_tag, p_auth_pw, p_id) — avviser ubalansert safe, telleren og siste redigerer'); },
     /* Ingen `where active` her: local-driveren returnerer ALLE valører, aktive og
        ikke, fordi kasse-domain.js sin denomById/syncLines slår opp i hele lista —
        en linje for en deaktivert valør skal fortsatt kunne verdsettes (og vises i

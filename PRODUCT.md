@@ -6,11 +6,11 @@ product
 
 ## Users
 
-Ansatte i Thansen-butikken i Fredrikstad: butikkmedarbeidere, butikksjef og IT/dev. Norsk UI. Brukes i korte glimt mellom kunder, på mobil på lager/butikkgulv og på desktop på bakrommet/kasse-PC. Brukerne er ikke teknologer; de skal finne dagens oppgaver, registrere fravær, slå opp en sykkel eller en XAL-snarvei på sekunder.
+Ansatte i Thansen-butikken i Fredrikstad: butikkmedarbeidere, butikksjef og IT/dev. Norsk UI. Brukes i korte glimt mellom kunder, på mobil på lager/butikkgulv og på desktop på bakrommet/kasse-PC. Brukerne er ikke teknologer; de skal finne dagens oppgaver, registrere fravær, slå opp en sykkel eller en XAL-snarvei på sekunder, og telle safe og kasse uten å regne selv.
 
 ## Product Purpose
 
-Thansen Internverktøy (tidligere «Verktøykasse») er en intern verktøysuite på GitHub Pages med Supabase-backend: ButikkPlanlegger (oppgavetavle, ukesplan, fravær), Velodex (sykkelregister med strekkoder og Thansen-sync) og Kunnskapsbase (wiki + Snarveier for XAL-kommandoer og lenker). Suksess er at verktøyet forsvinner inn i arbeidsoppgaven: raskt, gjenkjennelig, til å stole på.
+Thansen Internverktøy (tidligere «Verktøykasse») er en intern verktøysuite på GitHub Pages med Supabase-backend: ButikkPlanlegger (oppgavetavle, ukesplan, fravær), Velodex (sykkelregister med strekkoder og Thansen-sync), Kunnskapsbase (wiki + Snarveier for XAL-kommandoer og lenker) og Kasseoppgjør (telling av safe mot fast vekselbeholdning på 10 000 kr, og kasse ved åpning/lukking — antall, beløp, ruller og myntvekt; godkjennes av en annen butikksjef kun når safen går nøyaktig opp). Suksess er at verktøyet forsvinner inn i arbeidsoppgaven: raskt, gjenkjennelig, til å stole på.
 
 ## Brand Personality
 

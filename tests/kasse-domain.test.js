@@ -1156,3 +1156,219 @@ test('toGrams gir 0 for ikke-tall og ikke-endelige verdier, inkludert "1e999"', 
   assert.equal(D.toGrams(Infinity), 0);
   assert.equal(D.toGrams('1e999'), 0);
 });
+
+/* ---------- parseCount: tellefeltet skal forstå summer og tusenskille ----------
+   Regresjon: «10+10+3», «1 000» og «2,5» ga tidligere stille 0 kr via toCount. */
+
+test('parseCount: vanlige hele tall og tomt felt', () => {
+  assert.deepEqual(D.parseCount('5'), { ok:true, value:5, terms:1 });
+  assert.deepEqual(D.parseCount(''), { ok:true, value:0, terms:0 });
+  assert.deepEqual(D.parseCount('   '), { ok:true, value:0, terms:0 });
+  assert.deepEqual(D.parseCount(null), { ok:true, value:0, terms:0 });
+  assert.deepEqual(D.parseCount(7), { ok:true, value:7, terms:1 });
+});
+
+test('parseCount: summer med + — bunker lagt sammen i feltet', () => {
+  assert.deepEqual(D.parseCount('10+10+3'), { ok:true, value:23, terms:3 });
+  assert.deepEqual(D.parseCount('2 + 3'), { ok:true, value:5, terms:2 });
+  assert.deepEqual(D.parseCount('50+50+23'), { ok:true, value:123, terms:3 });
+});
+
+test('parseCount: et ufullført ledd mens man skriver («10+») eller dobbelt pluss hoppes over', () => {
+  assert.deepEqual(D.parseCount('10+'), { ok:true, value:10, terms:1 });
+  assert.deepEqual(D.parseCount('10++3'), { ok:true, value:13, terms:2 });
+  assert.deepEqual(D.parseCount('+'), { ok:true, value:0, terms:0 });
+});
+
+test('parseCount: norsk tusenskille i gyldige tresifrede grupper', () => {
+  assert.equal(D.parseCount('1 000').value, 1000);
+  assert.equal(D.parseCount('1 000').value, 1000);   /* ikke-brytende mellomrom (limt inn) */
+  assert.equal(D.parseCount('1.000').value, 1000);
+  assert.equal(D.parseCount('12 500').value, 12500);
+  assert.equal(D.parseCount('1 000 + 500').value, 1500);
+});
+
+test('parseCount: «10 10» er to bunker uten pluss — ugyldig, ikke 1010', () => {
+  assert.equal(D.parseCount('10 10').ok, false);
+  assert.equal(D.parseCount('1 0000').ok, false);
+});
+
+test('parseCount: komma er aldri tusenskille — «2,5» og «2,500» er ugyldige, ikke 25 eller 2500', () => {
+  assert.equal(D.parseCount('2,5').ok, false);
+  assert.equal(D.parseCount('2,500').ok, false);
+});
+
+test('parseCount: alt annet er ugyldig — aldri stille 0', () => {
+  for (const bad of ['abc', '3*10', '3x10', '-5', '5-2', '1e3', '12a', '0x10', 'Infinity']){
+    assert.equal(D.parseCount(bad).ok, false, bad);
+  }
+});
+
+test('parseCount: urealistisk store tall som går ut av trygt heltallsområde er ugyldige', () => {
+  assert.equal(D.parseCount('99999999999999999999').ok, false);
+});
+
+/* ---------- parseKr: verdifeltet — kroner til øre ---------- */
+
+test('parseKr: hele kroner, tusenskille og summer', () => {
+  assert.deepEqual(D.parseKr('5000'), { ok:true, ore:500000, terms:1 });
+  assert.equal(D.parseKr('5 000').ore, 500000);
+  assert.equal(D.parseKr('5.000').ore, 500000);
+  assert.equal(D.parseKr('1000+500').ore, 150000);
+  assert.deepEqual(D.parseKr(''), { ok:true, ore:0, terms:0 });
+});
+
+test('parseKr: desimaler med komma eller punktum, inntil to sifre', () => {
+  assert.equal(D.parseKr('2 500,50').ore, 250050);
+  assert.equal(D.parseKr('12.5').ore, 1250);
+  assert.equal(D.parseKr('1.000,5').ore, 100050);
+  assert.equal(D.parseKr('2,500').ok, false);   /* tre desimaler: ikke et kronebeløp */
+});
+
+test('parseKr: «kr» foran/bak og prislappnotasjonen «,-» godtas', () => {
+  assert.equal(D.parseKr('500 kr').ore, 50000);
+  assert.equal(D.parseKr('kr 200').ore, 20000);
+  assert.equal(D.parseKr('500,-').ore, 50000);
+  assert.equal(D.parseKr('100 kr + 200 kr').ore, 30000);
+});
+
+test('parseKr: ugyldig tekst gir ok:false, ikke 0', () => {
+  for (const bad of ['abc', '5 00', '10 10', '-100', '3*10', '1e3']){
+    assert.equal(D.parseKr(bad).ok, false, bad);
+  }
+});
+
+/* ---------- looseFromValue: kronebeløp → antall løse ---------- */
+
+const denom = id => D.denomById(D.DEFAULT_DENOMS, id);
+
+test('looseFromValue: et beløp som går opp gir antall løse', () => {
+  assert.deepEqual(D.looseFromValue(300000, {}, denom('note_200'), 'safe'), { ok:true, loose:15 });
+  assert.deepEqual(D.looseFromValue(0, {}, denom('note_200'), 'safe'), { ok:true, loose:0 });
+});
+
+test('looseFromValue: et beløp som ikke går opp i hele sedler er en feil — aldri avrundet', () => {
+  assert.deepEqual(D.looseFromValue(25000, {}, denom('note_200'), 'safe'), { ok:false, reason:'not-divisible' });
+  assert.deepEqual(D.looseFromValue(150, {}, denom('coin_1'), 'opening'), { ok:false, reason:'not-divisible' });
+});
+
+test('looseFromValue: i safen trekkes rullene fra først — resten blir løse', () => {
+  /* 20-kr: 25 stk/rull = 500 kr per rull. 2 ruller (1 000 kr) + 1 200 kr totalt → 10 løse. */
+  assert.deepEqual(D.looseFromValue(120000, { rolls:2 }, denom('coin_20'), 'safe'), { ok:true, loose:10 });
+});
+
+test('looseFromValue: et beløp under rullene alene er en feil, med rullverdien for meldingen', () => {
+  assert.deepEqual(D.looseFromValue(50000, { rolls:2 }, denom('coin_20'), 'safe'), { ok:false, reason:'below-rolls', rollOre:100000 });
+});
+
+test('looseFromValue: ruller gjelder kun safen — i kassen er hele beløpet løse', () => {
+  assert.deepEqual(D.looseFromValue(120000, { rolls:2 }, denom('coin_20'), 'closing'), { ok:true, loose:60 });
+});
+
+test('looseFromValue: ukjent kind kaster, som unitsFor', () => {
+  assert.throws(() => D.looseFromValue(100, {}, denom('coin_1'), 'kassen'), /Ukjent kind/);
+});
+
+test('looseFromValue: ugyldig beløp eller valør gir ok:false', () => {
+  assert.equal(D.looseFromValue(-100, {}, denom('coin_1'), 'safe').ok, false);
+  assert.equal(D.looseFromValue(NaN, {}, denom('coin_1'), 'safe').ok, false);
+  assert.equal(D.looseFromValue(100, {}, null, 'safe').ok, false);
+});
+
+test('rundtur: looseFromValue gir et antall som unitsFor/valueOre verdsetter til nøyaktig det tastede beløpet', () => {
+  const d = denom('coin_20'), line = { loose:0, rolls:3, source:'manual' };
+  const r = D.looseFromValue(200000, line, d, 'safe');
+  assert.equal(r.ok, true);
+  line.loose = r.loose;
+  assert.equal(D.lineValueOre(line, d, 'safe'), 200000);
+});
+
+/* ---------- formatKrInput ---------- */
+
+test('formatKrInput: grupperer som formatOre, uten «kr», og tomt for 0', () => {
+  assert.equal(D.formatKrInput(500000), '5 000');
+  assert.equal(D.formatKrInput(250050), '2 500,50');
+  assert.equal(D.formatKrInput(0), '');
+  assert.equal(D.formatKrInput(null), '');
+});
+
+test('formatKrInput og parseKr er hverandres invers', () => {
+  for (const ore of [100, 5000, 123400, 1000000, 250050]){
+    assert.equal(D.parseKr(D.formatKrInput(ore)).ore, ore);
+  }
+});
+
+/* ---------- sectionHasData / sessionHasData / isSafeBalanced / exceedsSafeTarget ---------- */
+
+test('sectionHasData skiller «ikke talt» fra «talt til 0»', () => {
+  const s = D.newSession(D.DEFAULT_DENOMS, '2026-09-23');
+  assert.equal(D.sectionHasData(s.sections.opening), false);
+  assert.equal(D.sessionHasData(s), false);
+  s.sections.opening.lines[0].loose = 2;
+  assert.equal(D.sectionHasData(s.sections.opening), true);
+  assert.equal(D.sessionHasData(s), true);
+  assert.equal(D.sectionHasData(null), false);
+});
+
+test('isSafeBalanced: kun når safen er talt og nøyaktig lik målet', () => {
+  const s = D.newSession(D.DEFAULT_DENOMS, '2026-09-23');
+  D.recalc(s, D.DEFAULT_DENOMS);
+  assert.equal(D.isSafeBalanced(s), false);                      /* ikke talt */
+  s.sections.safe.lines.find(l => l.denom_id === 'note_1000').loose = 9;
+  D.recalc(s, D.DEFAULT_DENOMS);
+  assert.equal(D.isSafeBalanced(s), false);                      /* 1 000 kr for lite */
+  s.sections.safe.lines.find(l => l.denom_id === 'note_1000').loose = 10;
+  D.recalc(s, D.DEFAULT_DENOMS);
+  assert.equal(D.isSafeBalanced(s), true);
+  s.sections.safe.lines.find(l => l.denom_id === 'coin_1').loose = 1;
+  D.recalc(s, D.DEFAULT_DENOMS);
+  assert.equal(D.isSafeBalanced(s), false);                      /* 1 kr for mye */
+});
+
+test('isSafeBalanced er defensiv mot manglende deler', () => {
+  assert.equal(D.isSafeBalanced(null), false);
+  assert.equal(D.isSafeBalanced({ sections:{} }), false);
+  assert.equal(D.isSafeBalanced({ sections:{ safe:{ total_ore:0, target_ore:0 } } }), false);
+});
+
+test('exceedsSafeTarget: en rad verdt mer enn hele safen flagges', () => {
+  const safe = { target_ore:1000000 };
+  assert.equal(D.exceedsSafeTarget(60000000, safe), true);   /* 3000 × 200 kr */
+  assert.equal(D.exceedsSafeTarget(1000000, safe), false);   /* nøyaktig målet: ikke et hint */
+  assert.equal(D.exceedsSafeTarget(500000, safe), false);
+  assert.equal(D.exceedsSafeTarget(60000000, null), false);
+});
+
+/* ---------- parseGrams ---------- */
+
+test('parseGrams: desimaler med komma/punktum og +-summer av flere poser', () => {
+  assert.deepEqual(D.parseGrams('412,5'), { ok:true, grams:412.5, terms:1 });
+  assert.equal(D.parseGrams('412.5').grams, 412.5);
+  assert.equal(D.parseGrams('250 + 162,5').grams, 412.5);
+  assert.equal(D.parseGrams('0,1+0,2').grams, 0.3);          /* ikke 0.30000000000000004 */
+  assert.deepEqual(D.parseGrams(''), { ok:true, grams:0, terms:0 });
+});
+
+test('parseGrams: ugyldig tekst gir ok:false — ikke stille «ingen vekt»', () => {
+  for (const bad of ['abc', '1 000', '12,5,5', '-3', '1e3']){
+    assert.equal(D.parseGrams(bad).ok, false, bad);
+  }
+});
+
+/* ---------- edited_by: fireøyneprinsippet ved endring av en lagret telling ---------- */
+
+test('finalize setter edited_by/edited_at på hver lagring, mens counted_by blir stående', () => {
+  const s = D.newSession(denoms, '2026-07-25');
+  const first = D.finalizeSession(s, denoms, user, '2026-07-25T09:00:00.000Z');
+  assert.deepEqual(first.edited_by, { tag:'MORT', name:'Morten Berg' });
+  const second = D.finalizeSession(first, denoms, { tag:'ANNA', name:'Anna Lie' }, '2026-07-25T17:00:00.000Z');
+  assert.deepEqual(second.counted_by, { tag:'MORT', name:'Morten Berg' });
+  assert.deepEqual(second.edited_by, { tag:'ANNA', name:'Anna Lie' });
+  assert.equal(second.edited_at, '2026-07-25T17:00:00.000Z');
+});
+
+test('finalize uten innlogget bruker rører ikke edited_by', () => {
+  const s = D.newSession(denoms, '2026-07-25');
+  const out = D.finalizeSession(s, denoms, null, '2026-07-25T09:00:00.000Z');
+  assert.equal(out.edited_by, null);
+});

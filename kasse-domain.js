@@ -102,6 +102,104 @@
     return Number.isFinite(n) && n > 0 ? n : 0;
   };
 
+  /* ---------- tolking av tellefelt og kronefelt ----------
+     Feltene i siden er fritekst (type="text"), så tolkingen skjer her, ett sted,
+     testet. Tidligere gikk tellefeltet rett gjennom toCount, som gir 0 for alt den
+     ikke forstår: «10+10+3» (tre bunker lagt sammen), «1 000» (norsk tusenskille)
+     og «2,5» ble alle stille til 0 kr mens teksten sto igjen i feltet. En
+     pengeteller skal aldri oversette en inntasting den ikke forstår til null.
+     Reglene, felles for begge:
+       • Summer med «+» er lov: «10+10+3» = 23. Tomme ledd («10+» mens man
+         fortsatt skriver, eller «10++3») hoppes over.
+       • Tusenskille (mellomrom eller punktum) er lov, men bare i gyldige
+         tresifrede grupper: «1 000», «1.000», «12 500». «10 10» er IKKE lov —
+         det ser ut som to bunker der plusset mangler, og skal ikke leses som 1010.
+       • Komma er aldri tusenskille. Det er desimaltegnet i norsk, så «2,500» i et
+         antallfelt er ugyldig i stedet for å bli lest som 2500 stk.
+       • Alt annet gir { ok:false } — aldri 0.
+     Tomt felt er gyldig og betyr 0 (terms:0). terms > 1 betyr at det var en sum,
+     slik at siden kan vise «= 23» ved siden av feltet. */
+  const normSpace = s => String(s == null ? '' : s).replace(/[  ]/g, ' ').trim();
+  const splitTerms = s => s.split('+').map(t => t.trim()).filter(t => t !== '');
+  const COUNT_TERM = /^(?:\d{1,3}(?:[ .]\d{3})+|\d+)$/;
+  const KR_TERM    = /^(\d{1,3}(?:[ .]\d{3})+|\d+)(?:[.,](\d{1,2}))?$/;
+  const digitsOnly = s => s.replace(/[ .]/g, '');
+
+  /* Hele stykk (sedler, mynt, ruller) fra et tellefelt. */
+  function parseCount(raw){
+    const terms = splitTerms(normSpace(raw));
+    let value = 0;
+    for (const t of terms){
+      if (!COUNT_TERM.test(t)) return { ok:false };
+      value += Number(digitsOnly(t));
+      if (!Number.isSafeInteger(value)) return { ok:false };
+    }
+    return { ok:true, value, terms:terms.length };
+  }
+
+  /* Kroner (inntil to desimaler) fra et verdifelt, til øre. «kr» foran/bak og
+     prislappnotasjonen «,-» godtas per ledd: «500,-», «kr 200», «1 000 kr». */
+  function parseKr(raw){
+    const terms = splitTerms(normSpace(raw))
+      .map(t => t.replace(/^kr\.?\s*/i, '').replace(/\s*(?:kr\.?|,-|\.-)$/i, '').trim())
+      .filter(t => t !== '');
+    let ore = 0;
+    for (const t of terms){
+      const m = KR_TERM.exec(t);
+      if (!m) return { ok:false };
+      const kroner = Number(digitsOnly(m[1]));
+      const dec = m[2] ? Number(m[2].padEnd(2, '0')) : 0;
+      ore += kroner * 100 + dec;
+      if (!Number.isSafeInteger(ore)) return { ok:false };
+    }
+    return { ok:true, ore, terms:terms.length };
+  }
+
+  /* Gram fra vektfeltet — samme «aldri stille 0»-regel som tellefeltene, og samme
+     +-summer («250 + 162,5» = to poser veid hver for seg). Desimaler med komma
+     eller punktum; ingen tusenskille, en vekt viser ikke det. Resultatet rundes til
+     tre desimaler så 0,1 + 0,2 ikke blir 0,30000000000000004 g. toGrams er
+     fortsatt den tolerante leseren for LAGREDE verdier; denne er for inntasting. */
+  const GRAM_TERM = /^\d+(?:[.,]\d+)?$/;
+  function parseGrams(raw){
+    const terms = splitTerms(normSpace(raw));
+    let grams = 0;
+    for (const t of terms){
+      if (!GRAM_TERM.test(t)) return { ok:false };
+      grams += Number(t.replace(',', '.'));
+    }
+    if (!Number.isFinite(grams)) return { ok:false };
+    return { ok:true, grams: Math.round(grams * 1000) / 1000, terms:terms.length };
+  }
+
+  /* Et kronebeløp tastet i verdifeltet → antall løse. Beløpet er radens TOTALE
+     verdi, så ruller som allerede står i raden (kun safe) trekkes fra først og
+     resten blir løse: «3 ruller + resten». Et beløp som ikke går opp i hele
+     sedler/mynt, eller som er mindre enn rullene alene, er en feil — aldri en
+     avrunding. 250 kr i 200-lapper er ikke «1 seddel». Samme (line, denom, kind)
+     som unitsFor, med beløpet først. */
+  function looseFromValue(ore, line, denom, kind){
+    if (!KINDS.includes(kind)) throw new Error('Ukjent kind: ' + kind + '.');
+    if (!denom || !Number.isSafeInteger(denom.value_ore) || denom.value_ore <= 0) return { ok:false, reason:'denom' };
+    if (!Number.isSafeInteger(ore) || ore < 0) return { ok:false, reason:'amount' };
+    const rollUnits = (kind === 'safe' && denom.kind === 'coin' && line)
+      ? toCount(line.rolls) * (denom.units_per_roll || 0) : 0;
+    const rollOre = rollUnits * denom.value_ore;
+    const rest = ore - rollOre;
+    if (rest < 0) return { ok:false, reason:'below-rolls', rollOre };
+    if (rest % denom.value_ore !== 0) return { ok:false, reason:'not-divisible' };
+    return { ok:true, loose: rest / denom.value_ore };
+  }
+
+  /* Visning av et øre-beløp i et redigerbart kronefelt: samme gruppering som
+     formatOre, men uten « kr» (feltet har kr som fast etikett) og tomt for 0,
+     slik at et utelt felt viser plassholderen i stedet for et falskt «0». */
+  const formatKrInput = ore => {
+    const n = Number(ore);
+    if (!Number.isFinite(n) || n === 0) return '';
+    return formatOre(n).replace(/\s*kr$/, '');
+  };
+
   /* Antall mynt en vekt tilsvarer for én valør. Forutsetter gyldige line og
      denom — det er kallernes ansvar å garantere (unitsFor og weightWarning
      sjekker begge dette selv før de kaller hit). Gir 0 ved manglende/ugyldig
@@ -210,11 +308,32 @@
      linje for en deaktivert valør er trygg å fjerne (se syncLines). */
   const lineHasData = line => !!line && (toCount(line.loose) > 0 || toCount(line.rolls) > 0 || toGrams(line.grams) > 0);
 
+  /* Er det talt noe som helst i denne delen? Skiller «0 kr fordi den ikke er talt»
+     fra «0 kr talt». Uten det viste oppsummeringen «Endring i kassen −2 000 kr»
+     straks åpningen var talt — lukkingen var bare ikke talt ennå. */
+  const sectionHasData = section => !!section && Array.isArray(section.lines) && section.lines.some(lineHasData);
+  const sessionHasData = session => !!(session && session.sections) && KINDS.some(k => sectionHasData(session.sections[k]));
+
+  /* Safen går opp: talt, og nøyaktig lik målet. Eierbeslutningen er fast
+     vekselbeholdning — et oppgjør godkjennes kun ved avvik 0. Leser total_ore
+     slik recalc/finalizeSession skrev den, så kall recalc først på en levende økt. */
+  const isSafeBalanced = session => {
+    const safe = session && session.sections && session.sections.safe;
+    return !!safe && Number.isSafeInteger(safe.target_ore) && safe.target_ore > 0 &&
+      safe.total_ore === safe.target_ore;
+  };
+
+  /* En enkelt safe-rad som alene er verdt mer enn HELE målet er nesten alltid et
+     kronebeløp tastet i antallfeltet («3000» i 200-lapper = 600 000 kr i en safe
+     som skal ha 10 000). Bare et hint til den som teller — blokkerer ingenting. */
+  const exceedsSafeTarget = (valueOre, section) =>
+    !!section && Number.isSafeInteger(section.target_ore) && section.target_ore > 0 && valueOre > section.target_ore;
+
   function newSession(denoms, dateStr){
     const lines = () => activeDenoms(denoms).map(emptyLine);
     return {
       id:null, session_date:dateStr, status:'draft', note:'',
-      counted_by:null, counted_at:null, verified_by:null, verified_at:null,
+      counted_by:null, counted_at:null, edited_by:null, edited_at:null, verified_by:null, verified_at:null,
       sections:{
         safe:    { lines: lines(), total_ore:0, target_ore: SAFE_TARGET_ORE },
         opening: { lines: lines(), total_ore:0 },
@@ -284,6 +403,15 @@
       out.counted_by = { tag:user.tag, name:user.name };
       out.counted_at = nowIso;
     }
+    /* counted_by fryses ved første lagring (over), så den alene sier ikke hvem som
+       sist satte tallene. Uten edited_by kunne en butikksjef endre en annens lagrede
+       telling, lagre, og så godkjenne sine egne tall — fireøyneprinsippet omgått.
+       Settes på hver lagring med en innlogget bruker; verifySession avviser både
+       den som talte og den som sist lagret. */
+    if (user && user.tag){
+      out.edited_by = { tag:user.tag, name:user.name };
+      out.edited_at = nowIso;
+    }
     return out;
   }
 
@@ -315,9 +443,10 @@
   const formatGrams = g => (Math.round(toGrams(g) * 10) / 10).toFixed(1).replace('.', ',') + ' g';
 
   return Object.freeze({ SAFE_TARGET_ORE, WEIGHT_TOLERANCE, KINDS, STATUSES, DEFAULT_DENOMS, validateDenoms, denomById,
-                         toCount, toGrams,
+                         toCount, toGrams, parseCount, parseKr, parseGrams, looseFromValue, formatKrInput,
                          unitsFor, valueOre, lineValueOre, weightWarning,
                          sectionTotalOre, safeDiffOre, dayChangeOre, recalc,
+                         sectionHasData, sessionHasData, isSafeBalanced, exceedsSafeTarget,
                          emptyLine, newSession, syncLines, finalizeSession,
                          formatOre, formatDiffOre, formatGrams });
 });
