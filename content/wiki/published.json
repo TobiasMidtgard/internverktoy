@@ -41,7 +41,7 @@
   },
   "selgerens-startside": {
     "id": "c5ff7172-1865-56fb-bc50-25127f92400e",
-    "digest": "b590f929d18ba7d0b6c1984140dcf3fcd712e45ac8a0719677bad172a72fec24"
+    "digest": "c39e3d0438b668a1751ef88e62bee5e20a00d6d7fcc6ee4edf8a36c1869517e7"
   },
   "sykkel-slitedeler": {
     "id": "efcd1a65-9040-5c5e-9fb3-1f1be6059db1",
@@ -162,5 +162,13 @@
   "velodex-brukerguide": {
     "id": "1ee962e9-799e-5cac-9be6-695de7e1166c",
     "digest": "1459b86011283373223175ca7f3599cfaea05f76184c8b7026e9f079de1e7556"
+  },
+  "produktsikkerhet-og-tilbakekalling": {
+    "id": "044b36c9-de78-5f66-974c-cca2cf7979b6",
+    "digest": "e75ffbd89d391d02ad748c0f6c48685f067f767f6914b8f2922e7e4b385bca1c"
+  },
+  "trygg-arbeidsdag-i-butikken": {
+    "id": "e02df4ff-e7f5-5358-aaa8-f5531a5ebe46",
+    "digest": "1367357d196f5f332e2b706520479a8571c5513837f52ba6eec21ec763256e2c"
   }
 }

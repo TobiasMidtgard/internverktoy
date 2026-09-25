@@ -83,6 +83,8 @@ Fortsett med [serviceinnlevering og verksted]({{article:serviceinnlevering-og-ve
 Disse veiledningene gir et felles grunnlag for kontroll og oppfølging. Få lokale fullmakter og oppgaver demonstrert før du gjør dem selvstendig.
 
 - [HMS og sikkerhetsdatablad]({{article:hms-og-sikkerhetsdatablad}}): identifiser kjemikaliet, finn relevant informasjon og bruk bekreftet opplæring.
+- [Trygg arbeidsdag i butikken]({{article:trygg-arbeidsdag-i-butikken}}): varehåndtering, frie rømningsveier, arbeidsutstyr, trusler og avvik.
+- [Produktsikkerhet og tilbakekalling]({{article:produktsikkerhet-og-tilbakekalling}}): identifiser varen, kontroller berørt serie og følg den konkrete sikkerhetsmeldingen.
 - [EE-avfall, batterier og farlig kjemi]({{article:avfall-ee-batterier-og-kjemi}}): avklar mottaksplikt, kategori, tilstand og riktig mottaksordning.
 - [Varemottak og lageravvik]({{article:varemottak-og-lageravvik}}): kontroller identitet, salgsenhet, antall, tilstand og videre ansvar.
 - [Kasseoppgjør]({{article:kasseoppgjor-brukerguide}}): tell i riktig enhet, lagre, les avvik og forstå godkjenningsvilkårene.

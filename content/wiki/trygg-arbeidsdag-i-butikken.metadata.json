@@ -1,0 +1,20 @@
+{
+  "title": "Trygg arbeidsdag i butikken",
+  "category": "HMS",
+  "tags": ["HMS", "ergonomi", "varehåndtering", "løft", "rømningsvei", "brann", "arbeidsutstyr", "opplæring", "stige", "vold", "trusler", "avvik", "nestenulykke", "varsling"],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {"label": "Arbeidstilsynet – arbeidstakers plikter", "url": "https://www.arbeidstilsynet.no/hms/roller-i-hms-arbeidet/arbeidstakers-plikter/"},
+    {"label": "Arbeidstilsynet – manuelt arbeid og ergonomi", "url": "https://www.arbeidstilsynet.no/arbeidsmiljo/ergonomi/manuelt-arbeid/"},
+    {"label": "Arbeidstilsynet – arbeidsplassforskriften §§ 2-18 og 2-21", "url": "https://www.arbeidstilsynet.no/regelverk/forskrifter/arbeidsplassforskriften/"},
+    {"label": "DSB – brannforebyggingsforskriften, brukerens plikter", "url": "https://www.dsb.no/brannsikkerhet/veiledning-til-forskrift-om-brannforebygging/"},
+    {"label": "Arbeidstilsynet – dokumentert, sertifisert og utstyrsspesifikk opplæring", "url": "https://www.arbeidstilsynet.no/arbeidstid-og-organisering/opplaring/"},
+    {"label": "Arbeidstilsynet – arbeid i høyden", "url": "https://www.arbeidstilsynet.no/risikofylt-arbeid/arbeid-i-hoyden/"},
+    {"label": "Arbeidstilsynet – sikker bruk av stige", "url": "https://www.arbeidstilsynet.no/risikofylt-arbeid/arbeid-i-hoyden/sikker-bruk-av-stige-ved-arbeid-i-hoyden/"},
+    {"label": "Arbeidstilsynet – forskrift om utførelse av arbeid, kapittel 3A", "url": "https://www.arbeidstilsynet.no/regelverk/forskrifter/forskrift-om-utforelse-av-arbeid/"},
+    {"label": "Arbeidstilsynet – vold og trusler", "url": "https://www.arbeidstilsynet.no/arbeidsmiljo/vold-og-trusler/"},
+    {"label": "Arbeidstilsynet – avvik og avvikshåndtering", "url": "https://www.arbeidstilsynet.no/hms/avvik-og-avvikshandtering/"},
+    {"label": "Arbeidstilsynet – varsle om arbeidsulykke", "url": "https://www.arbeidstilsynet.no/kontakt-oss/melde-ulykke/"},
+    {"label": "Arbeidstilsynet – forskjellen på avvik og varsling", "url": "https://www.arbeidstilsynet.no/arbeidsmiljo/varsling/sporsmal-og-svar-om-varsling/"}
+  ]
+}

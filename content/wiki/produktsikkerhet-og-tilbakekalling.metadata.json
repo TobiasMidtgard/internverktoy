@@ -1,0 +1,17 @@
+{
+  "title": "Tilbakekalling: identifiser varen og følg sikkerhetsmeldingen",
+  "category": "HMS",
+  "tags": ["produktsikkerhet", "tilbakekalling", "sikkerhetsmelding", "salgsstopp", "batchnummer", "serienummer", "meldeplikt", "DSB", "Brume Trio", "reiseadapter"],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {"label": "Lovdata – produktkontrolloven, særlig §§ 3 og 6 b", "url": "https://lovdata.no/dokument/NL/lov/1976-06-11-79"},
+    {"label": "DSB – internkontroll og tiltak ved farlige produkter", "url": "https://www.dsb.no/produkter-og-forbrukertjenester/veiledning/veileder-i-internkontroll-for-importorer-og-produsenter-av-forbrukerprodukter/"},
+    {"label": "DSB – distributørens forpliktelser", "url": "https://www.dsb.no/produkter-og-forbrukertjenester/veiledning/distributorens-forpliktelser/"},
+    {"label": "DSB – meldeplikt ved farlige produkter", "url": "https://www.dsb.no/produkter-og-forbrukertjenester/veiledning/veileder-om-meldeplikt-ved-farlige-produkter/"},
+    {"label": "DSB – er et produkt farlig?", "url": "https://www.dsb.no/sikkerhverdag/produkter-utstyr-og-fritid/er-et-produkt-farlig/"},
+    {"label": "Farligeprodukter.no – myndighetenes produktoversikt", "url": "https://farligeprodukter.no/"},
+    {"label": "thansen – aktuelle tilbakekallinger, Brume Trio og reiseadapter", "url": "https://www.thansen.no/kundeservice/tilbakekalling/aktuelle-tilbakekallinger/n1413425"},
+    {"label": "Farligeprodukter.no – Mobiline HHT 202 reiseadapter, publisert 11. november 2024", "url": "https://farligeprodukter.no/produkt/100483"},
+    {"label": "DSB – GPSR og forholdet til norsk rett", "url": "https://www.dsb.no/produkter-og-forbrukertjenester/aktuelt-produkter-og-forbrukertjenester/ny-produktsikkerhetsforordning-i-eu-gpsr/"}
+  ]
+}

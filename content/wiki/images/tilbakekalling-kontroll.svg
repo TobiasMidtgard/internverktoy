@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="640" viewBox="0 0 1200 640" role="img" aria-labelledby="title desc">
+  <title id="title">Tilbakekalling: sammenlign produkt, avgrensning og tiltak</title>
+  <desc id="desc">Tre kontroller i originalmeldingen: først riktig merke, modell og produktnummer; deretter eventuelle avgrensninger som batch, serienummer, variant eller dato; til slutt konkret råd om bruk, retur og kontaktpunkt. Samme navn eller bilde er ikke nok. Ved uklar identitet eller mistanke om fare skal ansvarlig kontaktes straks.</desc>
+  <rect width="1200" height="640" rx="18" fill="#0f1318"/>
+  <g font-family="Arial, sans-serif">
+    <text x="36" y="43" fill="#7db8f0" font-size="15" letter-spacing="2">PRODUKTSIKKERHET / OPPSLAG</text>
+    <text x="36" y="88" fill="#f1f4f8" font-size="32" font-weight="700">Les mer enn produktnavnet</text>
+    <text x="36" y="126" fill="#97a3b2" font-size="19">Sammenlign varen med den originale sikkerhetsmeldingen.</text>
+    <g fill="#161b22" stroke="#2a323d" stroke-width="2">
+      <rect x="28" y="157" width="370" height="331" rx="12"/>
+      <rect x="415" y="157" width="370" height="331" rx="12"/>
+      <rect x="802" y="157" width="370" height="331" rx="12"/>
+    </g>
+    <g fill="#263747" stroke="#41627f">
+      <rect x="52" y="181" width="40" height="40" rx="6"/>
+      <rect x="439" y="181" width="40" height="40" rx="6"/>
+      <rect x="826" y="181" width="40" height="40" rx="6"/>
+    </g>
+    <g fill="#ffd400" font-size="23" font-weight="700" text-anchor="middle">
+      <text x="72" y="209">1</text><text x="459" y="209">2</text><text x="846" y="209">3</text>
+    </g>
+    <g fill="#f1f4f8" font-size="23" font-weight="700">
+      <text x="105" y="209">Riktig produkt</text>
+      <text x="492" y="209">Berørt utgave</text>
+      <text x="879" y="209">Riktig tiltak</text>
+    </g>
+    <g stroke="#3a4656"><path d="M52 242h322M439 242h322M826 242h322"/></g>
+    <g fill="#f1f4f8" font-size="21">
+      <text x="52" y="282">Merke og modell</text>
+      <text x="52" y="326">Varenummer eller EAN</text>
+      <text x="52" y="370">Merking på selve varen</text>
+      <text x="439" y="282">Batch eller serienummer</text>
+      <text x="439" y="326">Variant eller dato</text>
+      <text x="439" y="370">Bare grensene som er oppgitt</text>
+      <text x="826" y="282">Råd om videre bruk</text>
+      <text x="826" y="326">Retur eller utbedring</text>
+      <text x="826" y="370">Butikk eller produsent?</text>
+    </g>
+    <g fill="#97a3b2" font-size="18">
+      <text x="52" y="432">Et likt bilde er ikke nok.</text>
+      <text x="439" y="432">Ikke gjett ved uleselig merking.</text>
+      <text x="826" y="432">Les den konkrete meldingen.</text>
+    </g>
+    <rect x="28" y="512" width="1144" height="67" rx="10" fill="#272218" stroke="#756139"/>
+    <text x="52" y="553" fill="#ffd400" font-size="21" font-weight="700">Uklar identitet eller mistanke om fare? Varsle ansvarlig straks og få saken avklart.</text>
+    <text x="36" y="613" fill="#97a3b2" font-size="17">Lesestøtte, ikke en tilbakekallingsmelding. Tiltak og avgrensninger må hentes fra den aktuelle saken.</text>
+  </g>
+</svg>
