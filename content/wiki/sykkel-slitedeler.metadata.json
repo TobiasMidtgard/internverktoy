@@ -1,0 +1,59 @@
+{
+  "title": "Sykkelens slitedeler: dekk, slanger, kjede og bremser",
+  "category": "Sykkel",
+  "tags": [
+    "sykkel",
+    "slitedeler",
+    "sykkeldekk",
+    "slange",
+    "ETRTO",
+    "ventil",
+    "kjede",
+    "kassett",
+    "friløpskrans",
+    "bremseklosser",
+    "bremseskive",
+    "Shimano",
+    "Schwalbe",
+    "kompatibilitet"
+  ],
+  "sources": [
+    {
+      "label": "thansen – gir, tannhjul og kjeder",
+      "url": "https://www.thansen.no/sykkel/reservedeler/gir-tannhjul/n14368"
+    },
+    {
+      "label": "thansen – bremseklosser",
+      "url": "https://www.thansen.no/sykkel/reservedeler/bremsedeler/bremsesko-bremseklosser/bremseklosser-sett/n14411?o=5"
+    },
+    {
+      "label": "Schwalbe – dekkstørrelser",
+      "url": "https://www.schwalbe.com/en/technology-faq/tire-sizes/"
+    },
+    {
+      "label": "Schwalbe – dekk og felgkompatibilitet",
+      "url": "https://www.schwalbe.com/en/technology-faq/tire-dimensions/"
+    },
+    {
+      "label": "Schwalbe – slangefinner",
+      "url": "https://www.schwalbe.com/en/tube-search"
+    },
+    {
+      "label": "Shimano – komponentkompatibilitet",
+      "url": "https://productinfo.shimano.com/en/compatibility"
+    },
+    {
+      "label": "Shimano – bremseklossoversikt C-192",
+      "url": "https://productinfo.shimano.com/en/compatibility/C-192"
+    },
+    {
+      "label": "Shimano – tekniske manualer",
+      "url": "https://si.shimano.com/en/"
+    },
+    {
+      "label": "Shimano – sikkerhet for skivebremser",
+      "url": "https://si.shimano.com/en/pdfs/dm/RBMBR01/DM-RBMBR01-00-ENG.pdf"
+    }
+  ],
+  "checked_at": "2026-09-25"
+}

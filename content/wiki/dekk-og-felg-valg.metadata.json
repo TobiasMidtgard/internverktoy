@@ -1,0 +1,16 @@
+{
+  "title": "Dekk og felger: behov, merking og dokumentert passform",
+  "category": "Dekk",
+  "tags": ["dekk", "felger", "dekkdimensjon", "belastningsindeks", "hastighetsindeks", "vinterdekk", "piggdekk", "TPMS", "boltsirkel", "innpress", "selgeropplæring"],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {"label": "Statens vegvesen – krav til dekk", "url": "https://www.vegvesen.no/kjoretoy/eie-og-vedlikeholde/dekk-og-kjetting/"},
+    {"label": "thansen – dekk og felger med bilvelger", "url": "https://www.thansen.no/bil/dekk-og-felger/n50"},
+    {"label": "thansen – slik avleser du ditt bildekk", "url": "https://www.thansen.no/bil/tips-og-informasjon/alt-om-dekk-og-felger/generelt/slik-avleser-du-ditt-bildekk/n1106469"},
+    {"label": "Continental – dekkmerking", "url": "https://www.continental-tires.com/tire-knowledge/tire-markings/"},
+    {"label": "BBS – felgdata og kjøretøytilpasning", "url": "https://cdn.bbs.com/11/assets/images/service/pdfEn/Anw_Gesamt.pdf"},
+    {"label": "OZ Racing – forklaring av felgmål", "url": "https://www.ozracing.com/world-of-oz/content/108"},
+    {"label": "Continental – dekktrykkovervåking", "url": "https://www.continental-tires.com/no/nb/tire-knowledge/tire-pressure-monitoring-system/"},
+    {"label": "Continental – dekktrykk", "url": "https://www.continental-tires.com/no/nb/tire-knowledge/tire-pressure/"}
+  ]
+}

@@ -37,15 +37,17 @@ function article(id, title = id, value = guide(title)) {
 
 // Run the real page and guide editor against inert, local RPC fixtures.
 // JSDOM outside-only does not load or execute the page's external scripts.
-function page(t) {
+function page(t, options = {}) {
   const dom = new JSDOM(wikiHTML, {
-    url: 'https://example.test/wiki.html',
+    url: options.url || 'https://example.test/wiki.html',
     runScripts: 'outside-only',
   });
   t.after(() => dom.window.close());
   const { window } = dom, { document } = window;
-  let user = { tag: 'manager', name: 'Testansatt', role: 'manager' };
-  let handler = async () => [];
+  const manager = { tag: 'manager', name: 'Testansatt', role: 'manager' };
+  let user = options.signedIn === false ? null : manager;
+  let handler = options.rpc || (async () => []);
+  let authenticate = async () => manager;
   const calls = [], messages = [], confirmations = [];
   window.TextEncoder = TextEncoder;
   window.confirm = message => { confirmations.push(message); return true; };
@@ -53,7 +55,7 @@ function page(t) {
     getUser: () => user,
     canManage: () => !!user && user.role === 'manager',
     clearSession: () => { user = null; },
-    ensureUser: async () => user,
+    ensureUser: async () => { if (!user) user = await authenticate(); return user; },
     icon: () => '',
     esc: value => String(value == null ? '' : value).replace(/[&<>"']/g,
       char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char])),
@@ -78,6 +80,7 @@ function page(t) {
   return {
     window, document, editor, byId, card, enter, calls, messages, confirmations,
     rpc: callback => { handler = callback; },
+    authenticate: callback => { authenticate = callback; },
     signedInAs: tag => { user = { tag, name: tag, role: 'manager' }; window.refreshAuth(); },
     cached: id => window.__guideIntegration.cached(id),
   };
@@ -347,5 +350,152 @@ test('the sequence section stays discoverable when empty and errors clear both o
   assert.doesNotMatch(ui.byId('results').textContent,/OLD/);
   assert.doesNotMatch(ui.byId('sequenceResults').textContent,/OLD/);
   assert.match(ui.byId('sequenceResults').textContent,/kunne ikke lastes/);
+});
+
+const HANDBOOK = [
+  'c5ff7172-1865-56fb-bc50-25127f92400e',
+  'd427a57a-eda5-410c-927f-ac72086332e1',
+  '9b2374d2-8c58-5908-b8ae-e06cfcc2e712',
+];
+const articleURL = id => 'https://example.test/wiki.html?article=' + encodeURIComponent(id);
+
+test('section navigation and handbook are compact authenticated entry points to the right content', async t => {
+  const ui = page(t);
+  await flush();
+  const nav = ui.byId('sectionNav'), handbook = ui.byId('sellerHandbook');
+  assert.equal(ui.document.querySelector('.search').nextElementSibling, nav);
+  assert.equal(nav.hidden, false);
+  assert.deepEqual(Array.from(nav.querySelectorAll('a'), link => link.getAttribute('href')),
+    ['#sequences', '#articleSection']);
+  for (const link of nav.querySelectorAll('a')) {
+    assert.ok(ui.document.querySelector(link.getAttribute('href')), 'Each section link has a target');
+  }
+  assert.equal(handbook.hidden, false);
+  assert.match(handbook.textContent, /Selgerhåndboken/);
+  const buttons = Array.from(handbook.querySelectorAll('button[data-article-id]'));
+  assert.deepEqual(buttons.map(button => button.dataset.articleId), HANDBOOK);
+  assert.match(ui.byId('cats').textContent, /Opplæring/);
+  assert.match(ui.byId('cats').textContent, /Kundeservice/);
+  ui.rpc((name, args) => name === 'get_article' ? article(args.p_id, args.p_id, null) : []);
+  for (const button of buttons) {
+    button.click();
+    await flush();
+    assert.equal(ui.byId('aTitle').textContent, button.dataset.articleId);
+  }
+  await ui.window.toggleAuth();
+  assert.equal(nav.hidden, true);
+  assert.equal(handbook.hidden, true);
+  const readCount = ui.calls.filter(call => call.name === 'get_article').length;
+  buttons[0].click();
+  await flush();
+  assert.equal(ui.calls.filter(call => call.name === 'get_article').length, readCount);
+  assert.equal(ui.byId('articleModal').classList.contains('show'), false);
+});
+
+test('a signed-in startup opens its valid article deep link once, independently of searches', async t => {
+  const ui = page(t, {
+    url: articleURL(HANDBOOK[0].toUpperCase()),
+    rpc: (name, args) => name === 'get_article' ? article(args.p_id, 'Selgerens startside', null) : [],
+  });
+  await flush();
+  assert.equal(ui.byId('aTitle').textContent, 'Selgerens startside');
+  assert.equal(ui.byId('articleModal').classList.contains('show'), true);
+  assert.equal(ui.calls.find(call => call.name === 'get_article').args.p_id, HANDBOOK[0]);
+  ui.window.closeModal('articleModal');
+  await ui.window.doSearch();
+  ui.window.setCat('Opplæring');
+  await flush();
+  assert.equal(ui.calls.filter(call => call.name === 'get_article').length, 1);
+  assert.equal(ui.byId('articleModal').classList.contains('show'), false);
+});
+
+test('a deep link waits through a cancelled login and loads only after successful authentication', async t => {
+  const ui = page(t, {
+    signedIn: false, url: articleURL(HANDBOOK[1]),
+    rpc: (name, args) => name === 'get_article' ? article(args.p_id, 'Reservedeler og passform', null) : [],
+  });
+  await flush();
+  assert.equal(ui.calls.length, 0, 'No private RPC runs before login');
+  assert.equal(ui.byId('sectionNav').hidden, true);
+  assert.equal(ui.byId('sellerHandbook').hidden, true);
+  ui.authenticate(async () => null);
+  await ui.window.toggleAuth();
+  assert.equal(ui.calls.length, 0, 'Cancelling login leaves the pending deep link unread');
+  ui.authenticate(async () => ({ tag: 'employee', name: 'Ansatt', role: 'user' }));
+  await ui.window.toggleAuth();
+  await flush();
+  assert.equal(ui.byId('aTitle').textContent, 'Reservedeler og passform');
+  assert.equal(ui.byId('articleModal').classList.contains('show'), true);
+  assert.equal(ui.byId('sectionNav').hidden, false);
+  assert.equal(ui.byId('sellerHandbook').hidden, false);
+  assert.ok(ui.calls.some(call => call.name === 'wiki_search_sections'), 'Header login also refreshes the catalogue');
+  ui.window.closeModal('articleModal');
+  await ui.window.doSearch();
+  ui.window.refreshAuth();
+  await flush();
+  assert.equal(ui.calls.filter(call => call.name === 'get_article').length, 1);
+  assert.equal(ui.byId('articleModal').classList.contains('show'), false);
+});
+
+test('malformed or ambiguous article deep links never reach get_article', async t => {
+  const queries = [
+    '?article=', '?article=not-a-uuid', '?article=' + HANDBOOK[0] + 'x',
+    '?article=' + encodeURIComponent('javascript:alert(1)'),
+    '?article=' + encodeURIComponent('<img src=x onerror=alert(1)>'),
+    '?article=' + HANDBOOK[0] + '&article=' + HANDBOOK[1],
+  ];
+  for (const query of queries) {
+    const ui = page(t, { url: 'https://example.test/wiki.html' + query });
+    await flush();
+    assert.equal(ui.calls.some(call => call.name === 'get_article'), false, query);
+    assert.equal(ui.byId('articleModal').classList.contains('show'), false);
+    assert.equal(ui.document.querySelector('[onerror]'), null);
+  }
+});
+
+test('a pending deep-link reply is discarded after logout and cannot reopen on another login', async t => {
+  const response = deferred();
+  const ui = page(t, {
+    url: articleURL(HANDBOOK[2]),
+    rpc: name => name === 'get_article' ? response.promise : [],
+  });
+  assert.equal(ui.calls.filter(call => call.name === 'get_article').length, 1);
+  await ui.window.toggleAuth();
+  ui.authenticate(async () => ({ tag: 'another', name: 'Annen ansatt', role: 'user' }));
+  await ui.window.toggleAuth();
+  response.resolve(article(HANDBOOK[2], 'Innhold fra forrige innlogging'));
+  await flush();
+  assert.equal(ui.calls.filter(call => call.name === 'get_article').length, 1);
+  assert.equal(ui.byId('articleModal').classList.contains('show'), false);
+  assert.equal(ui.byId('aGuide').querySelector('img'), null);
+  assert.equal(ui.cached(HANDBOOK[2]), undefined);
+});
+
+test('a newer article choice wins over either a delayed deep-link reply or its error', async t => {
+  for (const fails of [false, true]) {
+    const response = deferred();
+    const ui = page(t, {
+      url: articleURL(HANDBOOK[0]),
+      rpc: (name, args) => name === 'get_article'
+        ? (args.p_id === HANDBOOK[0] ? response.promise : article(args.p_id, 'Valgt av brukeren', null)) : [],
+    });
+    await ui.window.openArticle(HANDBOOK[1]);
+    if (fails) response.reject(new Error('Utdatert feil'));
+    else response.resolve(article(HANDBOOK[0], 'Forsinket dyplenke'));
+    await flush();
+    assert.equal(ui.byId('aTitle').textContent, 'Valgt av brukeren');
+    assert.equal(ui.cached(HANDBOOK[0]), undefined);
+    assert.equal(ui.messages.some(message => message.includes('Utdatert feil')), false);
+  }
+});
+
+test('a valid deep link to a missing article gives a controlled message without opening an empty modal', async t => {
+  const ui = page(t, {
+    url: articleURL(HANDBOOK[0]),
+    rpc: name => name === 'get_article' ? null : [],
+  });
+  await flush();
+  assert.equal(ui.byId('articleModal').classList.contains('show'), false);
+  assert.ok(ui.messages.includes('Fant ikke artikkelen'));
 });
 

@@ -1,0 +1,15 @@
+{
+  "title": "Bilbatterier og ladere: AGM, EFB og riktig valg",
+  "category": "Bildeler",
+  "tags": ["bilbatteri", "batterilader", "AGM", "EFB", "start-stopp", "BMS", "Ah", "kaldstartstrøm", "CTEK", "vedlikeholdslading", "støttebatteri"],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {"label": "thansen – valg av bilbatteri", "url": "https://www.thansen.no/bil/tips-og-informasjon/tips-og-guider-til-bilutstyr-/bilbatterier-og-starthjelp/velg-det-riktige-bilbatteriet/n1198594"},
+    {"label": "thansen – batteriutvalg", "url": "https://www.thansen.no/bil/bildeler/universaldeler/bilbatterier/n11976?o=1"},
+    {"label": "VARTA – AGM, EFB og start-stopp", "url": "https://www.varta-automotive.com/en/products/automotive/dynamic-agm"},
+    {"label": "VARTA – BMS og registrering ved batteribytte", "url": "https://www.varta-automotive.com/knowledge/articles/article-details/the-right-code-of-the-bem-for-battery-replacement"},
+    {"label": "thansen – CTEK MXS 5.0, norsk 12 V-produkt", "url": "https://www.thansen.no/bil/utstyr/elutstyr/batteriladere/ctek-mxs-5.0amp-12v-batterilader/n267/pn934967"},
+    {"label": "CTEK – MXS 5.0 produktstøtte", "url": "https://help.ctek.com/en/mxs-5.0"},
+    {"label": "Continental – monteringsanvisning for AGM, EFB og startbatterier", "url": "https://www.continental-aftermarket.com/media/1767/continental_batteries_installation_guide.pdf"}
+  ]
+}

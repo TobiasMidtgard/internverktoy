@@ -1,0 +1,13 @@
+{
+  "title": "Reservedeler og passform: finn riktig del første gang",
+  "category": "Bildeler",
+  "tags": ["reservedeler", "passform", "registreringsnummer", "VIN", "OE-nummer", "motorkode", "NBK", "Norsk Bildelkatalog", "deleoppslag", "PR-nummer"],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {"label": "NBK – katalogforbehold og tilgang", "url": "https://www.norskbildelkatalog.no/default.aspx?cat=2&Id=18"},
+    {"label": "NBK – brukerveiledning", "url": "https://www.norskbildelkatalog.no/Default.aspx?Cat=4&Id=12"},
+    {"label": "Brembo – velge riktig del med kjøretøydata og produktreferanser", "url": "https://www.bremboparts.com/asiapacific/en/support/how-to-choose-the-right-product/how-can-i-identify-the-right-product-to-fit-on-my-car-using-the-brembo-parts-search-function-93377"},
+    {"label": "Brembo – forskjeller mellom lignende bremseskiver", "url": "https://www.bremboparts.com/europe/en/support/car/how-to-choose-the-right-product/i-found-two-brake-discs-that-seem-exactly-the-same-how-do-i-choose-the-right-part-number-75416"},
+    {"label": "thansen – Bosch Aerotwin Retrofit, eksempel på passformopplysninger", "url": "https://www.thansen.no/bil/bildeler/vindusvisker/viskerblad/n185321/pn344083"}
+  ]
+}

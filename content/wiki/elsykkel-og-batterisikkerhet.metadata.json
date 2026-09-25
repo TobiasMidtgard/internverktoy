@@ -1,0 +1,52 @@
+{
+  "title": "Elsykkel og batteri: riktig system, trygg lading og realistisk rekkevidde",
+  "category": "Sykkel",
+  "tags": [
+    "elsykkel",
+    "batteri",
+    "lader",
+    "batterisikkerhet",
+    "lading",
+    "litium",
+    "rekkevidde",
+    "Wh",
+    "Ah",
+    "volt",
+    "Bosch",
+    "Shimano STEPS",
+    "vinterlagring",
+    "250 W",
+    "25 km/t"
+  ],
+  "sources": [
+    {
+      "label": "DSB – trygg lading av elsykkel",
+      "url": "https://www.dsb.no/sikkerhverdag/strom/trygg-lading-av-elsykkel-elsparkesykkel-og-stabrett/"
+    },
+    {
+      "label": "Bosch – batteriguide 2019, lagring side 22–23",
+      "url": "https://www.bosch-ebike.com/fileadmin/EBC/Service/Downloads/Broschueren/Bosch-eBike-Battery-Guide_MY2019_NZ.pdf?_=1539091780"
+    },
+    {
+      "label": "Shimano – batteri- og laderkompatibilitet C-562",
+      "url": "https://productinfo.shimano.com/en/compatibility/C-562"
+    },
+    {
+      "label": "Statens vegvesen – tekniske krav til elsykkel",
+      "url": "https://www.vegvesen.no/trafikkinformasjon/trafikksikkerhet/sikker-pa-sykkel/tekniske-krav/"
+    },
+    {
+      "label": "thansen – modellinndelte deler til elsykkel",
+      "url": "https://www.thansen.no/sykkel/reservedeler/deler-til-elsykkel/n14383"
+    },
+    {
+      "label": "thansen – batterier og ladere",
+      "url": "https://www.thansen.no/sykkel/reservedeler/deler-til-elsykkel/batteri-lader/n14498"
+    },
+    {
+      "label": "thansen – 36 V-batterier og Shimano BT-E8010",
+      "url": "https://www.thansen.no/sykkel/reservedeler/deler-til-elsykkel/batteri-lader/batteri-36v/n14512"
+    }
+  ],
+  "checked_at": "2026-09-25"
+}

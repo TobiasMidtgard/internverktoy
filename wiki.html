@@ -57,6 +57,12 @@
     border-radius:var(--radius);padding:14px 16px 14px 44px;font:500 18px/1.4 var(--font-ui);transition:border-color var(--dur);}
   .search input[type=search]::placeholder{color:var(--muted);font-weight:400;}
   .search .btn{font-size:15px;padding:9px 18px;}
+  .section-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0;}
+  .section-nav a{text-decoration:none;}
+  .handbook{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;margin:14px 0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);}
+  .handbook h2{margin:0;font:700 14px var(--font-ui);}
+  .handbook-links{display:flex;gap:8px;flex-wrap:wrap;}
+  .section-nav[hidden],.handbook[hidden]{display:none;}
   input:focus,select:focus,textarea:focus{outline:none;}
   .search input[type=search]:focus{border-color:#3a4656;}
   .cats{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 4px;}
@@ -174,7 +180,7 @@
   .section-empty{padding:20px 16px;text-align:left;border:1px dashed var(--line);border-radius:var(--radius);}
   .sequence-meta{display:flex;align-items:center;gap:8px;margin-top:9px;color:#9ecbff;font:500 11px var(--font-mono);}
   .sequence-meta .th-ic{font-size:16px;}
-  #sequences{scroll-margin-top:90px;}
+  #sequences,#articleSection{scroll-margin-top:90px;}
   #catalogFilters{margin-top:26px;}
   .filter-label{color:var(--muted);font:600 10px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;}
   #catalogFilters .cats{margin-top:10px;}
@@ -236,6 +242,19 @@
     </div>
     <button class="btn" onclick="doSearch()">Søk</button>
   </div>
+  <nav id="sectionNav" class="section-nav" aria-label="Innhold i kunnskapsbasen" hidden>
+    <span class="filter-label">Gå til</span>
+    <a class="chipbtn" href="#sequences">Knappesekvenser</a>
+    <a class="chipbtn" href="#articleSection">Artikler</a>
+  </nav>
+  <section id="sellerHandbook" class="handbook" aria-labelledby="handbookHeading" hidden>
+    <h2 id="handbookHeading">Selgerhåndboken</h2>
+    <div class="handbook-links">
+      <button class="chipbtn" data-article-id="c5ff7172-1865-56fb-bc50-25127f92400e">Start her</button>
+      <button class="chipbtn" data-article-id="d427a57a-eda5-410c-927f-ac72086332e1">Finn riktig del</button>
+      <button class="chipbtn" data-article-id="9b2374d2-8c58-5908-b8ae-e06cfcc2e712">Retur og reklamasjon</button>
+    </div>
+  </section>
   <section id="shortcuts" hidden>
     <div class="sc-head">
       <h2><span class="sec-idx">01 /</span> Snarveier</h2>
@@ -356,11 +375,12 @@
 <script src="wiki-guides.js?v=1"></script>
 <script>
 const T=window.THelper, $=id=>document.getElementById(id), esc=s=>T.esc(s);
-const CATS=['Bildeler','Dekk','Sykkel','Bilvask','Barneseter','Takbokser','Takstativ','Vindusviskere','Verktøy','MC','Internt','XAL','Generelt'];
+const CATS=['Opplæring','Kundeservice','Bildeler','Dekk','Sykkel','Bilvask','Barneseter','Takbokser','Takstativ','Vindusviskere','Verktøy','MC','Internt','XAL','Generelt'];
 let me=null, canManage=false, cat='', articles={}, editId=null, suggestForId=null, suggestForTitle=null, sugMap={};
 let links=[], linkCat='', editLinkId=null;
 let editorDirty=false, editorSaving=false, editorHadGuide=false;
 let authRevision=0, articleRequest=0, editorRequest=0, searchRequest=0;
+let pendingArticleId=articleIdFromLocation();
 const guideEditor=new WikiGuides.Editor($('guideEditor'),()=>{editorDirty=true;});
 WikiGuides.mountReader($('aGuide'));
 
@@ -411,9 +431,11 @@ function refreshAuth(){
   $('newBtn').textContent = canManage ? '+ Ny artikkel' : '+ Foreslå artikkel';
   $('newGuideBtn').style.display = canManage ? 'inline-block' : 'none';
   $('sequences').hidden=!me; $('articleHead').hidden=!me; $('catalogFilters').hidden=!me;
+  $('sectionNav').hidden=!me; $('sellerHandbook').hidden=!me;
   $('sugBtn').style.display = canManage ? 'inline-flex' : 'none';
   if(canManage) loadSuggestionCount();
   loadLinks();
+  openPendingArticle();
 }
 async function toggleAuth(){
   if(T.getUser()){
@@ -424,7 +446,7 @@ async function toggleAuth(){
     document.querySelectorAll('.guide-zoom').forEach(d=>d.close());
     $('aBody').innerHTML=''; $('aGuide').innerHTML=''; refreshAuth(); doSearch(); T.toast('Logget ut');
   }
-  else { const u=await T.ensureUser(); if(u){ refreshAuth(); T.toast('Logget inn som '+(u.name||u.tag)); } }
+  else { const u=await T.ensureUser(); if(u){ refreshAuth(); doSearch(); T.toast('Logget inn som '+(u.name||u.tag)); } }
 }
 
 /* ---------- categories ---------- */
@@ -531,7 +553,7 @@ async function doSearch(){
       <span class="th-kicker">Intern tilgang</span>
       <h3>Kunnskapsbasen er intern</h3>
       <p>Logg inn med ansattkoden din for å lese artikler, knappesekvenser og snarveier.</p>
-      <button class="btn" onclick="toggleAuth().then(doSearch)">Logg inn</button>
+      <button class="btn" onclick="toggleAuth()">Logg inn</button>
     </div>`;
     return;
   }
@@ -558,12 +580,23 @@ async function doSearch(){
 }
 
 /* ---------- article ---------- */
+function articleIdFromLocation(){
+  const values=new URLSearchParams(location.search).getAll('article');
+  return values.length===1 && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(values[0])
+    ? values[0].toLowerCase() : null;
+}
+function openPendingArticle(){
+  if(!pendingArticleId||!T.getUser())return;
+  const id=pendingArticleId; pendingArticleId=null;
+  return openArticle(id);
+}
 async function openArticle(id){
   const request=++articleRequest,revision=authRevision;
   if(!T.getUser())return;
   let a=articles[id];
-  if(!a){ try{ a=await T.rpcAuth('get_article',{p_id:id}); }catch(e){ if(e.message!=='no-auth'&&revision===authRevision) T.toast('Feil: '+e.message); return; } }
+  if(!a){ try{ a=await T.rpcAuth('get_article',{p_id:id}); }catch(e){ if(e.message!=='no-auth'&&revision===authRevision&&request===articleRequest) T.toast('Feil: '+e.message); return; } }
   if(request!==articleRequest||revision!==authRevision||!T.getUser())return;
+  if(!a){ T.toast('Fant ikke artikkelen'); return; }
   articles[id]=a;
   $('aTitle').textContent=a.title;
   $('aMeta').innerHTML=`<span class="cat">${esc(a.category)}</span><span class="m-date">Sist endret ${new Date(a.updated_at).toLocaleDateString('nb-NO',{day:'numeric',month:'short',year:'numeric'})}</span>${a.updated_by?`<span>av ${esc(a.updated_by)}</span>`:''}`;
@@ -701,7 +734,7 @@ document.addEventListener('keydown',e=>{
           && e.target.getAttribute('role')==='button' && e.target.tagName!=='BUTTON'){ e.preventDefault(); e.target.click(); }
 });
 $('q').addEventListener('input',debounce);
-for(const id of ['results','sequenceResults'])$(id).addEventListener('click',e=>{
+for(const id of ['results','sequenceResults','sellerHandbook'])$(id).addEventListener('click',e=>{
   const result=e.target.closest('[data-article-id]'); if(result)openArticle(result.dataset.articleId);
 });
 $('q').addEventListener('keydown',e=>{ if(e.key==='Enter') doSearch(); });

@@ -1,0 +1,56 @@
+{
+  "title": "Bilvask og kjemi: velg riktig middel og bruk det riktig",
+  "category": "Bilvask",
+  "tags": [
+    "bilvask",
+    "bilpleie",
+    "kjemi",
+    "avfetting",
+    "forvask",
+    "bilsjampo",
+    "felgrens",
+    "flyverust",
+    "asfaltfjerner",
+    "mikrofiber",
+    "SDS",
+    "sikkerhetsdatablad",
+    "Sonax",
+    "Autoglym",
+    "Optimize"
+  ],
+  "sources": [
+    {
+      "label": "Autoglym – vask på kjølige flater og skånsom arbeidsrekkefølge",
+      "url": "https://www.autoglym.com/blog/practical-tips-for-cleaning-your-car-in-a-heatwave"
+    },
+    {
+      "label": "SONAX – rengjøring av felger og dekk",
+      "url": "https://sonaxusa.com/wheel-and-tire-how-to.html"
+    },
+    {
+      "label": "thansen – Optimize vaskepakke og sikkerhetsdatablader",
+      "url": "https://www.thansen.no/bil/bilpleie/shampoo-og-vask/optimize-vaskepakke-u-avfetting-10-deler/n461/pn1372716"
+    },
+    {
+      "label": "thansen – SONAX Intensive Cleaner",
+      "url": "https://www.thansen.no/bil/bilpleie/shampoo-og-vask/avfetting/sonax-intensive-cleaner-25l/n1535960/pn1536006"
+    },
+    {
+      "label": "thansen – SONAX dekkvask og pleie",
+      "url": "https://www.thansen.no/bil/bilpleie/utvendig-pleie/dekkglans-rens/sonax-dekkvask-og-pleie-400ml/n1516951/pn1517093"
+    },
+    {
+      "label": "Arbeidstilsynet – hvordan lese sikkerhetsdatablad",
+      "url": "https://www.arbeidstilsynet.no/risikofylt-arbeid/kjemikalier/stoffkartotek/sikkerhetsdatablad/"
+    },
+    {
+      "label": "Giftinformasjonen – kjemikalier og uhell",
+      "url": "https://www.helsenorge.no/giftinformasjon/produkter-og-kjemikalier/"
+    },
+    {
+      "label": "Giftinformasjonen – faren ved å blande rengjøringsmidler",
+      "url": "https://www.helsenorge.no/giftinformasjon/produkter-og-kjemikalier/vaskemidler/salmiakk-og-klorin-skal-ikke-blandes/"
+    }
+  ],
+  "checked_at": "2026-09-25"
+}

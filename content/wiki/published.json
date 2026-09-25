@@ -1,0 +1,66 @@
+{
+  "barneseter-og-passform": {
+    "id": "003eb507-157b-4aca-8761-c9977c4ab9e8",
+    "digest": "37b237d575114c560b630d6887a901b8e8e3629ec782197014f0352c17728064"
+  },
+  "batterier-og-ladere": {
+    "id": "0f7ed195-1d0c-5918-932d-8c6f7fd32a20",
+    "digest": "e2d7272cd6a289968b2ba36f10b9a51b95d019512bb4fe3f69cae4e9175c59a8"
+  },
+  "bestilling-og-kundeloefter": {
+    "id": "c49aa4e2-62c1-54ee-9217-5378ba130bdf",
+    "digest": "25e42266485288096faf10d46481457b0193516e842fd2e704e959cce1634055"
+  },
+  "bilpaerer": {
+    "id": "72450126-ade6-4c8c-8183-5858abbadaae",
+    "digest": "c1a9cdc00fff750cc648996bda7d15d4a436b0b18846caedeb5c8a381908cf88"
+  },
+  "bilvask-og-kjemi": {
+    "id": "1223624a-5345-411f-b1ff-d909f79a4d6c",
+    "digest": "48f799c58586d38689118b0c54bf2fcba389a700ae8b746797c5cbd5bc46b6cb"
+  },
+  "dekk-og-felg-valg": {
+    "id": "82f91e23-e419-5910-915f-346c7643188b",
+    "digest": "eb813d864d9a43438ea967c40b0056e7eb3c3b4d0075813e55ae5104338c93e7"
+  },
+  "elsykkel-og-batterisikkerhet": {
+    "id": "e2f85cbb-997a-5684-ad53-5f81870f73ee",
+    "digest": "c4e978b1a98860c7d417df81dd593973903b06a94a22158f882999ea403bedfd"
+  },
+  "motorolje-og-spesifikasjoner": {
+    "id": "62ef6d11-b9dd-5f5d-a72d-59d460eb7a38",
+    "digest": "9b2e3db67f70804a4c25574fc2471365c9442b1e1102441b2beee4a44b3dfbc7"
+  },
+  "reservedeler-og-passform": {
+    "id": "d427a57a-eda5-410c-927f-ac72086332e1",
+    "digest": "1a4271ba5201aa020797148be8368275432bbe662157f4871c9536389817f6c5"
+  },
+  "retur-og-reklamasjon": {
+    "id": "9b2374d2-8c58-5908-b8ae-e06cfcc2e712",
+    "digest": "e488b7f6d2924cfdfc865de1641f32593f3aface82dce12a04682deb48488759"
+  },
+  "selgerens-startside": {
+    "id": "c5ff7172-1865-56fb-bc50-25127f92400e",
+    "digest": "2f79ec11dbc2c6a3f48654b43e5b9f3301d54c35b4b5e520b3eee4d5b979922e"
+  },
+  "sykkel-slitedeler": {
+    "id": "efcd1a65-9040-5c5e-9fb3-1f1be6059db1",
+    "digest": "b7586f2bb4b91976fd20d892f1f6976dab6946d25374e5489f53953edf61cce9"
+  },
+  "sykkel-valg-og-storrelse": {
+    "id": "e8dea36d-eb2a-4c1e-9afd-5330ae504f86",
+    "digest": "38d177da1ccb6561f461450a201adcbbace8cb0c82f6413d08b0e543234ada9e"
+  },
+  "takboks-og-sykkeltransport": {
+    "id": "4f748672-b23a-4ab7-81d0-a86432ca7ae7",
+    "digest": "834d294f56d74ac1b9b5baf12b4e5c8566de7fb53837419dac5a072824a06fdf"
+  },
+  "takstativ-og-taklast": {
+    "id": "8bb9115d-115c-473c-8aab-e20f06fc36e0",
+    "digest": "d35d944eff6b96384b0456dd430069d8c6cbc607980020edf922724ac82bc30a"
+  },
+  "vindusviskere": {
+    "id": "3baa6b85-5108-4d37-bcf7-fde3d1a89178",
+    "digest": "d1009ba7d9620531a038cf9dc7e02e596aef1f603ad2e6684ce6e6c87f59daf6"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "title": "Motorolje: viskositet, spesifikasjoner og riktig anbefaling",
+  "category": "Bildeler",
+  "tags": ["motorolje", "olje", "viskositet", "SAE", "ACEA", "API", "OEM", "godkjenning", "5W-30", "etterfylling", "oljeskift", "partikkelfilter"],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {"label": "Castrol Norge – viskositet og produsentspesifikasjon", "url": "https://www.castrol.com/no_no/norway/home/products/our-brands/viscosity-grades/5w-30.html"},
+    {"label": "Castrol – viskositetsforklaring og oljefinner", "url": "https://www.castrol.com/en_gb/united-kingdom/home/product-finder.html"},
+    {"label": "ACEA – 2023 Oil Sequences, light-duty engines", "url": "https://www.acea.auto/files/2023_ACEA_oil_sequences_light-duty_engines.pdf"},
+    {"label": "thansen – Castrol EDGE Professional C1 5W-30", "url": "https://www.thansen.no/bil/olje-og-kjemi/motorolje/castrol-edge-prof.-5w-30-c1-5-liter/n412/pn1377189/"},
+    {"label": "Volvo – modellspesifikk kontroll og påfylling av motorolje", "url": "https://www.volvocars.com/no/support/car/v40/17w17/article/98d7145de21d6d5fc0a801e80104f7b0/f26bbfca532b9981c0a801e800840073/0a2bf4d563f03f67c0a801e801fd7e96/"}
+  ]
+}

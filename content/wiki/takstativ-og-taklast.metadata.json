@@ -1,0 +1,15 @@
+{
+  "title": "Takstativ: riktig innfesting og kontroll av taklast",
+  "category": "Takstativ",
+  "tags": ["takstativ", "taklast", "rails", "flush rails", "fit kit", "Thule", "WingBar Edge", "moment", "passform", "selgeropplæring"],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {"label": "thansen – taktyper og takstativ", "url": "https://www.thansen.no/bil/utstyr/transportutstyr/takstativ/n364/"},
+    {"label": "Thule – oppbygging og montering av takstativ", "url": "https://www.thule.com/nb-no/articles/guides/what-can-i-use-my-thule-roof-rack-for"},
+    {"label": "Thule – biltilpasning for takstativ", "url": "https://www.thule.com/nb-no/roof-rack/car-roof-racks"},
+    {"label": "thansen – WingBar Edge til integrerte rails", "url": "https://www.thansen.no/bil/bildeler/takstativ/takstativ-thule-wingbar-edge-sort/n185147/pn1245753"},
+    {"label": "Thule – taklast og trygg pakking", "url": "https://www.thule.com/nb-no/articles/tips/how-to-pack-safely-with-a-roof-box"},
+    {"label": "Thule – dynamisk og statisk last ved taktelt", "url": "https://www.thule.com/-/s/approved/std.lang.all/02/00/670200.pdf?rev=9.2"},
+    {"label": "Statens vegvesen – taklast og sikring av ferielast", "url": "https://www.vegvesen.no/om-oss/presse/aktuelt/nasjonalt/bobil-eller-campingvogn-i-sommer-her-er-nyttige-tips/"}
+  ]
+}

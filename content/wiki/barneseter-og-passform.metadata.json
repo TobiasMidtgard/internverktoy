@@ -1,0 +1,15 @@
+{
+  "title": "Barneseter: riktig stol til barnet og bilen",
+  "category": "Barneseter",
+  "tags": ["barneseter", "bilstol", "ISOFIX", "i-Size", "R129", "bakovervendt", "beltestol", "Top Tether", "støttebein", "passform", "selgeropplæring"],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {"label": "Statens vegvesen – regelverket for sikring av barn", "url": "https://www.vegvesen.no/trafikkinformasjon/trafikksikkerhet/sikker-kjoring/sikring-av-barn-i-bil/regelverket-for-sikring-av-barn/"},
+    {"label": "Trygg Trafikk – Helt sikker", "url": "https://www.tryggtrafikk.no/helt-sikker/"},
+    {"label": "Trygg Trafikk – kjøp riktig bilstol", "url": "https://www.tryggtrafikk.no/tips/bil/barn-i-bil/slik-kjoper-du-riktig-bilstol/"},
+    {"label": "Britax Römer – godkjenning og kompatibilitet", "url": "https://www.britax-roemer.com/faq-page/faq-page.html"},
+    {"label": "Britax Römer – FLEX BASE iSENSE, kjøretøyliste og gulvrom", "url": "https://www.britax-roemer.com/on/demandware.static/-/Library-Sites-BritaxSharedLibrary/default/dw41925d9a/vehiclelist/3022/vehiclelist.pdf"},
+    {"label": "thansen – Sparco SK1000I i-Size", "url": "https://www.thansen.no/bil/utstyr/barn-i-bilen/bilstoler/4-12-aar-15-36-kg.-gr.-2-3/bilstol-sparco-sk1000i-i-size-76-150cm/n339/pn1299183"},
+    {"label": "Trygg Trafikk – klar for beltestol", "url": "https://www.tryggtrafikk.no/tips/bil/barn-i-bil/er-barnet-klar-for-beltestol/"}
+  ]
+}

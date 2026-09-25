@@ -1,0 +1,40 @@
+{
+  "title": "Sykkelvalg og størrelse: finn en sykkel kunden mestrer",
+  "category": "Sykkel",
+  "tags": [
+    "sykkel",
+    "sykkelstørrelse",
+    "rammestørrelse",
+    "hjulstørrelse",
+    "skrittlengde",
+    "barnesykkel",
+    "juniorsykkel",
+    "citybike",
+    "terrengsykkel",
+    "hybrid",
+    "sykkeltilpasning"
+  ],
+  "sources": [
+    {
+      "label": "thansen – størrelsesguider for barn og voksne",
+      "url": "https://www.thansen.no/kundeservice/tips-og-guider/storrelsesguider/n1134456/"
+    },
+    {
+      "label": "thansen – barne- og juniorsykler",
+      "url": "https://www.thansen.no/sykkel/gode-raad-guider-tips/storrelsesguide/barne-juniorsykler/n14672/"
+    },
+    {
+      "label": "Trek – tilpasning av sykkel",
+      "url": "https://www.trekbikes.com/us/en_US/owners-manual/fitting-your-bicycle/"
+    },
+    {
+      "label": "Schwalbe – forklaring av dekkstørrelser",
+      "url": "https://www.schwalbe.com/en/technology-faq/tire-sizes/"
+    },
+    {
+      "label": "Statens vegvesen – tekniske krav til sykkel",
+      "url": "https://www.vegvesen.no/trafikkinformasjon/trafikksikkerhet/sikker-pa-sykkel/tekniske-krav/"
+    }
+  ],
+  "checked_at": "2026-09-25"
+}
