@@ -1,0 +1,15 @@
+{
+  "title": "Båt: fortøyning, fendere og riktig vedlikehold",
+  "category": "Båt",
+  "tags": ["båt", "fortøyning", "tauverk", "fendere", "spring", "strekkavlaster", "båtvask", "gelcoat", "vedlikehold"],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {"label": "Redningsselskapet – fortøy for storm", "url": "https://rs.no/sikker-til-sjos/fortoy-for-storm/"},
+    {"label": "Marlow Ropes – Leisure Marine Definitive Rope Guide, issue 8", "url": "https://marlowropes.com/wp-content/uploads/2022/02/Leisure-Marine-Definitive-Rope-Guide-Issue-8.pdf"},
+    {"label": "thansen – tauverk og fortøyning", "url": "https://www.thansen.no/baat/rigg-dekk/tauverk-og-fortoyning/n1452484"},
+    {"label": "Redningsselskapet – fendere og vedlikehold", "url": "https://rs.no/sikker-til-sjos/fa-fine-fendere/"},
+    {"label": "thansen – JOTUN Boat Wash, 1 liter", "url": "https://www.thansen.no/baat/pleie-vedlikehold/vask-og-tilbehor/vask-og-vedlikehold/jotun-boat-wash-1-liter/n1453305/pn1453307"},
+    {"label": "Jotun – Boatwash produktinformasjon", "url": "https://www.jotun.com/no-no/jotun/decorative/yachting/products/boatwash"},
+    {"label": "thansen – vask og vedlikehold til båt", "url": "https://www.thansen.no/baat/pleie-vedlikehold/vask-og-tilbehor/vask-og-vedlikehold/n1453305"}
+  ]
+}

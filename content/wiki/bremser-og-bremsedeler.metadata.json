@@ -1,0 +1,33 @@
+{
+  "title": "Bremsedeler: skiver, klosser, kalipere og riktig variant",
+  "category": "Bildeler",
+  "tags": [
+    "bremser",
+    "bremseskive",
+    "bremseklosser",
+    "kaliper",
+    "slitasjevarsler",
+    "MIN TH",
+    "Brembo",
+    "parkeringsbrems"
+  ],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {
+      "label": "Brembo-sett KT 10 061",
+      "url": "https://www.bremboparts.com/europe/en/catalogue/discpadkit/KT_10_061"
+    },
+    {
+      "label": "thansens deleoversikt for en bestemt Vito-variant",
+      "url": "https://www.thansen.no/bil/mercedes-benz-vito-tourer-114-cdi-136hk/bremsedeler/t136004/g1600"
+    },
+    {
+      "label": "veiledning til identifikasjon",
+      "url": "https://www.bremboparts.com/asiapacific/en/support/how-to-choose-the-right-product/how-can-i-identify-the-right-product-to-fit-on-my-car-using-the-brembo-parts-search-function-93377"
+    },
+    {
+      "label": "vedlikeholdsveiledning",
+      "url": "https://www.brembo.com/en/news-archive/honda-civic-brakes"
+    }
+  ]
+}

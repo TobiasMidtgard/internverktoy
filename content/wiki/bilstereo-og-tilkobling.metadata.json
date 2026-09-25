@@ -1,0 +1,49 @@
+{
+  "title": "Bilstereo: finn riktig spiller, ramme og tilkobling",
+  "category": "Elektronikk",
+  "tags": [
+    "bilstereo",
+    "bilradio",
+    "DAB",
+    "Bluetooth",
+    "ISO",
+    "DIN",
+    "CAN-bus",
+    "rattstyring",
+    "antenne",
+    "fabrikkforsterker",
+    "monteringsramme",
+    "Pioneer"
+  ],
+  "sources": [
+    {
+      "label": "thansens utvalg for bilstereomontering",
+      "url": "https://www.thansen.no/bil/utstyr/bilstereo/bilstereo-montering/n91/"
+    },
+    {
+      "label": "Pioneer MVH-330DAB, varenummer 32942",
+      "url": "https://www.thansen.no/bil/utstyr/bilstereo/bilradio/pioneer/pioneer-mvh-330dab/n982949/pn1260672/"
+    },
+    {
+      "label": "thansens ISO/DIN-kabler",
+      "url": "https://www.thansen.no/bil/utstyr/bilstereo/bilstereo-montering/iso-din-kabler/n119"
+    },
+    {
+      "label": "Connects2s CTUVL02",
+      "url": "https://connects2.com/Product/ProductItem/CTUVL02"
+    },
+    {
+      "label": "thansens rattadapterutvalg",
+      "url": "https://www.thansen.no/bil/utstyr/bilstereo/bilstereo-montering/adapter-ratt-styring/n104?o=2"
+    },
+    {
+      "label": "Connects2 – CTSTY016.2, kompatibilitet og monteringsveiledning",
+      "url": "https://connects2.com/Product/ProductItem/CTSTY016.2"
+    },
+    {
+      "label": "Pioneer – MVH-330DAB, produkt og brukerhåndbøker",
+      "url": "https://pioneer-car.eu/no/no/mvh-330dab/mvh-330dab"
+    }
+  ],
+  "checked_at": "2026-09-25"
+}

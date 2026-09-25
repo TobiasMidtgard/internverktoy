@@ -1,0 +1,53 @@
+{
+  "title": "Lading og kabler: USB-C, biluttak og ladekabel til elbil",
+  "category": "Elektronikk",
+  "tags": [
+    "USB-C",
+    "USB PD",
+    "Power Delivery",
+    "lader",
+    "ladekabel",
+    "12V",
+    "24V",
+    "USB",
+    "Type 2",
+    "Mode 3",
+    "CCS",
+    "effekt"
+  ],
+  "sources": [
+    {
+      "label": "USB-IF forklarer Power Delivery",
+      "url": "https://www.usb.org/usb-charger-pd"
+    },
+    {
+      "label": "USB-IF om kabler og merking",
+      "url": "https://www.usb.org/cable_connector"
+    },
+    {
+      "label": "PPS-støtte",
+      "url": "https://www.usb.org/node/585"
+    },
+    {
+      "label": "Mobiline 12–24 V USB-C PD-lader på 20 W, varenummer 40217",
+      "url": "https://www.thansen.no/elektronikk/mobiltilbehor/utstyr-til-bilen/12-24v-usb-type-c-pd-20w-lader/n941418/pn1246959"
+    },
+    {
+      "label": "Volvos uttaksveiledning",
+      "url": "https://www.volvocars.com/no/support/car/v40/18w17/article/83705213e21b92e2c0a801e801c3d27d/401497129c248eafc0a801e8014b37af/15548c0c8207b634c0a801e801a89c1f/"
+    },
+    {
+      "label": "Nissans ladeoversikt",
+      "url": "https://www.nissan.no/utvalg/elbiler.html"
+    },
+    {
+      "label": "ladekabelutvalg",
+      "url": "https://www.thansen.no/bil/ladekabler/ladekabel-til-bil/n6016"
+    },
+    {
+      "label": "DSBs veiledning om elbillading",
+      "url": "https://www.dsb.no/sikkerhverdag/strom/trygg-lading-av-elbil/"
+    }
+  ],
+  "checked_at": "2026-09-25"
+}

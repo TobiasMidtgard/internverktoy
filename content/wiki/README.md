@@ -46,13 +46,15 @@ gjennom GitHub Pages.
 
 ## Dekning
 
-Denne leveransen dekker grunnleggende behovsavklaring, deleoppslag, pærer,
-olje, batterier, viskere, dekk/felger, barneseter, taktransport, sykkel,
-elsykkel, bilpleie og sentrale kundevilkår. Den eksisterende medarbeider-
-artikkelen om dekk og lagrede knappesekvenser beholdes.
+Håndboken har 32 kildeartikler om grunnleggende behovsavklaring, deleoppslag,
+pærer, olje og andre bilvæsker, batterier, viskere, bremser, filtre,
+varsler/diagnose, dekk/felger, barneseter, taktransport, tilhenger, sykkel,
+elsykkel, bilpleie, MC/scooter, verktøy, festemidler/løft, camping, båt,
+elektronikk, bilstereo, hage/fritid og sentrale kundevilkår. Den eksisterende
+medarbeiderartikkelen om dekk og lagrede knappesekvenser beholdes.
 
-Håndboken er under utbygging. Neste fagområder er MC/scooter, verktøy,
-tilhenger, flere bildeler og væsker, camping, båt, elektronikk og øvrig
-fritidssortiment. Varemottak, service, HMS, avfall og lokale butikkrutiner
-trenger egne artikler og bekreftede prosesser. En generell håndbok kan ikke
-erstatte oppdatert dokumentasjon for hvert produkt eller lokal opplæring.
+Håndboken er under utbygging. Varemottak, service, HMS, avfall, personvern
+og lokale butikkrutiner trenger egne artikler og bekreftede prosesser.
+Interne systemtrinn og fullmakter må avklares med butikken. En generell
+håndbok kan ikke erstatte oppdatert dokumentasjon for hvert produkt eller
+lokal opplæring.

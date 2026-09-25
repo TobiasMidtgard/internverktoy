@@ -1,0 +1,44 @@
+{
+  "title": "Hage og sesong: velg riktig slange, trykksprøyte og praktisk utstyr",
+  "category": "Fritid",
+  "tags": [
+    "hage",
+    "fritid",
+    "sesong",
+    "hageslange",
+    "trykksprøyte",
+    "vanning",
+    "kobling",
+    "materialkompatibilitet",
+    "frost",
+    "skjøteledning",
+    "Gardena"
+  ],
+  "sources": [
+    {
+      "label": "Optimize hageslange på 20 meter, varenummer 51692",
+      "url": "https://www.thansen.no/fritid/friluft/hageslange-20-m-med-koblingssett/n1098194/pn1361761"
+    },
+    {
+      "label": "Optimize trykksprøyte på 5 liter, varenummer 48296",
+      "url": "https://www.thansen.no/verktoy-forbruk/beholdere/trykksproyte-forstover/trykksproyte-med-pumpe-5-liter/n1405149/pn1529244"
+    },
+    {
+      "label": "sikkerhetsdatablad",
+      "url": "https://www.arbeidstilsynet.no/risikofylt-arbeid/kjemikalier/stoffkartotek/sikkerhetsdatablad/"
+    },
+    {
+      "label": "GARDENAs manual for 5L Comfort",
+      "url": "https://content.tdr.dss.husqvarnagroup.net/pub000094238/doc000240706"
+    },
+    {
+      "label": "thansens hageredskaper",
+      "url": "https://www.thansen.no/fritid/hus-hage/hageredskaper/n12269"
+    },
+    {
+      "label": "DSBs råd om skjøteledning",
+      "url": "https://www.dsb.no/sikkerhverdag/strom/riktig-bruk-av-skjoteledning/"
+    }
+  ],
+  "checked_at": "2026-09-25"
+}

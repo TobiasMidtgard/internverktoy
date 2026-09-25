@@ -1,0 +1,50 @@
+{
+  "title": "Kjølevæske, bremsevæske og AdBlue: finn riktig væske og påfyllingssted",
+  "category": "Bildeler",
+  "tags": [
+    "kjølevæske",
+    "frostvæske",
+    "DOT 4",
+    "DOT 5",
+    "DOT 5.1",
+    "AdBlue",
+    "SCR",
+    "Ready Mix",
+    "konsentrat"
+  ],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {
+      "label": "veiledning om bruk og vedlikehold",
+      "url": "https://www.glysantin.com/global/en/faq/usage-maintenance"
+    },
+    {
+      "label": "produktvalg og godkjenninger",
+      "url": "https://www.glysantin.com/global/en/faq/product-selection-approvals"
+    },
+    {
+      "label": "LIQUI MOLY forklarer kjølevæskens oppgaver og risiko ved varm motor",
+      "url": "https://www.liqui-moly.com/no/no/produkter/tips-og-tema/frostvaeskens-oppgaver.html"
+    },
+    {
+      "label": "Brembo forklarer bremsevæske og DOT-klasser",
+      "url": "https://www.bremboparts.com/europe/da/support/insights/bremsev%C3%A6ske-derfor-er-det-vigtigt-for-din-bils-bremsesystem-207814"
+    },
+    {
+      "label": "ATE/Continental om forskjellen",
+      "url": "https://www.ate-brakes.com/media/3928/202020604_pr_ate_new-brake-fluid_en.pdf"
+    },
+    {
+      "label": "VDA beskriver AdBlue og den separate tanken",
+      "url": "https://www.vda.de/en/topics/innovations/emission-reduction/adblue"
+    },
+    {
+      "label": "Volvos beskrivelse for XC40",
+      "url": "https://www.volvocars.com/uk/support/car/xc40/2021/article/4212e966420b7aa4c0a801517ab19b1f/"
+    },
+    {
+      "label": "AdBlue 10 liter Optimize",
+      "url": "https://www.thansen.no/bil/olje-og-kjemi/additiv/adblue/adblue-10-liter-optimize/n1516437/pn1208790"
+    }
+  ]
+}

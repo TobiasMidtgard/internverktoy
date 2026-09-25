@@ -41,7 +41,7 @@
   },
   "selgerens-startside": {
     "id": "c5ff7172-1865-56fb-bc50-25127f92400e",
-    "digest": "2f79ec11dbc2c6a3f48654b43e5b9f3301d54c35b4b5e520b3eee4d5b979922e"
+    "digest": "9b6b0b5af1be89031b93b307ce2c800a118ca3b617c2765191a5a9bdc2eea32f"
   },
   "sykkel-slitedeler": {
     "id": "efcd1a65-9040-5c5e-9fb3-1f1be6059db1",
@@ -62,5 +62,69 @@
   "vindusviskere": {
     "id": "3baa6b85-5108-4d37-bcf7-fde3d1a89178",
     "digest": "d1009ba7d9620531a038cf9dc7e02e596aef1f603ad2e6684ce6e6c87f59daf6"
+  },
+  "bat-fortoyning-og-vedlikehold": {
+    "id": "7fa4b58f-fdfb-50fb-846d-51714f5ecdec",
+    "digest": "1f783e9c78e6aef772db1177add2edccb02e837dc92bd73f106d449f90a7c16b"
+  },
+  "bat-redningsvest-og-sikkerhet": {
+    "id": "550aee2e-87c4-56ce-a75d-fe5e071d8d08",
+    "digest": "3346b0c3e5962cddc7789d2a5c716a6c48fe38c248515c863eeb759fbcb7ea51"
+  },
+  "bilens-varsler-og-diagnose": {
+    "id": "e3906cc0-d6b7-5621-8821-03fc9664a238",
+    "digest": "bcc51204e80fc37b379b27203190e1cbe9d0ddcc32781c1a20853ff0f3bec384"
+  },
+  "bilstereo-og-tilkobling": {
+    "id": "90d2531a-a22e-52da-a0c8-7ccd90d6bfff",
+    "digest": "de8537161ccc497fafaded94f61d7ca38ac3debe94eeac6371040838f9e4d7c9"
+  },
+  "bremser-og-bremsedeler": {
+    "id": "d8a56bd8-e42e-54e0-8694-b48133c8eca7",
+    "digest": "d3001f5c7e3f35f8f62d0b4f2a30b9705236a477efa1ecc5a5f9e5be3799eb9f"
+  },
+  "camping-gass-og-grill": {
+    "id": "36055f5f-bba2-5d10-98cc-e1e329710880",
+    "digest": "eab3b67574a67357dc9ab6c7506dfe4c41b7bf423651ee6cae1f2cb38c2a790e"
+  },
+  "camping-telt-og-utstyr": {
+    "id": "6142d984-3f47-5eac-acaf-7ad11023bfae",
+    "digest": "053763117753fee36881659fe49efd5aa1e2bec37ee44626ef1ecbadbdeef356"
+  },
+  "elektronikk-lading-og-kabler": {
+    "id": "ff2f05a3-4dc7-533a-88ca-6460d4474831",
+    "digest": "e2be83462b2e10f5055ad653edc916cf106a6105f981bda87cbed9e5c835267a"
+  },
+  "festemidler-moment-og-loft": {
+    "id": "a87125e7-f63a-5cb2-abde-cfd064529bf8",
+    "digest": "48d268dad93ec39c63f7024ffd5b18455777af2f3682b3dc34b68a7ed59bfb13"
+  },
+  "filtre-og-servicedeler": {
+    "id": "2e235ffb-40f0-51ba-bbb7-6f6ee31091c3",
+    "digest": "3c311246cbd94ec153cda2eac45a3db6037efea4194a66a04c7950ca6602ca16"
+  },
+  "fritid-hage-og-sesong": {
+    "id": "d70aba6f-b162-598b-b890-da09c0b7ce55",
+    "digest": "514d389a8e8d978c153d291467d34d8e62d3582910c254f95f793b1fc604e8e9"
+  },
+  "kjolevaeske-bremsevaeske-og-adblue": {
+    "id": "4ca3e80d-7e12-5dd5-813c-040f07d56c81",
+    "digest": "c8300afeb228adc30061b6bc6c91d7d348c1b630882393a4cf30d5a08b0b93e5"
+  },
+  "mc-hjelm-og-bekledning": {
+    "id": "e336c44a-1c41-5b99-898c-1fadec5aa9f6",
+    "digest": "3e67c5d42e4960ecc5edd84b5615e4cf4f4fe3067d98c7ddb7b278968d57cfd1"
+  },
+  "mc-og-scooter": {
+    "id": "254fa263-a940-4b17-8737-a1caf48f0021",
+    "digest": "67eb182b87bdb4498412990ffadd1e89124e13eb4a8dd79fbee7ec35af52db54"
+  },
+  "tilhenger-last-lys-og-kobling": {
+    "id": "6b22731f-6c7d-5691-8d76-80ea1f08c075",
+    "digest": "a6a22c2ed62c23338bb2284def2abc22549e45792b85659a70946966173ce846"
+  },
+  "verktoy-og-forbruk": {
+    "id": "1b2a9598-6656-47df-9518-08c24fea1ee5",
+    "digest": "1d77947509415e5a8b7c0bdcf1db6cf38214d9cbb1a460d260a1575d625becce"
   }
 }

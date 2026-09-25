@@ -1,0 +1,13 @@
+{
+  "title": "Båt: velg redningsvest og sikkerhetsutstyr",
+  "category": "Båt",
+  "tags": ["redningsvest", "flytehjelp", "oppblåsbar vest", "50 N", "100 N", "150 N", "båt", "barn", "service", "sjøsikkerhet"],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {"label": "Sjøfartsdirektoratet – husk vest i båt, norske krav", "url": "https://www.sdir.no/fritidsbat/vis-sjovett/husk-vest-i-bat/"},
+    {"label": "Baltic – valg av redningsvest og flytehjelp", "url": "https://baltic.se/en/pages/how-to-choose-a-life-jacket/"},
+    {"label": "thansen – Lalizas CE 100 N, 70–90 kg", "url": "https://www.thansen.no/baat/redningsvester-vaatdrakter/redningsvest/redningsvest-ce-100n-70-90-kg/n1310062/pn24716"},
+    {"label": "thansen – 1852 Classic 150 N, automatisk oppblåsbar", "url": "https://www.thansen.no/baat/redningsvester-vaatdrakter/oppblaasbar-veste/redningsvest-150n-navy-1852/n1310064/pn1529191"},
+    {"label": "Sjøfartsdirektoratet – båt og utstyr, passform og kontroll", "url": "https://www.sdir.no/fritidsbat/vis-sjovett/bat-og-utstyr/"}
+  ]
+}

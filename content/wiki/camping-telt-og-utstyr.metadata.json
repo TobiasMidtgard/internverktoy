@@ -1,0 +1,16 @@
+{
+  "title": "Camping: velg telt, soveutstyr og kjøleboks",
+  "category": "Camping",
+  "tags": ["telt", "vannsøyle", "sovepose", "ISO 23537", "liggeunderlag", "R-verdi", "kjøleboks", "12 V", "camping"],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {"label": "thansen – telt og tilbehør", "url": "https://www.thansen.no/camping/telt-tilbehor/n14293"},
+    {"label": "MSR/Cascade Designs – vannsøyle og teltmaterialer", "url": "https://cascadedesigns.com/blogs/msr-gear-guides/tent-fabrics-part-2-waterproof-ratings"},
+    {"label": "Outwell – teltmaterialer", "url": "https://outwell.com/en-gb/outwell-academy/guides-how-to-guides-from-outwell/material-and-maintenance-guides/flysheet-materials-guide"},
+    {"label": "Outwell – valg av sovepose", "url": "https://www.outwell.com/en-gb/outwell-academy/guides-how-to-guides-from-outwell/buying-guide/sleeping-bag-buying-guide"},
+    {"label": "Therm-a-Rest/Cascade Designs – R-verdi for liggeunderlag", "url": "https://support.cascadedesigns.com/hc/en-us/articles/35376948338195-How-warm-is-my-sleeping-pad-and-what-is-R-Value"},
+    {"label": "thansen – termoelektriske kjølebokser, blant annet RAZE CB40 og CB18", "url": "https://www.thansen.no/bil/utstyr/alt-til-bilferien/kjolebokser/termoelektriske-kjolebokser/n1327113/"},
+    {"label": "thansen – 230 V/12 V-adapter, 5 A", "url": "https://www.thansen.no/camping/kjolebokser/tilbehor/230v-12v-adapter-t.-kjoleboks/n15750/pn1197071/"},
+    {"label": "DSB – brannsikker på camping", "url": "https://www.dsb.no/sikkerhverdag/brann/brannsikker-pa-camping/"}
+  ]
+}

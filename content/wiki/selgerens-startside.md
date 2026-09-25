@@ -37,6 +37,37 @@ Neste nivå er produkter hvor flere deler må fungere sammen. [Takstativ]({{arti
 
 På sykkelområdet begynner du med [sykkelvalg og størrelse]({{article:sykkel-valg-og-storrelse}}), fortsetter med [slitedeler og kompatibilitet]({{article:sykkel-slitedeler}}) og lærer så [elsykkel og batterisikkerhet]({{article:elsykkel-og-batterisikkerhet}}). For [bilvask og kjemi]({{article:bilvask-og-kjemi}}) er overflate, produktetikett og bruksanvisning viktigere enn å anbefale det sterkeste middelet.
 
+## Utvid kunnskapen om bil og transport
+
+Når de vanligste oppslagene sitter, går du videre til varegrupper med flere avgrensninger:
+
+- [Bremsedeler]({{article:bremser-og-bremsedeler}}): aksel, bremsesystem, dimensjoner, sensorer og leveranseinnhold.
+- [Filtre og tennplugger]({{article:filtre-og-servicedeler}}): serviceplan, delens oppgave og riktig motorvariant.
+- [Kjølevæske, bremsevæske og AdBlue]({{article:kjolevaeske-bremsevaeske-og-adblue}}): spesifikasjon, blanding og riktig påfyllingssted.
+- [Varsellamper og diagnoseverktøy]({{article:bilens-varsler-og-diagnose}}): presise observasjoner, verktøyets dekning og når saken trenger feilsøking.
+- [Tilhenger, last og kobling]({{article:tilhenger-last-lys-og-kobling}}): bil, henger, førerkort, last og elektrisk tilkobling.
+
+## Lær flere varegrupper
+
+Ta utgangspunkt i den konkrete oppgaven kunden skal løse. En produktfamilie kan inneholde flere systemer som ikke passer sammen.
+
+- [MC og scooter]({{article:mc-og-scooter}}): identifikasjon, motortype, servicedeler og spesifikasjoner.
+- [MC-hjelm og bekledning]({{article:mc-hjelm-og-bekledning}}): passform, merking og riktig beskyttelse til bruken.
+- [Verktøy og forbruk]({{article:verktoy-og-forbruk}}): materiale, verktøy, tilbehør og batteriplattform.
+- [Festemidler, moment og løft]({{article:festemidler-moment-og-loft}}): gjenger, tiltrekking, kapasitet og korrekt støtte.
+- [Lading og kabler]({{article:elektronikk-lading-og-kabler}}): kontakt, protokoll, effekt og kompatibilitet.
+- [Bilstereo og tilkobling]({{article:bilstereo-og-tilkobling}}): biltilpasning, grensesnitt og nødvendig monteringsutstyr.
+- [Fritid, hage og sesong]({{article:fritid-hage-og-sesong}}): bruksmiljø, mål og produktets begrensninger.
+
+## Camping og båt
+
+Her påvirker brukssted, vær, vekt og oppbevaring ofte produktvalget. Lær å hente de konkrete grensene fra manualen og forklare dem til kunden.
+
+- [Campinggass og grill]({{article:camping-gass-og-grill}}): apparat, regulator, tilkobling og brukssted.
+- [Telt og campingutstyr]({{article:camping-telt-og-utstyr}}): plass, vær, komfort og komplett utstyr til turen.
+- [Redningsvest og båtsikkerhet]({{article:bat-redningsvest-og-sikkerhet}}): vesttype, størrelse, lovkrav og vedlikehold.
+- [Fortøyning og båtvedlikehold]({{article:bat-fortoyning-og-vedlikehold}}): båt, båtplass, belastning og riktige materialer.
+
 ## Lær kundebehandling og butikkflyt
 
 Les [retur, angrerett, reklamasjon og garanti]({{article:retur-og-reklamasjon}}) før du håndterer en vanskelig retursak alene. Skill mellom feil ved varen og at kunden har ombestemt seg. Registrer fakta uten å love et bestemt utfall før saken er vurdert.

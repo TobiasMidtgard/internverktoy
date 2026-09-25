@@ -1,0 +1,44 @@
+{
+  "title": "Tilhenger: riktig last, fungerende lys og trygg kobling",
+  "category": "Tilhenger",
+  "tags": [
+    "tilhenger",
+    "lastsikring",
+    "kuletrykk",
+    "tilhengerkalkulator",
+    "førerkort",
+    "nyttelast",
+    "7-polet",
+    "13-polet",
+    "adapter",
+    "lys",
+    "kulekobling"
+  ],
+  "sources": [
+    {
+      "label": "Statens vegvesens tilhengerkalkulator",
+      "url": "https://www.vegvesen.no/kjoretoy/eie-og-vedlikeholde/tilhenger/tilhengerkalkulator/"
+    },
+    {
+      "label": "Vegvesenets forklaring av klasse B",
+      "url": "https://www.vegvesen.no/forerkort/har-forerkort/forerkortklasser/personbil-klasse-b/"
+    },
+    {
+      "label": "Råd om last på tilhenger",
+      "url": "https://www.vegvesen.no/trafikkinformasjon/trafikksikkerhet/sikker-kjoring/pakk-bilen-riktig/"
+    },
+    {
+      "label": "Brenderups brukerhåndbok",
+      "url": "https://www.brenderup.com/storage/16C74F9BC9B194461F6A0A1D0020507CA25559105E55FCA39C7E18792B7C7E16/b58cfa59449248d791b43dc6accf0f15/pdf/media/ed6e025fcd8b449c9f05e141a02383cb/Brukerh%C3%A5ndbok_NO.pdf"
+    },
+    {
+      "label": "RAZE-adapter 40161",
+      "url": "https://www.thansen.no/bil/tilhengerutstyr/adapter-og-kabler/tilhengerkontakt-adapter-7-13-polet/n356/pn9736/"
+    },
+    {
+      "label": "Utvalget av adaptere og kabler",
+      "url": "https://www.thansen.no/bil/tilhengerutstyr/adapter-og-kabler/n356"
+    }
+  ],
+  "checked_at": "2026-09-25"
+}

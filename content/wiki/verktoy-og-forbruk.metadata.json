@@ -1,0 +1,59 @@
+{
+  "title": "Verktøy og forbruk: velg maskin, tilbehør og batteriplattform",
+  "category": "Verktøy",
+  "tags": [
+    "verktøy",
+    "bor",
+    "bits",
+    "kappeskive",
+    "vinkelsliper",
+    "batteriplattform",
+    "SLATE",
+    "håndverktøy",
+    "drill",
+    "forbruk"
+  ],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {
+      "label": "thansen – SLATE Power tools",
+      "url": "https://www.thansen.no/verktoy-forbruk/el-verktoy/slate-power-tools/n1483057"
+    },
+    {
+      "label": "thansen – SLATE vinkelsliper 20 V, 125 mm",
+      "url": "https://www.thansen.no/inspirasjon/farsdagsgave/slate-vinkelsliper-20v-125mm-u-batteri/n1423394/pn1495843"
+    },
+    {
+      "label": "thansen – lamellskive 125 mm, korn 80",
+      "url": "https://www.thansen.no/verktoy-forbruk/forbruk/kutte-slipe-og-polere/lamellskive/lamellskive-125-mm-korn-80/n1411350/pn1412351"
+    },
+    {
+      "label": "Bosch – valg av bor til ulike materialer",
+      "url": "https://www.bosch-diy.com/se/sv/all-about-diy/encyclopedia/guide-to-drills"
+    },
+    {
+      "label": "Bosch – Mini-X-Line, bitsprofiler og størrelser",
+      "url": "https://www.bosch-diy.com/gb/en/p/mini-x-line-drill-and-screwdriver-bit-set-multipack-3-1-2763499"
+    },
+    {
+      "label": "Bosch Professional – sikker bruk og tilbehør til vinkelsliper",
+      "url": "https://www.bosch-professional.com/gb/en/proper-use/angle-grinders/module-3/"
+    },
+    {
+      "label": "Bosch – vinkelslipermanual, kutting og sliping",
+      "url": "https://www.bosch-professional.com/binary/manualsmedia/o518362v21_160992A9CE_202411.pdf"
+    },
+    {
+      "label": "Bosch – AMPShare, plattformgrenser",
+      "url": "https://www.bosch-professional.com/ao/en/ampshare/landingpage.html"
+    },
+    {
+      "label": "Bosch – sikkerhetsanvisning for AMPShare-batterier",
+      "url": "https://www.bosch-professional.com/binary/manualsmedia/o559099v21_160992AA1M_202502.pdf"
+    },
+    {
+      "label": "Arbeidstilsynet – personlig verneutstyr",
+      "url": "https://www.arbeidstilsynet.no/risikofylt-arbeid/personlig-verneutstyr/"
+    }
+  ]
+}

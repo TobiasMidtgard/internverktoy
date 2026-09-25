@@ -1,0 +1,55 @@
+{
+  "title": "MC-hjelm og bekledning: godkjenning, passform og beskyttelse",
+  "category": "MC",
+  "tags": [
+    "MC",
+    "hjelm",
+    "ECE 22.06",
+    "CE",
+    "bekledning",
+    "passform",
+    "beskyttere",
+    "hansker",
+    "støvler",
+    "EN 17092"
+  ],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {
+      "label": "Lovdata – påbud om godkjent styrthjelm, § 2",
+      "url": "https://lovdata.no/forskrift/1979-09-21-7/%C2%A72"
+    },
+    {
+      "label": "Statens vegvesen – MC-utstyr og hjelmtilpasning",
+      "url": "https://www.vegvesen.no/trafikkinformasjon/trafikksikkerhet/sikker-pa-mc/mc-utstyr/"
+    },
+    {
+      "label": "UNECE – UN Regulation 22, 06-serien",
+      "url": "https://unece.org/sites/default/files/2021-09/R022r4am3e_0.pdf"
+    },
+    {
+      "label": "Arbeidstilsynet – CE-merking og samsvarserklæring for verneutstyr",
+      "url": "https://www.arbeidstilsynet.no/risikofylt-arbeid/personlig-verneutstyr/vernehansker/"
+    },
+    {
+      "label": "REV'IT! – EN 17092, klassifisering av MC-bekledning",
+      "url": "https://support.revitsport.com/hc/en-us/articles/34091441431831-Zoning-and-Classification"
+    },
+    {
+      "label": "REV'IT! – SEESOFT ryggbeskytter, EN 1621-2",
+      "url": "https://revitsport.com/products/en-motorcycle-back-protector-SEESOFT-Type-RV-Blue-Black"
+    },
+    {
+      "label": "SHOEI – passform, vedlikehold og utskifting",
+      "url": "https://www.shoei-europe.com/service/faq/"
+    },
+    {
+      "label": "thansen – NEX Racing pilothjelm, ECE 22.06",
+      "url": "https://www.thansen.no/scooter-mc/hjelmer/pilothjelm/nex-racing-mattsort/pilothjelm-nex-racing-mattsort-large/n1268472/pn1330076/"
+    },
+    {
+      "label": "thansen – Maleto kort MC-jakke, CE og EN 1621-1-beskyttere",
+      "url": "https://www.thansen.no/scooter-mc/bekledning/jakker/maleto-tekstil-kort/maleto-mc-jakke-kort-svart-graa-rod-xl/n1375918/pn1375922"
+    }
+  ]
+}

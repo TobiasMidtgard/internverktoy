@@ -1,0 +1,15 @@
+{
+  "title": "Camping: gass, regulator og grill",
+  "category": "Camping",
+  "tags": ["gass", "grill", "regulator", "gasslange", "propan", "kullos", "camping", "brannsikkerhet"],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {"label": "DSB – gassapparater", "url": "https://www.dsb.no/produkter-og-forbrukertjenester/produkter/gassapparater/"},
+    {"label": "thansen – IGT gassregulator til flaskegass, 29 mbar", "url": "https://www.thansen.no/camping/gassartikler/gassregulatorer/gassregulator-til-flaskegass/n15863/pn1338618"},
+    {"label": "DSB – brannsikker på camping", "url": "https://www.dsb.no/sikkerhverdag/brann/brannsikker-pa-camping/"},
+    {"label": "DSB – slik unngår du kullosforgiftning", "url": "https://www.dsb.no/sikkerhverdag/gass-og-brannfarlig-vaske/slik-unngar-du-kullosforgiftning/"},
+    {"label": "DSB – gassvettreglene", "url": "https://www.dsb.no/sikkerhverdag/gass-og-brannfarlig-vaske/gassvettreglene/"},
+    {"label": "DSB – slik griller du trygt med gass", "url": "https://www.dsb.no/sikkerhverdag/gass-og-brannfarlig-vaske/slik-griller-du-trygt-med-gass/"},
+    {"label": "DSB – fast opplegg for gass", "url": "https://www.dsb.no/sikkerhverdag/gass-og-brannfarlig-vaske/fast-opplegg-for-gass---hva-har-du-lov-til/"}
+  ]
+}

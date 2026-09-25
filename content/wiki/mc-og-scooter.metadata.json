@@ -1,0 +1,48 @@
+{
+  "title": "MC og scooter: identifiser kjøretøyet og velg riktige servicedeler",
+  "category": "MC",
+  "tags": [
+    "MC",
+    "scooter",
+    "moped",
+    "2T",
+    "4T",
+    "motorolje",
+    "JASO",
+    "tennplugg",
+    "drivreim",
+    "kjede",
+    "service"
+  ],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {
+      "label": "thansen – Putoline Scooter 4T 10W-40",
+      "url": "https://www.thansen.no/verktoy-forbruk/kjemi/olje/motorsykkelolje/putoline-scooter-4t-10w-40-1l/n1416245/pn1416255/"
+    },
+    {
+      "label": "Honda – PCX125 2025 instruksjonsbok",
+      "url": "https://2rom-prd-data.hondamotopub.com/om/HMEE/WW125S_A%20%28PCX%29/2025/WW125SA_OM_32K1YE00_web.pdf"
+    },
+    {
+      "label": "Yamaha – NMAX 125 2025, motor og drivlinje",
+      "url": "https://www.yamaha-motor.eu/is/en/scooters/sport/pdp/nmax-125-2025/"
+    },
+    {
+      "label": "Putoline – totaktsolje og smøresystemer",
+      "url": "https://www.putoline.com/en/category/engine-oils/two-stroke-engine-oils-3/"
+    },
+    {
+      "label": "Putoline – Ester Tech 4+ 10W-40, JASO MA2",
+      "url": "https://www.putoline.com/en/ester-tech-4-10w-40-1-x-200-l-drum-621/"
+    },
+    {
+      "label": "NGK – forklaring av tennpluggkoder",
+      "url": "https://www.ngkntk.com/fileadmin/user_upload/ngk_ntk_catalogue_2-wheel_2020-2021.pdf"
+    },
+    {
+      "label": "D.I.D – vedlikehold av motorsykkelkjeder",
+      "url": "https://www.didchain.com/pages/faq-frequently-asked-questions"
+    }
+  ]
+}

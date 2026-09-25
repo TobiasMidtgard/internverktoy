@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+  <title id="title">Bremseskive: diameter, utførelse og tykkelse</title>
+  <desc id="desc">En skive sett forfra viser ytterdiameter. Snitt av massiv og ventilert skive viser at ventilert utførelse har kanaler mellom friksjonsflatene. Ny tykkelse er forskjellig fra minste tillatte tykkelse, MIN TH. Tegningen er et prinsipp, ikke en modellspesifikasjon.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto-start-reverse"><path d="M0 0 7 3.5 0 7" fill="none" stroke="#ffd400" stroke-width="1.3"/></marker>
+  </defs>
+  <rect width="1200" height="650" rx="18" fill="#0f1318"/>
+  <g font-family="Arial, sans-serif">
+    <text x="36" y="48" fill="#7db8f0" font-size="15" letter-spacing="2">BILDELER / OPPSLAG</text>
+    <text x="36" y="94" fill="#f1f4f8" font-size="32" font-weight="700">Bremseskive: tre forskjellige kontroller</text>
+    <g fill="#161b22" stroke="#2a323d" stroke-width="2">
+      <rect x="28" y="126" width="354" height="438" rx="12"/>
+      <rect x="400" y="126" width="374" height="438" rx="12"/>
+      <rect x="792" y="126" width="380" height="438" rx="12"/>
+    </g>
+    <g fill="#f1f4f8" font-size="23" font-weight="700">
+      <text x="50" y="166">1. Diameter</text>
+      <text x="422" y="166">2. Utførelse</text>
+      <text x="814" y="166">3. Tykkelse</text>
+    </g>
+    <circle cx="205" cy="298" r="96" fill="#354354" stroke="#9ecbff" stroke-width="3"/>
+    <circle cx="205" cy="298" r="40" fill="#161b22" stroke="#97a3b2" stroke-width="2"/>
+    <g fill="#161b22" stroke="#97a3b2" stroke-width="1.5">
+      <circle cx="205" cy="238" r="7"/><circle cx="262" cy="279" r="7"/><circle cx="240" cy="347" r="7"/><circle cx="170" cy="347" r="7"/><circle cx="148" cy="279" r="7"/>
+    </g>
+    <path d="M109 404v42M301 404v42M109 432H301" fill="none" stroke="#ffd400" stroke-width="2"/>
+    <path d="M112 432H298" fill="none" stroke="#ffd400" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+    <text x="205" y="477" text-anchor="middle" fill="#ffd400" font-size="21">Ytterdiameter</text>
+    <g fill="#354354" stroke="#9ecbff" stroke-width="2">
+      <rect x="465" y="218" width="38" height="176"/>
+      <rect x="640" y="218" width="16" height="176"/>
+      <rect x="700" y="218" width="16" height="176"/>
+      <path d="M656 243h44v12h-44ZM656 300h44v12h-44ZM656 357h44v12h-44Z"/>
+    </g>
+    <g fill="#f1f4f8" font-size="19" text-anchor="middle">
+      <text x="484" y="434">Massiv</text>
+      <text x="678" y="434">Ventilert</text>
+    </g>
+    <path d="M590 279h80" stroke="#ffd400" stroke-width="2"/>
+    <circle cx="678" cy="279" r="5" fill="#ffd400"/>
+    <g fill="#97a3b2" font-size="17">
+      <text x="423" y="485">Snitt vist som prinsipp.</text>
+      <text x="423" y="514">Ventilert: kanaler mellom flatene.</text>
+      <text x="50" y="517">Lik diameter betyr ikke lik skive.</text>
+    </g>
+    <g fill="#0f1318" stroke="#3a4656" stroke-width="2">
+      <rect x="822" y="207" width="320" height="94" rx="9"/>
+      <rect x="822" y="358" width="320" height="94" rx="9"/>
+    </g>
+    <text x="844" y="242" fill="#9ecbff" font-size="21" font-weight="700">Ny tykkelse</text>
+    <text x="844" y="276" fill="#f1f4f8" font-size="18">Målet på den nye skiven</text>
+    <text x="982" y="340" fill="#ffd400" font-size="33" text-anchor="middle">≠</text>
+    <text x="844" y="395" fill="#ffd400" font-size="21" font-weight="700">MIN TH</text>
+    <text x="844" y="429" fill="#f1f4f8" font-size="18">Minste tillatte tykkelse</text>
+    <text x="814" y="491" fill="#97a3b2" font-size="17">Hent begge mål fra riktig del.</text>
+    <text x="814" y="520" fill="#97a3b2" font-size="17">Tilstanden må også kontrolleres.</text>
+    <text x="36" y="602" fill="#f1f4f8" font-size="19">Kontroller også høyde, sentrering, hullbilde, aksel og bilens bremsesystem.</text>
+    <text x="36" y="630" fill="#97a3b2" font-size="16">Prinsippskisse, ikke i målestokk. Verdier og passform må slås opp for den konkrete bilen og delen.</text>
+  </g>
+</svg>

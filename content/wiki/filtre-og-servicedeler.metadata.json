@@ -1,0 +1,39 @@
+{
+  "title": "Filtre, tennplugger og servicedeler: riktig del til riktig jobb",
+  "category": "Bildeler",
+  "tags": [
+    "filter",
+    "oljefilter",
+    "luftfilter",
+    "pollenfilter",
+    "kupefilter",
+    "drivstoffilter",
+    "tennplugg",
+    "NGK",
+    "WIX",
+    "service"
+  ],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {
+      "label": "MANN-FILTERs produktoversikt",
+      "url": "https://www.mann-filter.com/"
+    },
+    {
+      "label": "thansens WIX-oversikt",
+      "url": "https://www.thansen.no/brand/wix"
+    },
+    {
+      "label": "MANN-FILTERs nettkatalog",
+      "url": "https://www.mann-filter.com/us-en/catalog.html"
+    },
+    {
+      "label": "Spark Plug Basics",
+      "url": "https://ngksparkplugs.com/en/resources/spark-plug-basics"
+    },
+    {
+      "label": "NGKs monteringsveiledning",
+      "url": "https://www.ngksparkplugs.ca/installation-instructions"
+    }
+  ]
+}

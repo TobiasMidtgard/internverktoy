@@ -1,0 +1,40 @@
+{
+  "title": "Varsellamper og diagnoseverktøy: hjelp kunden uten å gjette på feilen",
+  "category": "Bildeler",
+  "tags": [
+    "varsellampe",
+    "motorlampe",
+    "feilkode",
+    "DTC",
+    "OBD",
+    "diagnose",
+    "ABS",
+    "oljetrykk",
+    "freeze frame",
+    "readiness",
+    "Autel"
+  ],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {
+      "label": "Volvos V70-manual",
+      "url": "https://www.volvocars.com/en-ca/support/car/v70/article/5796f223aaefe254c0a801e800894856/"
+    },
+    {
+      "label": "Autels AL549-manual",
+      "url": "https://autel.com/us/wp-content/uploads/AutoLink_AL549_User_Manual_EN_V1.2.pdf"
+    },
+    {
+      "label": "veiledning om ABS- og hjulhastighetssensorer",
+      "url": "https://www.hella.com/techworld/en/technical/sensors-and-actuators/check-and-change-abs-and-wheel-speed-sensors/"
+    },
+    {
+      "label": "Autel AL549",
+      "url": "https://www.thansen.no/bil/bilverktoy/diagnoseverktoy-og-obd-scanner/autel-diagnose-og-servicetester-al549/n1061083/pn1411285"
+    },
+    {
+      "label": "egen produktoversikt",
+      "url": "https://www.autel.com/mk1/4158.jhtml"
+    }
+  ]
+}
