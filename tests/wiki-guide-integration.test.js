@@ -356,6 +356,8 @@ const HANDBOOK = [
   'c5ff7172-1865-56fb-bc50-25127f92400e',
   'd427a57a-eda5-410c-927f-ac72086332e1',
   '9b2374d2-8c58-5908-b8ae-e06cfcc2e712',
+  'ded5a60f-f006-5d3b-bffe-1eab656d721a',
+  '4e8255b4-b614-5df6-bbec-9d9dcb07b8c8',
 ];
 const articleURL = id => 'https://example.test/wiki.html?article=' + encodeURIComponent(id);
 

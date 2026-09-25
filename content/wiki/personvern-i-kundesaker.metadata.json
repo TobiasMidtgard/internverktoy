@@ -1,0 +1,16 @@
+{
+  "title": "Personvern i kundesaker: registrer riktig og del trygt",
+  "category": "Kundeservice",
+  "tags": ["personvern", "kundeservice", "kundedata", "bilder", "fullmakt", "innsyn", "sletting", "avvik"],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {"label": "Datatilsynet – behandlingsgrunnlag", "url": "https://www.datatilsynet.no/rettigheter-og-plikter/virksomhetenes-plikter/om-behandlingsgrunnlag/"},
+    {"label": "thansen – retningslinjer for personvern og kontaktadresse", "url": "https://www.thansen.no/kundeservice/handelsbetingelser-og-privatliv/retningslinjer-for-personvern/n1134442/"},
+    {"label": "Datatilsynet – dataminimering", "url": "https://www.datatilsynet.no/rettigheter-og-plikter/personvernprinsippene/grunnleggende-personvernprinsipper/dataminimering/"},
+    {"label": "Datatilsynet – retting og sletting", "url": "https://www.datatilsynet.no/rettigheter-og-plikter/virksomhetenes-plikter/retting-og-sletting/"},
+    {"label": "Datatilsynet – integritet og konfidensialitet", "url": "https://www.datatilsynet.no/rettigheter-og-plikter/personvernprinsippene/grunnleggende-personvernprinsipper/integritet-og-konfidensialitet/"},
+    {"label": "Datatilsynet – lagringsbegrensning", "url": "https://www.datatilsynet.no/rettigheter-og-plikter/personvernprinsippene/grunnleggende-personvernprinsipper/lagringsbegrensning/"},
+    {"label": "Datatilsynet – hvilke brudd som skal meldes", "url": "https://www.datatilsynet.no/rettigheter-og-plikter/virksomhetenes-plikter/avvik/hvilke-brudd-skal-meldes-til-datatilsynet/"},
+    {"label": "Datatilsynet – meld avvik til Datatilsynet", "url": "https://www.datatilsynet.no/rettigheter-og-plikter/virksomhetenes-plikter/avvik/meld-avvik-til-datatilsynet/"}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "title": "HMS og kjemikalier: finn og bruk riktig sikkerhetsdatablad",
+  "category": "HMS",
+  "tags": ["HMS", "SDS", "sikkerhetsdatablad", "stoffkartotek", "faremerking", "H-setning", "P-setning", "CLP", "vernehansker", "kjemikalier", "søl", "Giftinformasjonen"],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {"label": "Arbeidstilsynet – stoffkartotek og opplæring", "url": "https://www.arbeidstilsynet.no/risikofylt-arbeid/kjemikalier/stoffkartotek/"},
+    {"label": "Arbeidstilsynet – innhold i sikkerhetsdatablad", "url": "https://www.arbeidstilsynet.no/risikofylt-arbeid/kjemikalier/stoffkartotek/sikkerhetsdatablad/"},
+    {"label": "Miljødirektoratet – faremerking og CLP", "url": "https://www.miljodirektoratet.no/clp/"},
+    {"label": "Arbeidstilsynet – kjemikalier, eksponering og forebygging", "url": "https://www.arbeidstilsynet.no/risikofylt-arbeid/kjemikalier/"},
+    {"label": "Arbeidstilsynet – valg av vernehansker", "url": "https://www.arbeidstilsynet.no/risikofylt-arbeid/personlig-verneutstyr/vernehansker/"},
+    {"label": "thansen – Optimize vaskepakke og sikkerhetsdatablader", "url": "https://www.thansen.no/bil/bilpleie/shampoo-og-vask/optimize-vaskepakke-u-avfetting-10-deler/n461/pn1372716"},
+    {"label": "Giftinformasjonen – førstehjelp og kontakt ved forgiftning", "url": "https://www.helsenorge.no/giftinformasjon/forstehjelp-ved-forgiftninger/"}
+  ]
+}

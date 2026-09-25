@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="710" viewBox="0 0 1200 710" role="img" aria-labelledby="title desc">
+  <title id="title">Finn riktig informasjon i sikkerhetsdatabladet</title>
+  <desc id="desc">Fire oppslagsgrupper: produkt og fare i punkt 1 og 2; håndtering, vern og reaktivitet i 7, 8 og 10; førstehjelp, brann og utslipp i 4, 5 og 6; avfall og transport i 13 og 14. Dette er et utvalg av dokumentets 16 punkter. Ved uhell skal nødvendig hjelp ikke vente på oppslag.</desc>
+  <rect width="1200" height="710" rx="18" fill="#0f1318"/>
+  <g font-family="Arial, sans-serif">
+    <text x="36" y="42" fill="#7db8f0" font-size="15" letter-spacing="2">HMS / OPPSLAG</text>
+    <text x="36" y="88" fill="#f1f4f8" font-size="32" font-weight="700">Hvor finner du svaret i sikkerhetsdatabladet?</text>
+    <text x="36" y="124" fill="#97a3b2" font-size="18">Velg etter situasjonen. Boksene er oppslag, ikke en arbeidsrekkefølge.</text>
+    <g fill="#161b22" stroke="#2a323d" stroke-width="2">
+      <rect x="28" y="151" width="562" height="188" rx="12"/>
+      <rect x="610" y="151" width="562" height="188" rx="12"/>
+      <rect x="28" y="359" width="562" height="188" rx="12"/>
+      <rect x="610" y="359" width="562" height="188" rx="12"/>
+    </g>
+    <g fill="#f1f4f8" font-size="24" font-weight="700">
+      <text x="52" y="191">Produkt og fare</text>
+      <text x="634" y="191">Før håndtering</text>
+      <text x="52" y="399">Ved uhell</text>
+      <text x="634" y="399">Avfall og transport</text>
+    </g>
+    <g fill="#263747" stroke="#41627f">
+      <rect x="52" y="214" width="54" height="40" rx="6"/><rect x="52" y="269" width="54" height="40" rx="6"/>
+      <rect x="634" y="211" width="54" height="32" rx="6"/><rect x="634" y="251" width="54" height="32" rx="6"/><rect x="634" y="291" width="54" height="32" rx="6"/>
+      <rect x="52" y="419" width="54" height="32" rx="6"/><rect x="52" y="459" width="54" height="32" rx="6"/><rect x="52" y="499" width="54" height="32" rx="6"/>
+      <rect x="634" y="422" width="54" height="40" rx="6"/><rect x="634" y="477" width="54" height="40" rx="6"/>
+    </g>
+    <g fill="#ffd400" font-size="22" font-weight="700" text-anchor="middle">
+      <text x="79" y="242">1</text><text x="79" y="297">2</text>
+      <text x="661" y="235">7</text><text x="661" y="275">8</text><text x="661" y="315">10</text>
+      <text x="79" y="443">4</text><text x="79" y="483">5</text><text x="79" y="523">6</text>
+      <text x="661" y="450">13</text><text x="661" y="505">14</text>
+    </g>
+    <g fill="#f1f4f8" font-size="20">
+      <text x="124" y="242">Hvilket produkt og hvilken leverandør?</text>
+      <text x="124" y="297">Hvilke farer har produktet?</text>
+      <text x="706" y="235">Lagring og bruk</text>
+      <text x="706" y="275">Eksponering og verneutstyr</text>
+      <text x="706" y="315">Reaktivitet og forhold som må unngås</text>
+      <text x="124" y="443">Førstehjelp</text>
+      <text x="124" y="483">Brann</text>
+      <text x="124" y="523">Utilsiktet utslipp</text>
+      <text x="706" y="450">Rester og emballasje</text>
+      <text x="706" y="505">Opplysninger for transport</text>
+    </g>
+    <rect x="28" y="573" width="1144" height="66" rx="10" fill="#272218" stroke="#756139"/>
+    <text x="52" y="614" fill="#ffd400" font-size="21" font-weight="700">Ved uhell: Nødvendig førstehjelp og nødhjelp skal ikke vente på dokumentoppslag.</text>
+    <text x="36" y="674" fill="#97a3b2" font-size="17">Utvalgte punkter av 16. Les hele den relevante informasjonen, vedlegg og butikkens godkjente rutiner.</text>
+  </g>
+</svg>

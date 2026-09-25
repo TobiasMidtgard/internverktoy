@@ -4,6 +4,8 @@ En god selger trenger ikke huske alle varenummer. Du må kunne stille presise sp
 
 Faglig struktur og lenker kontrollert 25. september 2026. Dette er en anbefalt læringsrekkefølge, ikke en bekreftet intern opplæringsplan fra thansen.
 
+Er du ny i verktøyet, begynn med [slik bruker du kunnskapsbasen]({{article:slik-bruker-du-kunnskapsbasen}}). Der lærer du søk, kategorier, kilder og forskjellen mellom snarveier og knappesekvenser.
+
 ## Første ferdighet: forstå hva kunden faktisk skal gjøre
 
 Start med et åpent spørsmål: «Hva skal du bruke dette til?» La kunden beskrive oppgaven før du velger produkt. «Jeg trenger olje» kan bety motorolje til etterfylling, olje til en totaktsmotor eller smøremiddel til et sykkelkjede. «Et batteri» kan være et startbatteri, et fritidsbatteri eller en reservedel til en bestemt elsykkel.
@@ -73,6 +75,19 @@ Her påvirker brukssted, vær, vekt og oppbevaring ofte produktvalget. Lær å h
 Les [retur, angrerett, reklamasjon og garanti]({{article:retur-og-reklamasjon}}) før du håndterer en vanskelig retursak alene. Skill mellom feil ved varen og at kunden har ombestemt seg. Registrer fakta uten å love et bestemt utfall før saken er vurdert.
 
 [Bestilling, Click & Collect og prismatch]({{article:bestilling-og-kundeloefter}}) forklarer hvilke opplysninger du bør kontrollere før du lover pris eller levering. Bruk knappesekvensene i kunnskapsbasen når du trenger dokumenterte systemsteg. Kontroller at startbildet og menyene stemmer med systemet du faktisk bruker.
+
+Fortsett med [serviceinnlevering og verksted]({{article:serviceinnlevering-og-verksted}}) for å avklare oppdrag, pris og videre kontakt. [Personvern i kundesaker]({{article:personvern-i-kundesaker}}) forklarer nødvendige opplysninger, bilder, mottakerkontroll og hva du gjør ved feilsending.
+
+## Lær sikker håndtering og butikkens daglige verktøy
+
+Disse veiledningene gir et felles grunnlag for kontroll og oppfølging. Få lokale fullmakter og oppgaver demonstrert før du gjør dem selvstendig.
+
+- [HMS og sikkerhetsdatablad]({{article:hms-og-sikkerhetsdatablad}}): identifiser kjemikaliet, finn relevant informasjon og bruk bekreftet opplæring.
+- [EE-avfall, batterier og farlig kjemi]({{article:avfall-ee-batterier-og-kjemi}}): avklar mottaksplikt, kategori, tilstand og riktig mottaksordning.
+- [Varemottak og lageravvik]({{article:varemottak-og-lageravvik}}): kontroller identitet, salgsenhet, antall, tilstand og videre ansvar.
+- [Kasseoppgjør]({{article:kasseoppgjor-brukerguide}}): tell i riktig enhet, lagre, les avvik og forstå godkjenningsvilkårene.
+- [ButikkPlanlegger]({{article:butikkplanlegger-brukerguide}}): finn ansvaret ditt, følg opp oppgaven og overlever det som gjenstår.
+- [Velodex]({{article:velodex-brukerguide}}): skill produkt, fysisk sykkel og tilgjengelighetsopplysninger.
 
 ## En praktisk modell ved disken
 

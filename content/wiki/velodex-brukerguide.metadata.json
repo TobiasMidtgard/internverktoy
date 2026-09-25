@@ -1,0 +1,51 @@
+{
+  "title": "Velodex: finn sykkelen, les detaljene og kontroller identiteten",
+  "category": "Butikkdrift",
+  "tags": [
+    "Velodex",
+    "sykkelregister",
+    "sykkel",
+    "bibliotek",
+    "varenummer",
+    "rammenummer",
+    "strekkode",
+    "reservedeler",
+    "utstilling",
+    "lagerstatus"
+  ],
+  "sources": [
+    {
+      "label": "Åpne Velodex",
+      "url": "https://tobiasmidtgard.github.io/internverktoy/bikes.html"
+    },
+    {
+      "label": "Dokumenterte knapper og betjening",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/bikes.html#L501-L540"
+    },
+    {
+      "label": "bibliotek og søk",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/bikes.html#L994-L1048"
+    },
+    {
+      "label": "Dokumenterte detaljer og identifikatorer",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/bikes.html#L1272-L1316"
+    },
+    {
+      "label": "Dokumentert strekkodevisning",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/bikes.html#L1236-L1255"
+    },
+    {
+      "label": "Dokumentert reservedelspanel",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/bikes.html#L1323-L1361"
+    },
+    {
+      "label": "Dokumentert import av produktopplysninger",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/importer/src/map.js#L27-L50"
+    },
+    {
+      "label": "Dokumentert tilgang og knappetekster",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/bikes.html#L1400-L1448"
+    }
+  ],
+  "checked_at": "2026-09-25"
+}

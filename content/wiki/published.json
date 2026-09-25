@@ -41,7 +41,7 @@
   },
   "selgerens-startside": {
     "id": "c5ff7172-1865-56fb-bc50-25127f92400e",
-    "digest": "9b6b0b5af1be89031b93b307ce2c800a118ca3b617c2765191a5a9bdc2eea32f"
+    "digest": "b590f929d18ba7d0b6c1984140dcf3fcd712e45ac8a0719677bad172a72fec24"
   },
   "sykkel-slitedeler": {
     "id": "efcd1a65-9040-5c5e-9fb3-1f1be6059db1",
@@ -126,5 +126,41 @@
   "verktoy-og-forbruk": {
     "id": "1b2a9598-6656-47df-9518-08c24fea1ee5",
     "digest": "1d77947509415e5a8b7c0bdcf1db6cf38214d9cbb1a460d260a1575d625becce"
+  },
+  "avfall-ee-batterier-og-kjemi": {
+    "id": "ce70e7d0-54f0-56eb-964d-abd1fa5da81d",
+    "digest": "1e7fe32f21518dc2e02e6b18ab5a1aa793d433a08c3e4bdd205ebc0af351c8ab"
+  },
+  "butikkplanlegger-brukerguide": {
+    "id": "f19d3759-fc1a-5d93-a656-edadbef7b0d4",
+    "digest": "0532a7bc43660e9bf09079c39599795eec69abc0010db9aa7b3d0ad7a5523ec3"
+  },
+  "hms-og-sikkerhetsdatablad": {
+    "id": "ded5a60f-f006-5d3b-bffe-1eab656d721a",
+    "digest": "9830fc7f990bea7dbdb7d14483956735a8bc634e970c4851d7b85ab3cba4b082"
+  },
+  "kasseoppgjor-brukerguide": {
+    "id": "6b73f392-b421-57d5-b3de-2e402df135d8",
+    "digest": "d8d4a8ca5f512844cbec89d57e30ce0e796efaecc435d0ad56779d27e9825456"
+  },
+  "personvern-i-kundesaker": {
+    "id": "68faaaf5-0f92-5cb1-bbf5-e3a0cf8ccc5f",
+    "digest": "05febf2570def022ee307ad5fb7c041b99640abd5ed49aeae7a32f653bb75cb1"
+  },
+  "serviceinnlevering-og-verksted": {
+    "id": "508e6e2b-2538-5e4c-9852-c537f41203c6",
+    "digest": "4bf0bb093bbf4764cc19eae3b5f45dbf2329b2142e41419e88668f50d80505b6"
+  },
+  "slik-bruker-du-kunnskapsbasen": {
+    "id": "4e8255b4-b614-5df6-bbec-9d9dcb07b8c8",
+    "digest": "fbd312af2da733770bbce45ee2333b450531ff831218b8f96933eed7858461ca"
+  },
+  "varemottak-og-lageravvik": {
+    "id": "1eb65a0c-cac1-5380-959f-48913658d334",
+    "digest": "a74f57020e25d83100a607d82a9fbbbc9fc54c89cd2a1689b47c47905bf292ac"
+  },
+  "velodex-brukerguide": {
+    "id": "1ee962e9-799e-5cac-9be6-695de7e1166c",
+    "digest": "1459b86011283373223175ca7f3599cfaea05f76184c8b7026e9f079de1e7556"
   }
 }

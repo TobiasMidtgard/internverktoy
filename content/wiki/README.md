@@ -46,15 +46,21 @@ gjennom GitHub Pages.
 
 ## Dekning
 
-Håndboken har 32 kildeartikler om grunnleggende behovsavklaring, deleoppslag,
+Håndboken har 41 kildeartikler om grunnleggende behovsavklaring, deleoppslag,
 pærer, olje og andre bilvæsker, batterier, viskere, bremser, filtre,
 varsler/diagnose, dekk/felger, barneseter, taktransport, tilhenger, sykkel,
 elsykkel, bilpleie, MC/scooter, verktøy, festemidler/løft, camping, båt,
-elektronikk, bilstereo, hage/fritid og sentrale kundevilkår. Den eksisterende
-medarbeiderartikkelen om dekk og lagrede knappesekvenser beholdes.
+elektronikk, bilstereo, hage/fritid og sentrale kundevilkår. Den dekker også
+kjemikalie-HMS, avfall, serviceinnlevering, personvern, varemottak og bruk
+av kunnskapsbasen, Kasseoppgjør, ButikkPlanlegger og Velodex. Den
+eksisterende medarbeiderartikkelen om dekk og lagrede knappesekvenser beholdes.
 
-Håndboken er under utbygging. Varemottak, service, HMS, avfall, personvern
-og lokale butikkrutiner trenger egne artikler og bekreftede prosesser.
-Interne systemtrinn og fullmakter må avklares med butikken. En generell
-håndbok kan ikke erstatte oppdatert dokumentasjon for hvert produkt eller
-lokal opplæring.
+Håndboken er under utbygging. Intern opplæring i XAL, butikkens kassestenging,
+mottakssystem, fullmakter, beredskap og serviceavtaler må fortsatt bekreftes
+lokalt. HMS utover kjemikalier og en egen veiledning om produkttilbakekalling
+gjenstår. En generell håndbok kan ikke erstatte oppdatert dokumentasjon for
+hvert produkt eller lokal opplæring.
+
+Verktøyveiledningene henviser til en kontrollert kodeversjon. De må revideres
+når brukerflyt eller datalagring endres. Kasseoppgjør bruker foreløpig lokal
+nettleserlagring; håndboken må ikke love sentral historikk eller sikkerhetskopi.

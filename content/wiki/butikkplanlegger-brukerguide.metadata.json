@@ -1,0 +1,59 @@
+{
+  "title": "ButikkPlanlegger: finn ansvaret ditt og overlever uferdige oppgaver",
+  "category": "Butikkdrift",
+  "tags": [
+    "ButikkPlanlegger",
+    "oppgaver",
+    "gjøremål",
+    "ukesplan",
+    "sjekkliste",
+    "status",
+    "overlevering",
+    "arbeidsflyt",
+    "ansvar",
+    "frister"
+  ],
+  "sources": [
+    {
+      "label": "Åpne ButikkPlanlegger",
+      "url": "https://tobiasmidtgard.github.io/internverktoy/tasks.html"
+    },
+    {
+      "label": "Dokumenterte visninger og navigasjon",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/tasks.html#L210-L228"
+    },
+    {
+      "label": "medarbeiderfilteret",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/tasks.html#L509-L524"
+    },
+    {
+      "label": "Dokumentert detaljvisning",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/tasks.html#L1412-L1438"
+    },
+    {
+      "label": "Dokumentert sjekklistefunksjon",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/tasks.html#L1016-L1034"
+    },
+    {
+      "label": "Dokumenterte statusvalg",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/tasks.html#L264-L278"
+    },
+    {
+      "label": "lagring av status",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/tasks.html#L1451-L1458"
+    },
+    {
+      "label": "Dokumentert rollevisning",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/tasks.html#L602-L618"
+    },
+    {
+      "label": "lagring og sletting av oppgaver",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/tasks.html#L1502-L1530"
+    },
+    {
+      "label": "Dokumentert varslingspanel",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/tasks.html#L236-L247"
+    }
+  ],
+  "checked_at": "2026-09-25"
+}

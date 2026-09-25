@@ -1,0 +1,51 @@
+{
+  "title": "Avfallsretur: EE-avfall, batterier og farlig kjemi",
+  "category": "HMS",
+  "tags": [
+    "avfall",
+    "EE-avfall",
+    "batterier",
+    "litiumbatterier",
+    "farlig avfall",
+    "spillolje",
+    "mottaksplikt",
+    "avfallsdeklarering",
+    "retur",
+    "HMS"
+  ],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {
+      "label": "Lovdata – gjeldende avfallsforskrift, særlig §§ 1-4–1-5 og 3-3–3-6",
+      "url": "https://lovdata.no/dokument/SF/forskrift/2004-06-01-930/%2A"
+    },
+    {
+      "label": "Miljødirektoratet – forhandlers mottak og oppbevaring av EE-avfall",
+      "url": "https://www.miljodirektoratet.no/ansvarsomrader/avfall/Returordninger-avfall/Elektronisk-og-elektrisk-avfall/"
+    },
+    {
+      "label": "Klima- og miljødepartementet – batteriforordningens EØS-status, 3. september 2026",
+      "url": "https://www.regjeringen.no/no/sub/eos-notatbasen/notatene/2026/mai/batteri-forenklingspakke-miljo-batteriforordningen-og-industrirapporteringsportalen/id3171866/"
+    },
+    {
+      "label": "Miljødirektoratet – spillolje fra husholdninger og virksomheter",
+      "url": "https://www.miljodirektoratet.no/ansvarsomrader/avfall/farlig-avfall/spillolje/"
+    },
+    {
+      "label": "Miljødirektoratet – virksomhetens farlige avfall og årlig leveringsplikt",
+      "url": "https://www.miljodirektoratet.no/publikasjoner/2016/april-2016/har-virksomheten-din-farlig-avfall/"
+    },
+    {
+      "label": "Miljødirektoratet – gjeldende løsning for Avfallsdeklarering",
+      "url": "https://www.miljodirektoratet.no/ansvarsomrader/avfall/for-naringsliv/avfallsdeklarering/"
+    },
+    {
+      "label": "DSB – skadde batterier, brannfare og varsling",
+      "url": "https://www.dsb.no/sikkerhverdag/strom/ladevett-for-trygg-lading/"
+    },
+    {
+      "label": "DSB – ADR/RID og transport av farlig gods",
+      "url": "https://www.dsb.no/farlige-stoffer/transport-av-farlig-gods/adrrid/"
+    }
+  ]
+}

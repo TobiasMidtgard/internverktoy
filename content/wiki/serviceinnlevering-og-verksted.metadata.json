@@ -1,0 +1,14 @@
+{
+  "title": "Serviceinnlevering: avklar oppdrag, pris og videre oppfølging",
+  "category": "Kundeservice",
+  "tags": ["service", "verksted", "innlevering", "sykkel", "reklamasjon", "prisoverslag", "feilsøking", "tilleggsarbeid"],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {"label": "Lovdata – håndverkertjenesteloven §§ 1–2, virkeområde", "url": "https://lovdata.no/nav/lov/1989-06-16-63/kapI"},
+    {"label": "Lovdata – håndverkertjenesteloven, særlig §§ 32–34", "url": "https://lovdata.no/dokument/NL/lov/1989-06-16-63"},
+    {"label": "Lovdata – håndverkertjenesteloven § 9, tilleggsarbeid", "url": "https://lovdata.no/dokument/NL/lov/1989-06-16-63/%C2%A79"},
+    {"label": "Lovdata – forbrukerkjøpsloven, særlig kapittel 6 og § 30", "url": "https://lovdata.no/dokument/NL/lov/2002-06-21-34"},
+    {"label": "thansen – sykkelservice", "url": "https://www.thansen.no/kundeservice/reparasjon-og-service/sykler/n1134445/"},
+    {"label": "Regjeringen – Prop. 64 L (2013–2014), omtale av tilleggsarbeid etter håndverkertjenesteloven § 9", "url": "https://www.regjeringen.no/no/dokumenter/Prop-64-L-20132014/id755470/?ch=5"}
+  ]
+}

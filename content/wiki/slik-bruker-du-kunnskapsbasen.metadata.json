@@ -1,0 +1,43 @@
+{
+  "title": "Slik bruker du kunnskapsbasen: finn svaret og følg riktig veiledning",
+  "category": "Opplæring",
+  "tags": [
+    "kunnskapsbase",
+    "wiki",
+    "søk",
+    "snarveier",
+    "knappesekvenser",
+    "XAL",
+    "opplæring",
+    "kilder",
+    "forslag",
+    "arbeidsflyt"
+  ],
+  "sources": [
+    {
+      "label": "Åpne kunnskapsbasen",
+      "url": "https://tobiasmidtgard.github.io/internverktoy/wiki.html"
+    },
+    {
+      "label": "Dokumentert navigasjon og knapper",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/wiki.html#L238-L286"
+    },
+    {
+      "label": "Dokumentert filtrering og søk",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/wiki.html#L453-L580"
+    },
+    {
+      "label": "Dokumentert åpning og kopiering",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/wiki.html#L467-L499"
+    },
+    {
+      "label": "Dokumentert sekvens- og bildevisning",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/wiki-guides.js#L45-L70"
+    },
+    {
+      "label": "Dokumentert lesing, rettigheter og forslag",
+      "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/wiki.html#L593-L676"
+    }
+  ],
+  "checked_at": "2026-09-25"
+}

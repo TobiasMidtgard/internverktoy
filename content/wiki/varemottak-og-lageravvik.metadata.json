@@ -1,0 +1,29 @@
+{
+  "title": "Varemottak og lageravvik: kontroller varen, antallet og neste steg",
+  "category": "Butikkdrift",
+  "tags": [
+    "varemottak",
+    "lager",
+    "lageravvik",
+    "varepåfyll",
+    "beholdning",
+    "varenummer",
+    "EAN",
+    "GTIN",
+    "emballasje",
+    "prismerking",
+    "levering",
+    "avvik"
+  ],
+  "sources": [
+    {
+      "label": "GS1 om GTIN og forpakningsnivåer",
+      "url": "https://gs1.no/gtin_/"
+    },
+    {
+      "label": "Se produktopplysningene hos thansen",
+      "url": "https://www.thansen.no/bil/bildeler/vindusvisker/viskerblad/n185321/pn344083"
+    }
+  ],
+  "checked_at": "2026-09-25"
+}

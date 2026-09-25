@@ -1,0 +1,14 @@
+{
+  "title": "Kasseoppgjør: tell, lagre og kontroller oppgjøret",
+  "category": "Butikkdrift",
+  "tags": ["kasseoppgjør", "safe", "åpning", "lukking", "telling", "valører", "ruller", "gram", "historikk", "godkjenning", "avvik", "lokal lagring"],
+  "checked_at": "2026-09-25",
+  "sources": [
+    {"label": "Kasseoppgjør – åpne verktøyet", "url": "https://tobiasmidtgard.github.io/internverktoy/kasse.html"},
+    {"label": "Kontrollert versjon – lagring og historikk", "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/kasse-store.js#L1"},
+    {"label": "Kontrollert versjon – tellevisning og knapper", "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/kasse.html#L274"},
+    {"label": "Kontrollert versjon – beløp, myntvekt og ruller", "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/kasse-domain.js"},
+    {"label": "Kontrollert versjon – godkjenningsvilkår", "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/kasse.html#L483"},
+    {"label": "Kontrollert versjon – historikk og redigering", "url": "https://github.com/TobiasMidtgard/internverktoy/blob/9e2a07eeb0cab20ba34bc8c775b3628920395b87/kasse.html#L1356"}
+  ]
+}
