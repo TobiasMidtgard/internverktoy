@@ -1,6 +1,10 @@
 -- Regresjonstest for tasks_v24: prune_old_data. Rulles alltid tilbake.
 -- Bruk: node --env-file=db/.env db/run.mjs db/test_prune.sql
 begin;
+-- stores_v1: rader testen setter inn direkte havner i fredrikstad (default kun inne i
+-- denne transaksjonen, som rulles tilbake).
+alter table public.tasks alter column store_id set default 'fredrikstad';
+alter table public.staff_status alter column store_id set default 'fredrikstad';
 
 do $$
 declare

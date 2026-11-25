@@ -71,6 +71,9 @@ html.intro #preloader{display:block}
 .clockbox b{color:var(--th-text);font-weight:600}
 #clockS{display:inline-block;min-width:2ch}
 .clock-sep{width:1px;height:12px;background:var(--th-line)}
+.store-sel{color:var(--th-muted)}
+.store-sel select{border-radius:999px;min-height:40px;padding-left:14px}
+.store-sel-hero{display:none}
 .admin-chip{background:transparent;border:1px solid var(--th-line);color:var(--th-muted);border-radius:999px;padding:9px 15px;min-height:40px;font:600 12.5px var(--th-font-ui);cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:border-color var(--th-dur),color var(--th-dur),transform var(--th-dur)}
 .admin-chip:hover{border-color:var(--th-brand-2);color:var(--th-text)}
 .admin-chip:active{transform:scale(.97)}
@@ -185,6 +188,10 @@ html.th-cursor input,html.th-cursor select,html.th-cursor textarea,html.th-curso
 @media(max-width:640px){
   /* Klokke + ukenummer er pynt på mobil: ordmerke + innloggingschip får ikke plass sammen med dem */
   .clockbox{display:none}
+  /* Butikkvelgeren får ikke plass i toppen på mobil — den flytter ned over overskriften */
+  .hub-top .store-sel{display:none}
+  .store-sel-hero{display:inline-flex;margin:0 0 12px}
+  .store-sel-hero select{max-width:70vw}
   .wordmark{font-size:12.5px;letter-spacing:.07em}
   .hub-top{padding:14px 16px}
   .hero-inner{padding-top:96px}
@@ -221,6 +228,7 @@ html.th-cursor input,html.th-cursor select,html.th-cursor textarea,html.th-curso
   <a class="wordmark" href="index.html">THANSEN<span class="dot">·</span><span class="k">INTERNVERKTØY</span></a>
   <div class="top-right">
     <div class="clockbox"><b id="clock">--:--:<span id="clockS">--</span></b><span class="clock-sep"></span><span class="wk" id="week">UKE --</span></div>
+    <div id="storeSel" class="store-sel"></div>
     <button class="admin-chip" id="adminBtn">Logg inn</button>
   </div>
 </header>
@@ -239,7 +247,8 @@ html.th-cursor input,html.th-cursor select,html.th-cursor textarea,html.th-curso
     <circle cx="230" cy="212" r="18"/><path d="M230 182L230 242M223 182L237 182M223 242L237 242"/>
   </svg>
   <div class="hero-inner">
-    <p class="kicker">Thansen / Fredrikstad</p>
+    <div id="storeSelHero" class="store-sel store-sel-hero"></div>
+    <p class="kicker" id="storeKicker">Thansen / Fredrikstad</p>
     <h1 class="headline" id="headline">INTERNVERKTØY</h1>
     <p class="hero-sub">Fire presise verktøy for butikken: sykkelregister, ukesplan, kunnskapsbase og kasseoppgjør. Bygget internt, alltid klare.</p>
   </div>
@@ -407,7 +416,7 @@ html.th-cursor input,html.th-cursor select,html.th-cursor textarea,html.th-curso
 <div id="curDot" aria-hidden="true"></div>
 <div id="curRing" aria-hidden="true"></div>
 
-<script src="shared.js?v=16"></script>
+<script src="shared.js?v=17"></script>
 <script>
 (function(){
 'use strict';
@@ -424,10 +433,24 @@ function paint(){
 }
 btn.addEventListener('click', async () => {
   if (!T) return;
-  if (T.getUser()) { T.clearSession(); paint(); T.toast('Logget ut'); loadWiki(); }
-  else { const u = await T.ensureUser(); if (u) { paint(); T.toast('Logget inn som '+(u.name||u.tag)); loadWiki(); } }
+  if (T.getUser()) { T.clearSession(); paint(); T.toast('Logget ut'); loadWiki(); refreshStores(); }
+  else { const u = await T.ensureUser(); if (u) { paint(); T.toast('Logget inn som '+(u.name||u.tag)); loadWiki(); refreshStores(); } }
 });
 paint();
+
+/* ---------- butikk (stores_v1): velger + tellere for valgt butikk ---------- */
+let storesReady = null;
+function refreshStores(){
+  if (!T || !T.sb) return Promise.resolve();
+  storesReady = TMO(T.loadStores(), 4000).catch(() => null).then(() => {
+    T.storeSelect(document.getElementById('storeSel'));
+    T.storeSelect(document.getElementById('storeSelHero'));
+    const n = T.storeName();
+    if (n) document.getElementById('storeKicker').textContent = 'Thansen / ' + n;
+    loadCounts();
+  });
+  return storesReady;
+}
 
 /* ---------- klokke + ISO-uke (sekundsifferet tikker med th-tick-pop) ---------- */
 const elC = document.getElementById('clock'), elS = document.getElementById('clockS'), elW = document.getElementById('week');
@@ -467,14 +490,15 @@ function countTo(el, n, label){
 }
 async function loadCounts(){
   const v = document.getElementById('liveVelodex'), k = document.getElementById('liveTasks');
-  if (!T || !T.sb){ fallback(v); fallback(k); return; }
+  if (!T || !T.sb || !T.storeId()){ fallback(v); fallback(k); return; }
+  const store = T.storeId();
   try {
-    const r = await TMO(T.sb.from('bikes').select('uid', {count:'exact', head:true}).eq('display_status','on_display'), 4000);
+    const r = await TMO(T.sb.from('bikes').select('uid', {count:'exact', head:true}).eq('store_id', store).eq('display_status','on_display'), 4000);
     if (r.error || r.count == null) fallback(v);
     else countTo(v, r.count, r.count === 1 ? 'sykkel på utstilling' : 'sykler på utstilling');
   } catch(e){ fallback(v); }
   try {
-    const r = await TMO(T.sb.from('tasks').select('id', {count:'exact', head:true}).neq('status','done'), 4000);
+    const r = await TMO(T.sb.from('tasks').select('id', {count:'exact', head:true}).eq('store_id', store).neq('status','done'), 4000);
     if (r.error || r.count == null) fallback(k);
     else countTo(k, r.count, r.count === 1 ? 'åpen oppgave' : 'åpne oppgaver');
   } catch(e){ fallback(k); }
@@ -507,7 +531,7 @@ function loadKasse(){
 }
 loadKasse();
 
-loadCounts(); loadWiki();
+refreshStores(); loadWiki();
 
 /* ---------- portalklikk: 450ms blå sluse, kun rene venstreklikk ---------- */
 const wipe = document.getElementById('wipe');

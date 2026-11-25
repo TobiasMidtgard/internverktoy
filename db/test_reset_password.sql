@@ -6,6 +6,8 @@ insert into public.coworkers (tag,name,color,title,role,pass_hash) values
   ('ZZM2','Manager','#004595','Butikksjef','manager', extensions.crypt('mgr12345', extensions.gen_salt('bf'))),
   ('ZZC2','Coworker','#004595','Deltid','coworker',   extensions.crypt('gammelt1', extensions.gen_salt('bf'))),
   ('ZZD2','Devkonto','#004595','IT','dev',            extensions.crypt('dev12345', extensions.gen_salt('bf')));
+-- stores_v1: butikksjefen kan bare forvalte ansatte i egen butikk
+insert into public.store_members (store_id, tag) values ('fredrikstad','ZZM2'), ('fredrikstad','ZZC2'), ('fredrikstad','ZZD2');
 
 do $$
 begin

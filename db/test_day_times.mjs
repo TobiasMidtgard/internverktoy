@@ -6,6 +6,8 @@ const cfg = { host: process.env.PGHOST, port: +(process.env.PGPORT||5432), user:
 const c = new pg.Client(cfg);
 await c.connect();
 await c.query('begin');
+await c.query(`alter table public.tasks alter column store_id set default 'fredrikstad';
+  alter table public.staff_status alter column store_id set default 'fredrikstad'`);   // stores_v1: direkte innsatte testrader → fredrikstad
 const checks=[]; const ok=(n,v)=>checks.push({check:n,PASS:!!v});
 const oslo = `at time zone 'Europe/Oslo'`;
 
@@ -28,7 +30,8 @@ await c.query(`insert into public.coworkers (tag,name,title,color,role,pass_hash
   ('ZZT1','Tester En','Butikksjef','#004595','manager', extensions.crypt('pass1234', extensions.gen_salt('bf')))`);
 
 // 4. add_task normaliserer fristen mot ukedagsavvik (lørdag 09:00 → 10:00)
-const r4=(await c.query(`select to_char(due_at ${oslo},'HH24:MI') v, day_times from add_task('ZZT1','pass1234',
+await c.query(`insert into public.store_members (store_id, tag) select 'fredrikstad', tag from public.coworkers where tag like 'ZZ%' on conflict do nothing`);   // stores_v1
+const r4=(await c.query(`select to_char(due_at ${oslo},'HH24:MI') v, day_times from add_task('ZZT1','pass1234','fredrikstad',
   jsonb_build_object('title','ZZT dagtid','recur_unit','day','due_at',
     to_char(('2026-06-13 09:00'::timestamp ${oslo}),'YYYY-MM-DD"T"HH24:MI:SSOF'),
     'day_times','{"6":"10:00","d":"09:00"}'::jsonb))`)).rows[0];

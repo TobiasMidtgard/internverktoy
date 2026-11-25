@@ -15,14 +15,12 @@ export async function markDiscontinued(client, seenIds){
   return data;
 }
 
-// How many thansen-sourced bikes are currently active — used to sanity-check the
-// discontinued-sweep against partial Algolia results.
+// How many distinct Thansen products are currently active — used to sanity-check the
+// discontinued-sweep against partial Algolia results. Counts products, not rows: since
+// stores_v1 every product has one row per store, so a row count would grow with each
+// new store and make every normal run look "partial".
 export async function countActiveThansen(client){
-  const { count, error } = await client
-    .from('bikes')
-    .select('uid', { count: 'exact', head: true })
-    .eq('source', 'thansen')
-    .eq('discontinued', false);
+  const { data, error } = await client.rpc('count_active_thansen');
   if (error) throw new Error('countActiveThansen failed: ' + error.message);
-  return count ?? 0;
+  return Number(data) || 0;
 }

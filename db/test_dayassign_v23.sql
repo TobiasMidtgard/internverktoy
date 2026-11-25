@@ -1,6 +1,10 @@
 -- Regresjonstest for tasks_v23: dags-tildelinger. Rulles alltid tilbake.
 -- Bruk: node --env-file=db/.env db/run.mjs db/test_dayassign_v23.sql
 begin;
+-- stores_v1: rader testen setter inn direkte havner i fredrikstad (default kun inne i
+-- denne transaksjonen, som rulles tilbake).
+alter table public.tasks alter column store_id set default 'fredrikstad';
+alter table public.staff_status alter column store_id set default 'fredrikstad';
 
 -- midlertidig manager-konto for å kalle RPC-ene
 insert into public.coworkers (tag,name,color,title,role,pass_hash)
@@ -8,6 +12,7 @@ values ('ZZMG','Test Manager','#004595','Butikksjef','manager', extensions.crypt
 insert into public.coworkers (tag,name,color,title,role) values
   ('ZZA9','Ansatt A','#004595','Deltid','coworker'),
   ('ZZB9','Ansatt B','#004595','Deltid','coworker');
+insert into public.store_members (store_id, tag) values ('fredrikstad','ZZMG'), ('fredrikstad','ZZA9'), ('fredrikstad','ZZB9');
 
 do $$
 declare

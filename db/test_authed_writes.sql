@@ -1,11 +1,15 @@
 -- Regresjonstest for tasks_v17: auth på tavle-skriving + invitasjonskode. Rulles alltid tilbake.
 -- Bruk: node --env-file=db/.env db/run.mjs db/test_authed_writes.sql
 begin;
+-- stores_v1: rader testen setter inn direkte havner i fredrikstad (default kun inne i
+-- denne transaksjonen, som rulles tilbake).
+alter table public.tasks alter column store_id set default 'fredrikstad';
+alter table public.staff_status alter column store_id set default 'fredrikstad';
 
 do $$
 declare inv text; tid uuid; r public.tasks;
 begin
-  select value into inv from public.app_config where key='invite_code';
+  select invite_code into inv from public.stores where id='fredrikstad';
 
   -- 1) Registrering uten/med feil invitasjonskode skal feile
   begin

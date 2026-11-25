@@ -7,6 +7,8 @@ const cfg = { host: process.env.PGHOST, port: +(process.env.PGPORT||5432), user:
 const c = new pg.Client(cfg);
 await c.connect();
 await c.query('begin');
+await c.query(`alter table public.tasks alter column store_id set default 'fredrikstad';
+  alter table public.staff_status alter column store_id set default 'fredrikstad'`);   // stores_v1: direkte innsatte testrader → fredrikstad
 await c.query(`alter table public.tasks add column if not exists day_assignees jsonb not null default '{}'::jsonb`);
 const id = (await c.query(
   `insert into public.tasks (title, recur_unit, status, priority) values ('[TEST] dayassign','day','todo','medium') returning id`)).rows[0].id;

@@ -47,3 +47,24 @@ opprettes et issue i repoet automatisk.
    pg_restore --clean --if-exists --no-owner -d "postgresql://…" dump.pgdump
    ```
 
+
+## Flere butikker (stores_v1)
+
+`supabase/stores_v1.sql` innfører butikker og butikkmedlemskap. Den endrer signaturen på
+flere RPC-er, så migreringen og sidene må ut **samtidig**: gamle sider mot ny database
+(eller omvendt) får feil ved lagring.
+
+```bash
+node --env-file=db/.env db/backup.mjs                       # 1. backup
+node --env-file=db/.env db/run.mjs supabase/stores_v1.sql   # 2. migrering
+node --env-file=db/.env db/run.mjs db/test_stores.sql       # 3. tilgangstest (rulles tilbake)
+# 4. merge PR-en til main (GitHub Pages publiserer sidene)
+node --env-file=db/.env db/snapshot.mjs                     # 5. oppdater skjema-snapshot
+```
+
+- All eksisterende data havner i butikken `fredrikstad`, og alle eksisterende ansatte blir medlem der.
+- Kontoer med rollen `dev` (TMID) har tilgang til alle butikker uten medlemskap, og kan opprette
+  nye butikker fra butikkvelgeren («+ Ny butikk…»).
+- Butikksjefer legger til ansatte i sin butikk med «Ny ansatt» (en eksisterende kode legges til
+  butikken i stedet for å opprettes på nytt) og setter butikkens invitasjonskode med nøkkelknappen.
+- Velodex bruker nå innlogging i stedet for den felles redigeringskoden.

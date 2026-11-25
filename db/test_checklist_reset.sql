@@ -1,6 +1,10 @@
 -- Regresjonstest for tasks_v22: sjekklister nullstilles ved rollover. Rulles alltid tilbake.
 -- Bruk: node --env-file=db/.env db/run.mjs db/test_checklist_reset.sql
 begin;
+-- stores_v1: rader testen setter inn direkte havner i fredrikstad (default kun inne i
+-- denne transaksjonen, som rulles tilbake).
+alter table public.tasks alter column store_id set default 'fredrikstad';
+alter table public.staff_status alter column store_id set default 'fredrikstad';
 
 do $$
 declare
@@ -27,7 +31,7 @@ begin
   if t.notes not like '%Morgenrutine:%' then raise exception 'FAIL: øvrig tekst ødelagt'; end if;
 
   -- Manuell done -> todo på gjentakende oppgave nullstiller også
-  select value into inv from public.app_config where key='invite_code';
+  select invite_code into inv from public.stores where id='fredrikstad';
   j := public.register_account('ZZR1','Test Reset','Deltid','#004595','test1234', inv);
   tok := j->>'token';
   perform public.set_status('ZZR1', tok, d_id, 'done');
