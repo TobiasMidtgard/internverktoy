@@ -64,3 +64,8 @@ test('mapHitToBike spare_parts defaults to empty', () => {
   assert.deepEqual(b.spare_parts, []);
   assert.equal(b.spare_parts_count, 30);
 });
+
+test('mapHitToBike leaves out stock_stores while per-store stock is unknown', () => {
+  const b = mapHitToBike({ url: '/x/pn123', title: 'T', price: 1, item_number: '9' });
+  assert.equal('stock_stores' in b, false);
+});

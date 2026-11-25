@@ -11,6 +11,8 @@ const cfg = { host: process.env.PGHOST, port: +(process.env.PGPORT||5432), user:
 const c = new pg.Client(cfg);
 await c.connect();
 await c.query('begin');
+await c.query(`alter table public.tasks alter column store_id set default 'fredrikstad';
+  alter table public.staff_status alter column store_id set default 'fredrikstad'`);   // stores_v1: direkte innsatte testrader → fredrikstad
 
 // Three "completed on time" recurring tasks. due_at sits one full period in the
 // past at a time-of-day 3h ahead of now, so the correct next occurrence is the

@@ -65,6 +65,7 @@ window.THelper = (function () {
     try { sessionStorage.removeItem(SESSION_KEY); } catch {}
   }
   function clearSession(){
+    _stores = null;
     const s = getSession();
     if (s && s.token && sb) sb.rpc('logout_account', { p_tag: s.user.tag, p_token: s.token }).then(()=>{}, ()=>{});
     localStorage.removeItem(SESSION_KEY);
@@ -75,6 +76,69 @@ window.THelper = (function () {
   const level   = () => LEVEL[role()] || 0;
   const canManage = () => level() >= 2;
   const isDev   = () => role() === 'dev';
+
+  /* ---------- butikker (stores_v1) ----------
+     Hver side viser én butikk om gangen. Valget huskes per enhet. Innlogget ser du bare
+     butikkene du er medlem av (dev: alle); uten innlogging kan alle butikker vises, men
+     ikke endres. Tilgangen håndheves i databasen — dette styrer bare hva UI-et tilbyr. */
+  const STORE_KEY = 'thelper.store';
+  let _stores = null;            // [{id,name}] for gjeldende innlogging, null = ikke hentet
+  const storedStore = () => { try { return localStorage.getItem(STORE_KEY); } catch { return null; } };
+  function setStore(id){ try { localStorage.setItem(STORE_KEY, id); } catch {} }
+  const stores  = () => _stores || [];
+  const storeId = () => {
+    const want = storedStore();
+    if (!_stores) return want;   // før lasting: siste valg (rask første tegning)
+    return (_stores.find(x => x.id === want) || _stores[0] || {}).id || null;
+  };
+  const storeName = () => (stores().find(x => x.id === storeId()) || {}).name || '';
+  /* Kan innlogget konto skrive i valgt butikk? (lista er medlemskapene når man er logget inn) */
+  const canEditStore = () => !!getUser() && !!_stores && _stores.some(x => x.id === storeId());
+
+  async function loadStores(){
+    if (!sb) { _stores = []; return _stores; }
+    const s = getSession();
+    const args = s ? { p_auth_tag: s.user.tag, p_auth_pw: s.token } : {};
+    let { data, error } = await sb.rpc('list_stores', args);
+    if (error && s) {                       // utløpt sesjon: vis butikkene uten innlogging
+      ({ data, error } = await sb.rpc('list_stores', {}));
+    }
+    _stores = error ? [] : (data || []);
+    const id = storeId();
+    if (id && id !== storedStore()) setStore(id);
+    return _stores;
+  }
+
+  /* Setter inn butikkvelgeren i `host`. Bytte laster siden på nytt — enkelt og sikkert,
+     ingen side kan da blande data fra to butikker. Dev får «+ Ny butikk» nederst. */
+  function storeSelect(host){
+    if (!host) return;
+    injectCss();
+    const list = stores(), cur = storeId();
+    host.classList.add('th-store');
+    const opts = list.map(x => `<option value="${esc(x.id)}" ${x.id === cur ? 'selected' : ''}>${esc(x.name)}</option>`).join('')
+      + (!list.length ? '<option value="">Ingen butikk</option>' : '')
+      + (isDev() ? '<option value="__new">+ Ny butikk…</option>' : '');
+    host.innerHTML = `<select aria-label="Butikk" title="${getUser() ? 'Butikkene du har tilgang til' : 'Butikk (logg inn for å endre)'}">${opts}</select>`;
+    const sel = host.querySelector('select');
+    sel.disabled = list.length < 2 && !isDev();
+    sel.onchange = async () => {
+      if (sel.value === '__new') { sel.value = cur || ''; await createStoreFlow(); return; }
+      if (sel.value && sel.value !== cur) { setStore(sel.value); location.reload(); }
+    };
+  }
+  async function createStoreFlow(){
+    const name = (prompt('Navn på den nye butikken (f.eks. «Sarpsborg»):', '') || '').trim();
+    if (!name) return;
+    const slug = name.toLowerCase().replace(/æ/g,'ae').replace(/ø/g,'o').replace(/å/g,'a')
+                     .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0, 32);
+    try {
+      const res = await rpcAuth('create_store', { p_id: slug, p_name: name });
+      const row = Array.isArray(res) ? res[0] : res;
+      setStore(row.id); toast('Butikk opprettet: ' + row.name);
+      setTimeout(() => location.reload(), 600);
+    } catch (e) { toast('Kunne ikke opprette butikk: ' + ((e && e.message) || 'ukjent feil')); }
+  }
 
   /* ---------- shared CSS ---------- */
   function injectCss(){
@@ -132,7 +196,18 @@ window.THelper = (function () {
       .th-btn:active{transform:scale(.97);}
       .th-btn.ghost{background:transparent;border:1px solid var(--th-line);color:var(--th-text);}
       .th-btn.ghost:hover{filter:none;border-color:var(--th-brand-2);}
-      :where(button,a,input,select,textarea,[role=button]):focus-visible{outline:2px solid var(--th-yellow);outline-offset:2px;}`;
+      :where(button,a,input,select,textarea,[role=button]):focus-visible{outline:2px solid var(--th-yellow);outline-offset:2px;}
+      /* Butikkvelger (stores_v1) — arver tekstfarge så den passer i alle sidehoder */
+      .th-store{display:inline-flex;align-items:center;gap:6px;min-width:0;}
+      .th-store select{appearance:none;-webkit-appearance:none;background:transparent;color:inherit;max-width:44vw;
+        border:1px solid rgba(128,140,160,.45);border-radius:8px;min-height:36px;padding:6px 26px 6px 10px;
+        font:600 12px/1.2 var(--th-font-ui);cursor:pointer;text-overflow:ellipsis;
+        background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
+        background-position:calc(100% - 13px) 50%,calc(100% - 9px) 50%;background-size:4px 4px;background-repeat:no-repeat;
+        transition:border-color var(--th-dur);}
+      .th-store select:hover{border-color:var(--th-brand-2);}
+      .th-store select:disabled{cursor:default;opacity:.85;}
+      .th-store option{background:var(--th-panel);color:var(--th-text);}`;
     document.head.appendChild(st);
   }
 
@@ -225,7 +300,11 @@ window.THelper = (function () {
             if (!invite) throw new Error('Fyll inn invitasjonskoden (spør butikksjefen)');
             res = await callRegister(tag, name, title, color, pw, invite);
           }
-          setSession(res.user, res.token); close(res.user);
+          setSession(res.user, res.token);
+          const before = storedStore();
+          await loadStores();
+          if (before && storeId() !== before) { location.reload(); return; }   // viste butikk er ikke din
+          close(res.user);
         } catch (e) {
           err.textContent = (e && e.message) || 'Noe gikk galt';
           okBtn.textContent = mode === 'login' ? 'Logg inn' : mode === 'reg' ? 'Opprett konto' : 'Bytt passord';
@@ -251,9 +330,13 @@ window.THelper = (function () {
     return data;
   }
 
+  /* Som rpcAuth, men med valgt butikk som p_store */
+  const rpcStore = (fn, args = {}) => rpcAuth(fn, { p_store: storeId(), ...args });
+
   injectCss();   // tokens + .th-ic må finnes før sidene rendrer ikoner (før første toast/modal)
 
   return { SB_URL, SB_KEY, sb, esc, toast, TITLES, icon,
            getUser, role, level, canManage, isDev, clearSession,
-           authModal, ensureUser, rpcAuth };
+           authModal, ensureUser, rpcAuth, rpcStore,
+           loadStores, stores, storeId, storeName, setStore, canEditStore, storeSelect };
 })();

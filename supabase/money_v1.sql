@@ -55,6 +55,9 @@ create unique index if not exists money_denominations_label_key
 
 create table if not exists money_count_sessions (
   id                uuid primary key default gen_random_uuid(),
+  -- stores_v1: hvert oppgjør hører til én butikk. RPC-ene under må ta p_store og kalle
+  -- public._require_store / _require_store_manager, akkurat som tasks-RPC-ene.
+  store_id          text not null references public.stores(id),
   session_date      date not null,
   status            text not null default 'saved' check (status in ('saved','verified')),
   note              text not null default '',
@@ -100,7 +103,7 @@ create table if not exists money_count_sessions (
 );
 
 create index if not exists money_count_sessions_date_idx
-  on money_count_sessions (session_date desc, counted_at desc);
+  on money_count_sessions (store_id, session_date desc, counted_at desc);
 
 
 -- ---------------------------------------------------------------------------
@@ -141,6 +144,9 @@ revoke all on money_count_sessions from anon, authenticated;
 --       returns void
 --   save_money_denominations(p_auth_tag text, p_auth_pw text, p_list jsonb)
 --       returns setof money_denominations
+--
+-- Butikk (stores_v1): alle RPC-ene tar p_store (list/save) eller slår opp radens store_id
+-- (get/verify/delete), og krever medlemskap via _require_store. Krever at stores_v1 er kjørt.
 --
 -- Rollekrav: lesing og lagring for alle innloggede; godkjenning, sletting og
 -- valørendring for manager+. Rollesjekken ligger i dag KUN i sidekoden (THelper.canManage), og

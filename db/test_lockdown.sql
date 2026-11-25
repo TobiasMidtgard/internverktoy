@@ -15,13 +15,13 @@ begin
   if not has_table_privilege('anon','public.tasks','select') then raise exception 'FAIL: tasks ble stengt ved et uhell'; end if;
 
   -- 2) get_people krever innlogging og returnerer begge nøkler
-  select value into inv from public.app_config where key='invite_code';
+  select invite_code into inv from public.stores where id='fredrikstad';
   j := public.register_account('ZZL1','Test Laas','Deltid','#004595','test1234', inv);
   tok := j->>'token';
-  res := public.get_people('ZZL1', tok);
+  res := public.get_people('ZZL1', tok, 'fredrikstad');
   if res->'coworkers' is null or res->'staff_status' is null then raise exception 'FAIL: get_people mangler nøkler'; end if;
   begin
-    perform public.get_people('ZZL1','feil-token');
+    perform public.get_people('ZZL1','feil-token','fredrikstad');
     raise exception 'FAIL: get_people uten gyldig auth';
   exception when others then if sqlerrm like 'FAIL:%' then raise; end if; end;
 

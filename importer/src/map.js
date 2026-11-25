@@ -1,3 +1,5 @@
+import { stockStoresFromHit } from './stock.js';
+
 const BASE = 'https://www.thansen.no';
 
 export function parseSheets(sheets){
@@ -33,7 +35,7 @@ export function mapHitToBike(hit, { x = 0, y = 0 } = {}){
   const abs   = url.startsWith('http') ? url : BASE + url;
   const specs = parseSheets(hit.sheets);
   const brand = hit.brand?.title || '';
-  return {
+  const bike = {
     source_id:         String(url.match(/\/pn(\d+)(?:[/?#]|$)/)?.[1] || hit.objectID || '').trim(),
     name:              formatTitle(brand, specs.type, specs.model) || String(hit.title || '').trim(),
     descr:             String(hit.title || '').trim(),
@@ -50,4 +52,8 @@ export function mapHitToBike(hit, { x = 0, y = 0 } = {}){
     spare_parts_count: hit.supplementary_types?.spare_part?.product_count ?? 0,
     x, y,
   };
+  // Sendes bare når vi faktisk vet lagerstatus per butikk (se stock.js)
+  const stock = stockStoresFromHit(hit);
+  if (Array.isArray(stock)) bike.stock_stores = stock.map(String);
+  return bike;
 }

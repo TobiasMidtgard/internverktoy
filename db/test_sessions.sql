@@ -5,7 +5,7 @@ begin;
 do $$
 declare inv text; j jsonb; tok text; tok2 text;
 begin
-  select value into inv from public.app_config where key='invite_code';
+  select invite_code into inv from public.stores where id='fredrikstad';
 
   -- 1) Registrering returnerer {user, token} og logger inn
   j := public.register_account('ZZS1','Test Sesjon','Deltid','#004595','test1234', inv);

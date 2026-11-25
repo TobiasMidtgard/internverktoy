@@ -22,16 +22,11 @@ test('upsertBike throws on supabase error', async () => {
   await assert.rejects(() => upsertBike(c, { source_id: 'P1' }), /boom/);
 });
 
-test('countActiveThansen counts non-discontinued thansen bikes', async () => {
-  const filters = [];
-  const chain = {
-    select: (cols, opts) => { filters.push({ cols, opts }); return chain; },
-    eq: (k, v) => { filters.push({ k, v }); return chain; },
-    then: (resolve) => resolve({ count: 42, error: null }),
-  };
-  const c = { from: (t) => { filters.push({ table: t }); return chain; } };
-  const n = await countActiveThansen(c);
-  assert.equal(n, 42);
-  assert.ok(filters.some(f => f.table === 'bikes'));
-  assert.ok(filters.some(f => f.k === 'discontinued' && f.v === false));
+test('countActiveThansen counts distinct products via count_active_thansen', async () => {
+  const c = { rpc: async (name, args) => { assert.equal(name, 'count_active_thansen'); assert.equal(args, undefined); return { data: 42, error: null }; } };
+  assert.equal(await countActiveThansen(c), 42);
+});
+test('countActiveThansen throws on supabase error', async () => {
+  const c = { rpc: async () => ({ data: null, error: { message: 'nope' } }) };
+  await assert.rejects(() => countActiveThansen(c), /nope/);
 });

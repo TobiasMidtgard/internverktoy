@@ -10,7 +10,7 @@ values ('ZZT1','Test Privilegert','#004595','Butikksjef','manager'),
 do $$
 declare inv text;
 begin
-  select value into inv from public.app_config where key='invite_code';
+  select invite_code into inv from public.stores where id='fredrikstad';
 
   -- 1) Claim av privilegert passordløs rad skal feile
   begin

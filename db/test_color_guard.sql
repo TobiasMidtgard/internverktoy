@@ -5,7 +5,7 @@ begin;
 do $$
 declare v text; inv text;
 begin
-  select value into inv from public.app_config where key='invite_code';
+  select invite_code into inv from public.stores where id='fredrikstad';
 
   -- _clean_color
   if public._clean_color('#abc', 'x') <> '#abc' then raise exception 'FAIL: #abc avvist'; end if;
