@@ -58,6 +58,8 @@ flere RPC-er, så migreringen og sidene må ut **samtidig**: gamle sider mot ny 
 node --env-file=db/.env db/backup.mjs                       # 1. backup
 node --env-file=db/.env db/run.mjs supabase/stores_v1.sql   # 2. migrering
 node --env-file=db/.env db/run.mjs db/test_stores.sql       # 3. tilgangstest (rulles tilbake)
+node --env-file=db/.env db/run.mjs supabase/stores_v2.sql   #    automatisk plassering (kan kjøres sammen med v1)
+node --env-file=db/.env db/run.mjs db/test_auto_place.sql   #    test (rulles tilbake)
 # 4. merge PR-en til main (GitHub Pages publiserer sidene)
 node --env-file=db/.env db/snapshot.mjs                     # 5. oppdater skjema-snapshot
 ```
@@ -68,3 +70,8 @@ node --env-file=db/.env db/snapshot.mjs                     # 5. oppdater skjema
 - Butikksjefer legger til ansatte i sin butikk med «Ny ansatt» (en eksisterende kode legges til
   butikken i stedet for å opprettes på nytt) og setter butikkens invitasjonskode med nøkkelknappen.
 - Velodex bruker nå innlogging i stedet for den felles redigeringskoden.
+- Automatisk plassering (stores_v2): butikksjefen setter Thansen-butikknummeret med
+  «Auto-plassering» i Velodex (redigeringsmodus). Nattlig import legger da ut sykler som er på
+  lager i den butikken, én gang per sykkel. Importen må vite lager per butikk:
+  `importer/src/stock.js` returnerer `null` til feltet i Thansens søkeindeks er bekreftet,
+  og da endres ingen plassering.

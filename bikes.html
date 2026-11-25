@@ -512,6 +512,7 @@
     <div id="storeSel" title="Butikk"></div>
     <button class="btn" id="bikesBtn">Sykler</button>
     <button class="btn" id="lockBtn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Kun visning</button>
+    <button class="btn" id="autoBtn" hidden title="Legg sykler som er på lager i butikken automatisk ut på lerretet">Auto-plassering</button>
     <button class="btn" id="snapToggle" aria-pressed="false">Snapp: Av</button>
     <select id="snapSize" title="Rutenettstørrelse">
       <option value="20">Rutenett 20</option>
@@ -1395,8 +1396,27 @@ function updateLockUI(){
   bikesBtn.textContent=editing?'+ Ny sykkel':'Sykler';
   bikesBtn.classList.toggle('primary',editing);
   if(!editing)clearSelection();
+  document.getElementById('autoBtn').hidden=!(editing&&T.canManage());
   refreshLibrary();
 }
+/* stores_v2: butikksjef kobler butikken til et Thansen-butikknummer. Nattlig import legger
+   da ut sykler som er på lager der (én gang per sykkel — fjerner du et kort, blir det borte). */
+document.getElementById('autoBtn').onclick=async()=>{
+  try{
+    const cur=(await T.rpcStore('get_store_thansen'))||[];
+    const c=Array.isArray(cur)?cur[0]||{}:cur;
+    const v=prompt('Thansen-butikknummer for '+(T.storeName()||'butikken')+'.\n'
+      +'Sykler som er på lager i den butikken legges automatisk ut på lerretet ved nattlig import.\n'
+      +'La feltet stå tomt for å slå av.', c.thansen_store_id||'');
+    if(v===null)return;
+    const res=await T.rpcStore('set_store_thansen',{p_thansen_id:v.trim(),p_auto:!!v.trim()});
+    const r=Array.isArray(res)?res[0]||{}:res;
+    toast(r.thansen_store_id?'Auto-plassering på: Thansen-butikk '+r.thansen_store_id+'.':'Auto-plassering av.',true);
+  }catch(err){
+    if(/set_store_thansen|get_store_thansen/.test((err&&err.message)||''))toast('Kjør stores_v2.sql i Supabase først.');
+    else handleWriteError(err,'Auto-plassering');
+  }
+};
 lockBtn.onclick=async()=>{
   if(isEditing()){
     editOn=false;sessionStorage.removeItem(EDIT_KEY);updateLockUI();toast('Låst: kun visning.',true);
